@@ -23,7 +23,4 @@ Route::middleware(['auth', 'throttle:6,1'])->group(function () {
         ->name('verification.send');
 });
 
-/* Route::middleware('auth')->group(function () {
-    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-}); */
 

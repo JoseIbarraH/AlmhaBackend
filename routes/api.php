@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RefreshTokenController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -17,12 +18,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-
 Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 Route::post('/forgot-password', [PasswordResetLinkController::class, 'store']);
 Route::post('/reset-password', [NewPasswordController::class, 'store']);
 
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-    ->middleware('auth:sanctum')
-    ->name('logout');
+Route::post('refresh-token', [RefreshTokenController::class, 'refreshToken']);
+
+Route::middleware(['auth:sanctum', 'token.not.expired'])->group(function () {
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
+
+    Route::get('/validate-token', function (Request $request) {
+        return response()->json([
+            'valid' => true,
+            'user' => $request->user(),
+        ]);
+    });
+});
+
