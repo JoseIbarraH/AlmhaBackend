@@ -1,65 +1,74 @@
-# Stage 1: Construcción
-FROM php:8.2-fpm-alpine AS build
+FROM php:8.3-cli AS base
 
-# Variables de entorno
-ARG APP_ENV=production
-ENV APP_ENV=${APP_ENV}
-ENV COMPOSER_ALLOW_SUPERUSER=1 \
-    COMPOSER_HOME=/composer
+# System packages and PHP extensions
+RUN apt-get update && apt-get install -y \
+    git unzip curl libpng-dev libonig-dev libxml2-dev \
+    libzip-dev libpq-dev libcurl4-openssl-dev libssl-dev \
+    zlib1g-dev libicu-dev g++ libevent-dev procps \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip exif pcntl bcmath sockets intl
 
-# Instalación de dependencias del sistema
-RUN apk add --no-cache \
-    bash \
-    git \
-    curl \
-    libzip-dev \
-    zip \
-    unzip \
-    oniguruma-dev \
-    icu-dev \
-    npm \
-    nodejs \
-    yarn \
-    && docker-php-ext-configure zip \
-    && docker-php-ext-install \
-        intl \
-        mbstring \
-        pdo_mysql \
-        zip \
-    && apk del icu-dev libzip-dev
+# Swoole is installed from GitHub
+RUN curl -L -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/tags/v5.1.0.tar.gz \
+    && tar -xf swoole.tar.gz \
+    && cd swoole-src-5.1.0 \
+    && phpize \
+    && ./configure \
+    && make -j$(nproc) \
+    && make install \
+    && docker-php-ext-enable swoole
 
-# Instalar Composer desde la imagen oficial
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Node.js 18 (Vite compatible) and Yarn installation
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g yarn
 
-WORKDIR /app
+# Composer installation
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copiar solo composer.json y composer.lock para cachear dependencias
-COPY composer.json composer.lock ./
+WORKDIR /var/www
 
-# Instalar dependencias de Composer
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# Copy composer files and artisan file
+COPY composer.json composer.lock artisan ./
 
-# Copiar todo el código fuente
+# Create Laravel's basic directory structure
+RUN mkdir -p bootstrap/cache storage/app storage/framework/cache/data \
+    storage/framework/sessions storage/framework/views storage/logs
+
+# Install Composer dependencies (without post-scripts)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
+
+# Node files (cache for Vite build)
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+# Copy the rest of the project files
 COPY . .
 
-# Stage 2: Producción
-FROM php:8.2-fpm-alpine AS production
+# Run Composer post-scripts
+RUN composer dump-autoload --optimize
 
-WORKDIR /app
+# Vite build
+RUN yarn build
 
-# Copiar la aplicación desde el build stage
-COPY --from=build /app /app
+# Laravel config cache (to be done at runtime, not during build)
+RUN php artisan config:clear \
+ && php artisan route:clear \
+ && php artisan view:clear
 
-# Crear usuario www-data
-RUN addgroup -g 1000 www && \
-    adduser -u 1000 -G www -s /bin/sh -D www
+# File permissions
+RUN chown -R www-data:www-data /var/www \
+ && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-RUN chown -R www:www /app \
-    && chmod -R 755 /app
-
-# Exponer puerto PHP-FPM
 EXPOSE 9000
 
-USER www
+# Startup script
+RUN echo '#!/bin/bash\n\
+# Cache configurations after environment variables are loaded\n\
+php artisan config:cache\n\
+php artisan route:cache\n\
+php artisan view:cache\n\
+# Start the server\n\
+exec php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000\n\
+' > /start.sh && chmod +x /start.sh
 
-CMD ["php-fpm"]
+CMD ["sh", "-c", "echo 'APP_KEY:' $APP_KEY && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000"]

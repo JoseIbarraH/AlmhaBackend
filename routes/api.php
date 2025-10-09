@@ -19,6 +19,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware('web')->post('/login', [AuthenticatedSessionController::class, 'store']);
+Route::middleware('web')->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
+
 Route::post('/register', [RegisteredUserController::class, 'store']);
 
 Route::post('/forgot-password', [PasswordResetLinkController::class, 'store']);
