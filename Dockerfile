@@ -1,13 +1,14 @@
+# Imagen base con PHP 8.3 CLI
 FROM php:8.3-cli AS base
 
-# System packages and PHP extensions
+# Instala dependencias del sistema y extensiones PHP necesarias
 RUN apt-get update && apt-get install -y \
     git unzip curl libpng-dev libonig-dev libxml2-dev \
     libzip-dev libpq-dev libcurl4-openssl-dev libssl-dev \
     zlib1g-dev libicu-dev g++ libevent-dev procps \
     && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip exif pcntl bcmath sockets intl
 
-# Swoole is installed from GitHub
+# Instala Swoole desde GitHub
 RUN curl -L -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/tags/v5.1.0.tar.gz \
     && tar -xf swoole.tar.gz \
     && cd swoole-src-5.1.0 \
@@ -17,58 +18,47 @@ RUN curl -L -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/t
     && make install \
     && docker-php-ext-enable swoole
 
-# Node.js 18 (Vite compatible) and Yarn installation
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g yarn
-
-# Composer installation
+# Instala Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Define el directorio de trabajo
 WORKDIR /var/www
 
-# Copy composer files and artisan file
+# Copia los archivos esenciales primero
 COPY composer.json composer.lock artisan ./
 
-# Create Laravel's basic directory structure
+# Crea las carpetas básicas de Laravel
 RUN mkdir -p bootstrap/cache storage/app storage/framework/cache/data \
     storage/framework/sessions storage/framework/views storage/logs
 
-# Install Composer dependencies (without post-scripts)
+# Instala dependencias de Composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
 
-# Node files (cache for Vite build)
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
-
-# Copy the rest of the project files
+# Copia el resto del proyecto
 COPY . .
 
-# Run Composer post-scripts
+# Ejecuta los post-scripts de Composer (dump-autoload, etc.)
 RUN composer dump-autoload --optimize
 
-# Vite build
-RUN yarn build
-
-# Laravel config cache (to be done at runtime, not during build)
+# Limpia y genera caches
 RUN php artisan config:clear \
  && php artisan route:clear \
  && php artisan view:clear
 
-# File permissions
+# Asigna permisos correctos
 RUN chown -R www-data:www-data /var/www \
  && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
+# Expone el puerto 9000 (usado por Octane/Swoole)
 EXPOSE 9000
 
-# Startup script
+# Script de inicio
 RUN echo '#!/bin/bash\n\
-# Cache configurations after environment variables are loaded\n\
 php artisan config:cache\n\
 php artisan route:cache\n\
 php artisan view:cache\n\
-# Start the server\n\
 exec php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000\n\
 ' > /start.sh && chmod +x /start.sh
 
-CMD ["sh", "-c", "echo 'APP_KEY:' $APP_KEY && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000"]
+# Comando de inicio por defecto
+CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000"]
