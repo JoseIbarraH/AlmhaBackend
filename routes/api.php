@@ -7,17 +7,14 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
-});
-
-Route::middleware('auth:sanctum')->group(function () {
+/* Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+}); */
 
 Route::post('/register', [RegisteredUserController::class, 'store']);
 
@@ -26,9 +23,9 @@ Route::post('/reset-password', [NewPasswordController::class, 'store']);
 
 Route::post('refresh-token', [RefreshTokenController::class, 'refreshToken']);
 
-Route::middleware(['auth:sanctum', 'token.not.expired'])->group(function () {
-    /* Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout'); */
+/* Route::middleware(['auth:sanctum', 'token.not.expired'])->group(function () {
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
 
     Route::get('/validate-token', function (Request $request) {
         return response()->json([
@@ -36,12 +33,26 @@ Route::middleware(['auth:sanctum', 'token.not.expired'])->group(function () {
             'user' => $request->user(),
         ]);
     });
-});
+}); */
 
+Route::prefix('service')->group(function () {
+    // Listar todos los servicios
+    Route::get('/', [ServiceController::class, 'list_services']);
+    
+    Route::get('/test', [ServiceController::class, 'test_upload']);
 
+    // Ver detalles de un servicio específico
+    Route::get('/{id}', [ServiceController::class, 'get_service']);
 
+    // Crear un nuevo servicio
+    Route::post('/', [ServiceController::class, 'create_service']);
 
-Route::middleware('auth:sanctum')->prefix('design')->group(function () {
-    Route::get('/designs', [DesignController::class, 'index']);
-    Route::post('/background', [DesignController::class, 'backgroundStore']);
+    // Actualizar un servicio existente
+    Route::put('/{id}', [ServiceController::class, 'update_service']);
+
+    // Eliminar un servicio
+    Route::delete('/{id}', [ServiceController::class, 'delete_service']);
+
+    // Actualizar solo el estado del servicio
+    Route::patch('/update_status/{id}', [ServiceController::class, 'update_status']);
 });
