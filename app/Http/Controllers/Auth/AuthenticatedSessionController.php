@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use Illuminate\Support\Facades\Cookie;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\NewAccessToken;
 use App\Models\RefreshToken;
 use Illuminate\Http\Request;
@@ -12,75 +14,44 @@ use App\Models\User;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Handle an incoming authentication request.
-     */
+
     public function store(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
+            'remember' => 'boolean'
         ]);
 
-        // Buscar usuario
-        $user = User::where('email', $request->email)->first();
+        $credentials = $request->only('email', 'password');
+        $remember = $request->boolean('remember');
 
-        // Verificar credenciales
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        // Intentar autenticar con las credenciales
+        if (!Auth::guard('web')->attempt($credentials, $remember)) {
             return response()->json([
                 'message' => 'Credenciales inválidas'
             ], 401);
         }
 
-        $accessTtlSeconds = 60 * 15; // 15 min
-        /** @var NewAccessToken $accessTokenObj */
-        $accessTokenObj = $user->createToken('access-token');
+        // Regenerar sesión para prevenir session fixation
+        $request->session()->regenerate();
 
-        $accessToken = $accessTokenObj->accessToken; // modelo PersonalAccessToken
-        $accessToken->expires_at = now()->addSeconds($accessTtlSeconds);
-        $accessToken->save();
-
-        $plainAccessToken = $accessTokenObj->plainTextToken;
-
-        // 2) Crear refresh token (largo) -> devolvemos el token *plano* al cliente, pero guardamos hash
-        $plainRefresh = Str::random(64);
-        $refreshHash = hash('sha256', $plainRefresh);
-
-        $refresh = RefreshToken::create([
-            'user_id' => $user->id,
-            'token_hash' => $refreshHash,
-            'user_agent' => $request->userAgent(),
-            'ip' => $request->ip(),
-            'expires_at' => now()->addDays(30),
-        ]);
-
-        // 3) (Recomendado) Setear refresh token en cookie httpOnly
-        $cookie = cookie('refresh_token', $plainRefresh, 60 * 24 * 30, '/', null, config('app.env') === 'production', true, false, 'Strict');
-
-        // Devolver respuesta
+        // Retornar usuario autenticado
         return response()->json([
-            'user' => $user,
-            'access_token' => $plainAccessToken,
-            'expires_in' => $accessTtlSeconds,
-        ])->withCookie($cookie);
+            'message' => 'Autenticación exitosa',
+            'user' => Auth::user()
+        ]);
     }
 
     public function destroy(Request $request)
     {
-        $user = $request->user();
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        // revocar access token actual
-        $current = $user->currentAccessToken();
-        if ($current) {
-            $current->delete();
-        }
-
-        // revocar refresh tokens del user + borrar cookie
-        RefreshToken::where('user_id', $user->id)->update(['revoked_at' => now()]);
-
-        $cookie = cookie()->forget('refresh_token');
-
-        return response()->json(['message' => 'Logged out'])->withCookie($cookie);
+        return response()->json([
+            'message' => 'Sesión cerrada exitosamente'
+        ]);
     }
 
 }
