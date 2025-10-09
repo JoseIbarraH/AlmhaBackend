@@ -20,6 +20,7 @@ RUN apk add --no-cache \
     npm \
     nodejs \
     yarn \
+    && docker-php-ext-configure zip \
     && docker-php-ext-install \
         intl \
         mbstring \
@@ -27,15 +28,18 @@ RUN apk add --no-cache \
         zip \
     && apk del icu-dev libzip-dev
 
-# Instalar Composer
+# Instalar Composer desde la imagen oficial
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Copiar dependencias y código fuente
+# Copiar solo composer.json y composer.lock para cachear dependencias
 COPY composer.json composer.lock ./
+
+# Instalar dependencias de Composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
+# Copiar todo el código fuente
 COPY . .
 
 # Stage 2: Producción
@@ -43,11 +47,8 @@ FROM php:8.2-fpm-alpine AS production
 
 WORKDIR /app
 
-# Copiar dependencias instaladas desde build
+# Copiar la aplicación desde el build stage
 COPY --from=build /app /app
-
-# Copiar archivos necesarios para Laravel
-COPY --from=build /usr/local/etc/php/php.ini /usr/local/etc/php/php.ini
 
 # Crear usuario www-data
 RUN addgroup -g 1000 www && \
