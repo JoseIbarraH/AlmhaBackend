@@ -130,14 +130,8 @@ class ServiceController extends Controller
     // Crear un servicio
     public function create_service(StoreRequest $request)
     {
-
-        dd([
-            'all_request' => $request->all(),
-            'sample_images_files' => $request->file('sample_images'),
-            'result_images_files' => $request->file('result_images'),
-            'has_sample_images' => $request->hasFile('sample_images'),
-            'has_result_images' => $request->hasFile('result_images'),
-        ]);
+        /* $request->all();
+        dd($request->all()); */
         try {
             $data = $request->validated();
 

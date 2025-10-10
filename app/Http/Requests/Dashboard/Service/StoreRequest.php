@@ -39,19 +39,14 @@ class StoreRequest extends FormRequest
 
             // Imágenes de muestra
 
-            'sample_images' => 'array|nullable',
-            'sample_images.*' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
-
-            'sample_images.*.recovery' => 'nullable|string',
-            'sample_images.*.postoperative_care' => 'nullable|string',
-            'sample_images.*.image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
+            'sample_images' => 'array',
+            'sample_images.technique' => 'image|max:5120',
+            'sample_images.recovery' => 'image|max:5120',
+            'sample_images.postoperative_care' => 'image|max:5120',
 
             // Galería de resultados
-            'result_images' => 'array|nullable',
-            'result_images.*' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
-
-
-
+            'results_gallery' => 'array',
+            'results_gallery.*' => 'image|max:5120'
         ];
     }
 
