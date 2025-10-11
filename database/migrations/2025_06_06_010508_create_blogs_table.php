@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('slug')->unique();
-            $table->string('image_name')->nullable();
-            $table->string('category')->nullable();
+            $table->string('image')->nullable();
+            $table->enum('category', ['general', 'facial', 'bodily', 'non-surgical'])->default('general');
             $table->string('writer')->nullable();
             $table->integer('view')->default(0);
             $table->enum('status', ['inactive', 'active'])->default('inactive');

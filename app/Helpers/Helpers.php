@@ -30,7 +30,7 @@ class Helpers
         $filename = $randomName . '.webp';
         $path = trim($folder, '/') . '/' . $filename;
         Storage::disk('public')->put($path, $image);
-        
+
         return $path;
     }
 
@@ -49,41 +49,41 @@ class Helpers
         return $path;
     }
 
-   public static function translateBatch(array $texts, string $source = 'es', string $target = 'en'): array
-{
-    if (empty($texts)) {
-        return [];
-    }
-
-    // Asegura que la URL tenga /translate al final
-    $baseUrl = rtrim(env('LIBRETRANSLATE_URL'), '/');
-    $url = $baseUrl . '/translate';
-
-    $translations = [];
-
-    foreach ($texts as $text) {
-        if (empty($text)) {
-            $translations[] = '';
-            continue;
+    public static function translateBatch(array $texts, string $source = 'es', string $target = 'en', string $format = 'text'): array
+    {
+        if (empty($texts)) {
+            return [];
         }
 
-        $response = Http::asJson()->post($url, [
-            'q' => $text,
-            'source' => $source,
-            'target' => $target,
-            'format' => 'text',
-        ]);
+        // Asegura que la URL tenga /translate al final
+        $baseUrl = rtrim(env('LIBRETRANSLATE_URL'), '/');
+        $url = $baseUrl . '/translate';
 
-        if ($response->failed()) {
-            throw new \Exception("LibreTranslate error: " . $response->body());
+        $translations = [];
+
+        foreach ($texts as $text) {
+            if (empty($text)) {
+                $translations[] = '';
+                continue;
+            }
+
+            $response = Http::asJson()->post($url, [
+                'q' => $text,
+                'source' => $source,
+                'target' => $target,
+                'format' => $format,
+            ]);
+
+            if ($response->failed()) {
+                throw new \Exception("LibreTranslate error: " . $response->body());
+            }
+
+            $data = $response->json();
+            $translations[] = $data['translatedText'] ?? '';
         }
 
-        $data = $response->json();
-        $translations[] = $data['translatedText'] ?? '';
+        return $translations;
     }
-
-    return $translations;
-}
 
 
 

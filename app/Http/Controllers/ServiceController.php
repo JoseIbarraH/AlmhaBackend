@@ -84,7 +84,7 @@ class ServiceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Lista de servicios obtenida correctamente',
+                'message' => __('messages.service.success.listServices'),
                 'data' => $services
             ]);
 
@@ -92,12 +92,11 @@ class ServiceController extends Controller
             Log::error('Error en list_services: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener los servicios',
+                'message' => __('messages.service.error.listServices'),
                 'error' => $e->getMessage()
             ], 500);
         }
     }
-
 
     // Ver un servicio
     public function get_service($id, Request $request)
@@ -121,36 +120,13 @@ class ServiceController extends Controller
                 'status' => $service->status,
                 'title' => $translation->title ?? '',
                 'description' => $translation->description ?? '',
-                'surgery_phases' => $service->surgeryPhases->map(function ($phase) {
-                    return [
-                        'id' => $phase->id,
-                        'recovery_time' => $phase->recovery_time,
-                        'preoperative_recommendations' => $phase->preoperative_recommendations,
-                        'postoperative_recommendations' => $phase->postoperative_recommendations,
-                        'lang' => $phase->lang,
-                    ];
-                }),
-                'frequently_asked_questions' => $service->frequentlyAskedQuestions->map(function ($faq) {
-                    return [
-                        'id' => $faq->id,
-                        'question' => $faq->question,
-                        'answer' => $faq->answer,
-                        'lang' => $faq->lang,
-                    ];
-                }),
-                'sample_images' => [
-                    'technique' => $service->sampleImages->technique ?? null,
-                    'recovery' => $service->sampleImages->recovery ?? null,
-                    'postoperative_care' => $service->sampleImages->postoperative_care ?? null,
-                ],
-                'results_gallery' => $service->resultGallery->pluck('path')->toArray(),
                 'created_at' => $service->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
             ];
 
             return response()->json([
                 'success' => true,
-                'message' => 'Servicio obtenido correctamente',
+                'message' => __('messages.service.success.getService'),
                 'data' => $data,
             ]);
 
@@ -158,13 +134,11 @@ class ServiceController extends Controller
             Log::error('Error en get_service: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener el servicio',
+                'message' => __('messages.service.error.getService'),
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
-
-
 
     // Crear un servicio
     public function create_service(StoreRequest $request)
@@ -256,7 +230,7 @@ class ServiceController extends Controller
             // 7️⃣ Respuesta final
             return response()->json([
                 'success' => true,
-                'message' => 'Servicio creado correctamente',
+                'message' => __('messages.service.success.createService'),
                 'data' => $service->load([
                     'serviceTranslation',
                     'surgeryPhases',
@@ -271,7 +245,7 @@ class ServiceController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear el servicio',
+                'message' => __('messages.service.error.createService'),
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -427,7 +401,7 @@ class ServiceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Servicio actualizado correctamente',
+                'message' => __('messages.service.success.updateService'),
                 'data' => $service->load([
                     'serviceTranslation',
                     'surgeryPhases',
@@ -442,7 +416,7 @@ class ServiceController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el servicio',
+                'message' => __('messages.service.error.updateService'),
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -453,20 +427,17 @@ class ServiceController extends Controller
     {
         try {
             $service = Service::findOrFail($id);
-
-            Storage::disk('public')->deleteDirectory("services/{$service->id}");
-
             $service->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Servicio eliminado correctamente'
+                'message' => __('messages.service.success.deleteService')
             ]);
         } catch (\Throwable $e) {
             Log::error('Error en delete_service: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el servicio',
+                'message' => __('messages.error.success.deleteService'),
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -484,13 +455,13 @@ class ServiceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Estado actualizado correctamente',
+                'message' => __('messages.service.success.updateStatus'),
                 'data' => $service
             ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el estado',
+                'message' => __('messages.service.error.updateStatus'),
                 'error' => $e->getMessage()
             ], 500);
         }
