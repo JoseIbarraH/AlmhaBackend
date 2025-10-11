@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Support\Facades\Storage;
 
 class Service extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'service_image',
         'status'
     ];
 
@@ -31,7 +32,7 @@ class Service extends Model
 
     public function sampleImages()
     {
-        return $this->hasMany(ServiceSampleImage::class, 'service_id');
+        return $this->hasOne(ServiceSampleImage::class, 'service_id');
     }
 
     public function resultGallery()
@@ -39,9 +40,14 @@ class Service extends Model
         return $this->hasMany(ServiceResultGallery::class, 'service_id');
     }
 
-
-
-
-
+    protected static function booted()
+    {
+        static::deleting(function ($service) {
+            $path = "images/service/{$service->id}";
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->deleteDirectory($path);
+            }
+        });
+    }
 
 }

@@ -14,9 +14,10 @@ class ServiceSampleImage extends Model
         'service_id',
         'technique',
         'recovery',
-        'postoperative_care',
-        'path',
+        'postoperative_care'
     ];
+
+    protected $touches = ['service'];
 
     public function service()
     {

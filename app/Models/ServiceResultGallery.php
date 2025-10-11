@@ -16,6 +16,8 @@ class ServiceResultGallery extends Model
         'path',
     ];
 
+    protected $touches = ['service'];
+
     public function service()
     {
         return $this->belongsTo(Service::class);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dashboard\Service\UpdateRequest;
 use App\Models\Service;
 use App\Models\ServiceFaq;
 use App\Models\ServiceSurgeryPhase;
@@ -13,6 +14,7 @@ use App\Helpers\Helpers;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Dashboard\Service\StoreRequest;
+use Symfony\Component\Console\Helper\HelperSet;
 
 class ServiceController extends Controller
 {
@@ -20,35 +22,72 @@ class ServiceController extends Controller
     public function list_services(Request $request)
     {
         try {
-            $query = Service::with(['media', 'serviceTranslation']);
+            $locale = $request->query('locale', app()->getLocale());
+            $perPage = 12;
 
+            $query = Service::with([
+                'serviceTranslation' => fn($q) => $q->where('lang', $locale),
+                'surgeryPhases' => fn($q) => $q->where('lang', $locale),
+                'frequentlyAskedQuestions' => fn($q) => $q->where('lang', $locale),
+                'sampleImages',
+                'resultGallery',
+            ]);
+
+            // Filtro por búsqueda en traducción
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->whereHas('serviceTranslation', function ($q) use ($search) {
-                    $q->where('title', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%");
+                $query->whereHas('serviceTranslation', function ($q) use ($search, $locale) {
+                    $q->where('lang', $locale)
+                        ->where(function ($q2) use ($search) {
+                            $q2->where('title', 'like', "%{$search}%")
+                                ->orWhere('description', 'like', "%{$search}%");
+                        });
                 });
             }
 
-            $paginate = $query->paginate(10);
+            // Paginación
+            $services = $query->paginate($perPage);
 
-            $paginate->getCollection()->transform(function ($service) {
+            // Transformar la colección paginada
+            $services->getCollection()->transform(function ($service) {
                 $translation = $service->serviceTranslation->first();
+
                 return [
                     'id' => $service->id,
                     'status' => $service->status,
+                    'service_image' => $service->service_image ? url("storage/{$service->service_image}") : null,
                     'title' => $translation->title ?? '',
                     'description' => $translation->description ?? '',
-                    'created_at' => $service->created_at ? $service->created_at->format('Y-m-d H:i:s') : null,
-                    'updated_at' => $service->updated_at ? $service->updated_at->format('Y-m-d H:i:s') : null,
+                    'surgery_phases' => $service->surgeryPhases->map(fn($phase) => [
+                        'id' => $phase->id,
+                        'recovery_time' => $phase->recovery_time,
+                        'preoperative_recommendations' => $phase->preoperative_recommendations,
+                        'postoperative_recommendations' => $phase->postoperative_recommendations,
+                        'lang' => $phase->lang,
+                    ]),
+                    'frequently_asked_questions' => $service->frequentlyAskedQuestions->map(fn($faq) => [
+                        'id' => $faq->id,
+                        'question' => $faq->question,
+                        'answer' => $faq->answer,
+                        'lang' => $faq->lang,
+                    ]),
+                    'sample_images' => $service->sampleImages ? [
+                        'technique' => $service->sampleImages->technique ? url("storage/{$service->sampleImages->technique}") : null,
+                        'recovery' => $service->sampleImages->recovery ? url("storage/{$service->sampleImages->recovery}") : null,
+                        'postoperative_care' => $service->sampleImages->postoperative_care ? url("storage/{$service->sampleImages->postoperative_care}") : null,
+                    ] : null,
+                    'results_gallery' => $service->resultGallery->map(fn($img) => url("storage/{$img->path}")),
+                    'created_at' => $service->created_at?->format('Y-m-d H:i:s'),
+                    'updated_at' => $service->updated_at?->format('Y-m-d H:i:s'),
                 ];
             });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Lista de servicios obtenida correctamente',
-                'data' => $paginate
+                'data' => $services
             ]);
+
         } catch (\Throwable $e) {
             Log::error('Error en list_services: ' . $e->getMessage());
             return response()->json([
@@ -61,17 +100,20 @@ class ServiceController extends Controller
 
 
     // Ver un servicio
-    public function get_service($id)
+    public function get_service($id, Request $request)
     {
         try {
-            $service = Service::with([
+            $locale = $request->query('locale', app()->getLocale()); // o 'es' por default
 
-                'serviceTranslation',
-                'frequentlyAskedQuestions',
-                'surgeryPhases'
+            $service = Service::with([
+                'serviceTranslation' => fn($q) => $q->where('lang', $locale),
+                'frequentlyAskedQuestions' => fn($q) => $q->where('lang', $locale),
+                'surgeryPhases' => fn($q) => $q->where('lang', $locale),
+                'sampleImages',
+                'resultGallery'
             ])->findOrFail($id);
 
-            // Obtener traducción principal (puedes ajustar el idioma base)
+            // Obtener traducción del idioma solicitado
             $translation = $service->serviceTranslation->first();
 
             $data = [
@@ -96,7 +138,12 @@ class ServiceController extends Controller
                         'lang' => $faq->lang,
                     ];
                 }),
-
+                'sample_images' => [
+                    'technique' => $service->sampleImages->technique ?? null,
+                    'recovery' => $service->sampleImages->recovery ?? null,
+                    'postoperative_care' => $service->sampleImages->postoperative_care ?? null,
+                ],
+                'results_gallery' => $service->resultGallery->pluck('path')->toArray(),
                 'created_at' => $service->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
             ];
@@ -106,6 +153,7 @@ class ServiceController extends Controller
                 'message' => 'Servicio obtenido correctamente',
                 'data' => $data,
             ]);
+
         } catch (\Throwable $e) {
             Log::error('Error en get_service: ' . $e->getMessage());
             return response()->json([
@@ -116,96 +164,72 @@ class ServiceController extends Controller
         }
     }
 
-    public function test_upload(Request $request)
-    {
-        dd([
-            'all_request' => $request->all(),
-            'sample_images_files' => $request->file('sample_images'),
-            'result_images_files' => $request->file('result_images'),
-            'has_sample_images' => $request->hasFile('sample_images'),
-            'has_result_images' => $request->hasFile('result_images'),
-        ]);
-    }
+
 
     // Crear un servicio
     public function create_service(StoreRequest $request)
     {
-        /* $request->all(); */
-        dd($request->all());
+        /* dd($request->all()); */
         try {
             $data = $request->validated();
-
-            // 1️⃣ Crear el servicio principal
+            /* dd($data); */
             $service = Service::create([
                 'status' => $data['status'] ?? 'inactive',
+                'service_image' => ''
             ]);
 
-            // 2️⃣ Crear traducciones del servicio (ES + EN)
-            $titleEn = Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? '';
-            $descEn = Helpers::translateBatch([$data['description']], 'es', 'en')[0] ?? '';
+            $service->service_image = Helpers::saveWebpFile($data['service_image'], "images/service/{$service->id}/service_image");
+            $service->save();
 
-            ServiceTranslation::insert([
-                [
-                    'service_id' => $service->id,
-                    'lang' => 'es',
-                    'title' => $data['title'],
-                    'description' => $data['description'],
-                ],
-                [
-                    'service_id' => $service->id,
-                    'lang' => 'en',
-                    'title' => $titleEn,
-                    'description' => $descEn,
-                ],
+            ServiceTranslation::create([
+                'service_id' => $service->id,
+                'lang' => 'es',
+                'title' => $data['title'],
+                'description' => $data['description'],
             ]);
 
-            // 3️⃣ Fases quirúrgicas
+            ServiceTranslation::create([
+                'service_id' => $service->id,
+                'lang' => 'en',
+                'title' => Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? '',
+                'description' => Helpers::translateBatch([$data['description']], 'es', 'en')[0] ?? '',
+            ]);
+
             if (!empty($data['surgery_phases'])) {
                 foreach ($data['surgery_phases'] as $phase) {
-                    $recovery = $phase['recovery_time'] ?? [];
-                    $preop = $phase['preoperative_recommendations'] ?? [];
-                    $postop = $phase['postoperative_recommendations'] ?? [];
+                    $fields = [
+                        'recovery_time',
+                        'preoperative_recommendations',
+                        'postoperative_recommendations',
+                    ];
 
-                    $translatedRecovery = Helpers::translateBatch([(is_array($recovery) ? implode(', ', $recovery) : $recovery)], 'es', 'en')[0] ?? '';
-                    $translatedPreop = Helpers::translateBatch([(is_array($preop) ? implode(', ', $preop) : $preop)], 'es', 'en')[0] ?? '';
-                    $translatedPostop = Helpers::translateBatch([(is_array($postop) ? implode(', ', $postop) : $postop)], 'es', 'en')[0] ?? '';
+                    $translated = collect($fields)->mapWithKeys(fn($f) => [
+                        $f => explode(', ', Helpers::translateBatch(
+                            [(array) $phase[$f] ? implode(', ', (array) $phase[$f]) : ''],
+                            'es',
+                            'en'
+                        )[0] ?? '')
+                    ])->toArray();
 
-                    // Español
-                    $service->surgeryPhases()->create([
-                        'recovery_time' => $recovery,
-                        'preoperative_recommendations' => $preop,
-                        'postoperative_recommendations' => $postop,
-                        'lang' => 'es',
-                    ]);
-
-                    // Inglés
-                    $service->surgeryPhases()->create([
-                        'recovery_time' => explode(', ', $translatedRecovery),
-                        'preoperative_recommendations' => explode(', ', $translatedPreop),
-                        'postoperative_recommendations' => explode(', ', $translatedPostop),
-                        'lang' => 'en',
-                    ]);
+                    $service->surgeryPhases()->create($phase + ['lang' => 'es']);
+                    $service->surgeryPhases()->create($translated + ['lang' => 'en']);
                 }
             }
+
 
             // 4️⃣ Preguntas frecuentes
             if (!empty($data['frequently_asked_questions'])) {
                 foreach ($data['frequently_asked_questions'] as $faq) {
-                    $question = $faq['question'] ?? '';
-                    $answer = $faq['answer'] ?? '';
-
-                    $questionEn = Helpers::translateBatch([$question], 'es', 'en')[0] ?? '';
-                    $answerEn = Helpers::translateBatch([$answer], 'es', 'en')[0] ?? '';
 
                     $service->frequentlyAskedQuestions()->create([
-                        'question' => $question,
-                        'answer' => $answer,
+                        'question' => $faq['question'] ?? '',
+                        'answer' => $faq['answer'] ?? '',
                         'lang' => 'es',
                     ]);
 
                     $service->frequentlyAskedQuestions()->create([
-                        'question' => $questionEn,
-                        'answer' => $answerEn,
+                        'question' => Helpers::translateBatch([$faq['question'] ?? ''], 'es', 'en')[0] ?? '',
+                        'answer' => Helpers::translateBatch([$faq['answer'] ?? ''], 'es', 'en')[0] ?? '',
                         'lang' => 'en',
                     ]);
                 }
@@ -213,29 +237,21 @@ class ServiceController extends Controller
 
             // 5️⃣ Guardar imágenes de muestra
             if ($request->hasFile('sample_images')) {
-                foreach ($request->file('sample_images') as $file) {
-                    $path = $file->store('sample_images', 'public');
-                    $service->sampleImages()->create([
-                        'technique' => $data['technique'] ?? null,
-                        'recovery' => $data['recovery'] ?? null,
-                        'postoperative_care' => $data['postoperative_care'] ?? null,
-                        'path' => $path,
-                    ]);
-                }
+                $service->sampleImages()->create([
+                    'technique' => Helpers::saveWebpFile($data['sample_images']['technique'], "images/service/{$service->id}/sample_images") ?? null,
+                    'recovery' => Helpers::saveWebpFile($data['sample_images']['recovery'], "images/service/{$service->id}/sample_images") ?? null,
+                    'postoperative_care' => Helpers::saveWebpFile($data['sample_images']['postoperative_care'], "images/service/{$service->id}/sample_images") ?? null
+                ]);
             }
-
 
             // 6️⃣ Guardar imágenes de resultados
-            if ($request->hasFile('result_images')) {
-                foreach ($request->file('result_images') as $file) {
-                    $path = $file->store('result_gallery', 'public');
-
+            if ($request->hasFile('results_gallery')) {
+                foreach ($request->file('results_gallery') as $file) {
                     $service->resultGallery()->create([
-                        'path' => $path,
+                        'path' => Helpers::saveWebpFile($file, "images/service/{$service->id}/results_gallery") ?? null
                     ]);
                 }
             }
-
 
             // 7️⃣ Respuesta final
             return response()->json([
@@ -261,61 +277,173 @@ class ServiceController extends Controller
         }
     }
 
-
-
     // Actualizar un servicio
-    public function update_service(Request $request, $id)
+    public function update_service(UpdateRequest $request, $id)
     {
+        /* dd($request->all(), $id); */
         try {
             $service = Service::findOrFail($id);
+            $data = $request->validated();
+            /* dd($data); */
 
-            $data = $request->validate([
-                'title' => 'required|string',
-                'description' => 'nullable|string',
-                'status' => 'nullable|in:active,inactive',
-                'images.*' => 'nullable|image|max:5120',
-            ]);
+            // 1️⃣ Actualizar status solo si cambió
+            if (($data['status'] ?? null) !== $service->status) {
+                $service->update(['status' => $data['status']]);
+            }
 
-            $titleEn = Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? '';
-            $descEn = Helpers::translateBatch([$data['description'] ?? ''], 'es', 'en')[0] ?? '';
+            if (isset($data['service_image']) && !is_string($data['service_image'])) {
+                if (!empty($service->service_image) && Storage::disk('public')->exists($service->service_image)) {
+                    Storage::disk('public')->delete($service->service_image);
+                }
+                $path = Helpers::saveWebpFile($data['service_image'], "images/service/{$service->id}/service_image");
+                $service->update(['service_image' => $path]);
+            }
 
-            $service->update(['status' => $data['status'] ?? $service->status]);
+            // 2️⃣ Obtener traducciones actuales
+            $translations = [
+                'es' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'es']),
+                'en' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'en']),
+            ];
 
-            // Traducciones
-            ServiceTranslation::updateOrCreate(
-                ['service_id' => $service->id, 'lang' => 'es'],
-                ['title' => $data['title'], 'description' => $data['description'] ?? '']
-            );
+            $fields = ['title', 'description'];
+            $changed = collect($fields)->filter(fn($f) => ($data[$f] ?? '') !== $translations['es']->$f);
 
-            ServiceTranslation::updateOrCreate(
-                ['service_id' => $service->id, 'lang' => 'en'],
-                ['title' => $titleEn, 'description' => $descEn]
-            );
+            if ($changed->isNotEmpty()) {
+                $translations['es']->update([
+                    'title' => $data['title'],
+                    'description' => $data['description'] ?? '',
+                ]);
 
-            // Guardar nuevas imágenes si las hay
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $file) {
-                    $path = $file->store("services/{$service->id}", 'public');
-                    $service->media()->create([
-                        'type' => 'gallery',
-                        'media_type' => 'image',
-                        'path' => $path,
-                        'title' => $file->getClientOriginalName()
+                $translations['en']->update([
+                    'title' => $changed->contains('title')
+                        ? Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? ''
+                        : $translations['en']->title,
+                    'description' => $changed->contains('description')
+                        ? Helpers::translateBatch([$data['description'] ?? ''], 'es', 'en')[0] ?? ''
+                        : $translations['en']->description,
+                ]);
+            }
+
+            if (!empty($data['frequently_asked_questions'])) {
+                // Traer los IDs existentes de la base de datos
+                $existingFaqs = $service->frequentlyAskedQuestions()->pluck('id')->toArray();
+                $incomingIds = [];
+
+                foreach ($data['frequently_asked_questions'] as $faqData) {
+                    $faqId = $faqData['id'] ?? null;
+
+                    // Español
+                    $faqEs = $faqId
+                        ? ServiceFaq::find($faqId)
+                        : new ServiceFaq(['service_id' => $service->id, 'lang' => 'es']);
+
+                    $faqEs->fill([
+                        'question' => $faqData['question'] ?? '',
+                        'answer' => $faqData['answer'] ?? '',
+                    ])->save();
+
+                    $incomingIds[] = $faqEs->id;
+
+                    // Inglés
+                    $faqEn = ServiceFaq::firstOrNew([
+                        'service_id' => $service->id,
+                        'lang' => 'en',
+                        'id' => $faqId, // asegura que se actualice el mismo registro
                     ]);
+
+                    $faqEn->fill([
+                        'question' => Helpers::translateBatch([$faqEs->question], 'es', 'en')[0] ?? '',
+                        'answer' => Helpers::translateBatch([$faqEs->answer], 'es', 'en')[0] ?? '',
+                    ])->save();
+                }
+
+                // Opcional: eliminar FAQs que ya no estén en el request
+                $toDelete = array_diff($existingFaqs, $incomingIds);
+                if (!empty($toDelete)) {
+                    ServiceFaq::whereIn('id', $toDelete)->delete();
                 }
             }
+
+
+            if ($request->hasFile('sample_images')) {
+                $sample = $service->sampleImages;
+
+                // Cargamos los paths existentes (si hay)
+                $technique = $sample->technique ?? null;
+                $recovery = $sample->recovery ?? null;
+                $postoperative_care = $sample->postoperative_care ?? null;
+
+                // Procesamos cada campo nuevo solo si se envió un archivo
+                foreach (['technique', 'recovery', 'postoperative_care'] as $field) {
+                    if (isset($data['sample_images'][$field]) && !is_string($data['sample_images'][$field])) {
+                        // Borrar anterior si existía
+                        if ($sample && $sample->$field && Storage::disk('public')->exists($sample->$field)) {
+                            Storage::disk('public')->delete($sample->$field);
+                        }
+
+                        // Guardar nuevo archivo
+                        ${$field} = Helpers::saveWebpFile(
+                            $data['sample_images'][$field],
+                            "images/service/{$service->id}/sample_images"
+                        );
+                    }
+                }
+
+                // Solo un update/create con los resultados finales
+                $service->sampleImages()->updateOrCreate(
+                    ['service_id' => $service->id],
+                    compact('technique', 'recovery', 'postoperative_care')
+                );
+            }
+
+            if (isset($data['results_gallery'])) {
+                $existingImages = $service->resultGallery()->pluck('path')->toArray();
+                $newImages = [];
+
+                foreach ($data['results_gallery'] as $item) {
+                    // Si es string => imagen ya existente, se conserva
+                    if (is_string($item)) {
+                        $newImages[] = $item;
+                    }
+                    // Si es un archivo nuevo => se guarda y se agrega
+                    elseif ($item instanceof \Illuminate\Http\UploadedFile) {
+                        $path = Helpers::saveWebpFile($item, "images/service/{$service->id}/results_gallery");
+                        $newImages[] = $path;
+                        $service->resultGallery()->create(['path' => $path]);
+                    }
+                }
+
+                // 🧹 Eliminar las imágenes que estaban antes pero ya no llegan
+                $toDelete = array_diff($existingImages, $newImages);
+
+                foreach ($toDelete as $path) {
+                    if (Storage::disk('public')->exists($path)) {
+                        Storage::disk('public')->delete($path);
+                    }
+                    $service->resultGallery()->where('path', $path)->delete();
+                }
+            }
+
 
             return response()->json([
                 'success' => true,
                 'message' => 'Servicio actualizado correctamente',
-                'data' => $service
+                'data' => $service->load([
+                    'serviceTranslation',
+                    'surgeryPhases',
+                    'frequentlyAskedQuestions',
+                    'sampleImages',
+                    'resultGallery',
+                ]),
             ]);
+
         } catch (\Throwable $e) {
             Log::error('Error en update_service: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar el servicio',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -326,13 +454,6 @@ class ServiceController extends Controller
         try {
             $service = Service::findOrFail($id);
 
-            // Borrar relaciones dependientes para evitar error de FK
-            $service->serviceTranslation()->delete();
-            $service->frequentlyAskedQuestions()->delete();
-            $service->surgeryPhases()->delete();
-            $service->media()->delete();
-
-            // Borrar carpeta de imágenes
             Storage::disk('public')->deleteDirectory("services/{$service->id}");
 
             $service->delete();

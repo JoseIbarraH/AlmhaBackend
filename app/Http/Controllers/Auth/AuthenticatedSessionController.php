@@ -43,7 +43,7 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    public function destroy(Request $request)
+    /* public function destroy(Request $request)
     {
         Auth::guard('web')->logout();
         $request->session()->invalidate();
@@ -52,6 +52,19 @@ class AuthenticatedSessionController extends Controller
         return response()->json([
             'message' => 'Sesión cerrada exitosamente'
         ]);
+    } */
+
+    public function destroy(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+
+        // No regenerar token, ni devolver nada que use la sesión
+        return response()->json([
+            'message' => 'Sesión cerrada completamente',
+        ])->withoutCookie(cookie()->forget(config('session.cookie')));
     }
+
 
 }

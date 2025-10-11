@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
-            $table->string('surgery_image')->nullable();
+            $table->string('service_image')->nullable();
             $table->enum('status', ['active', 'inactive']);
             $table->timestamps();
         });
@@ -20,7 +20,7 @@ return new class extends Migration {
         Schema::create('service_translations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_id')->constrained('services')->onDelete('cascade');
-            $table->string('lang', 5); // es, en, fr, etc.
+            $table->string('lang', 5)->default('es');;
             $table->text('description');
             $table->string('title');
             $table->timestamps();
@@ -29,10 +29,10 @@ return new class extends Migration {
         Schema::create('service_surgery_phases', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_id')->constrained('services')->onDelete('cascade');
-            $table->json('postoperative_recommendations')->nullable();
-            $table->json('preoperative_recommendations')->nullable();
             $table->string('lang', 5)->default('es');
             $table->json('recovery_time')->nullable();
+            $table->json('postoperative_recommendations')->nullable();
+            $table->json('preoperative_recommendations')->nullable();
             $table->timestamps();
         });
 
@@ -42,6 +42,22 @@ return new class extends Migration {
             $table->string('lang', 5)->default('es');
             $table->string('question', 255);
             $table->text('answer');
+            $table->timestamps();
+        });
+
+        Schema::create('service_sample_images', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('service_id')->constrained('services')->onDelete('cascade');
+            $table->string('technique')->nullable();
+            $table->string('recovery')->nullable();
+            $table->string('postoperative_care')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('service_result_galleries', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('service_id')->constrained('services')->onDelete('cascade');
+            $table->string('path');
             $table->timestamps();
         });
     }
@@ -55,5 +71,7 @@ return new class extends Migration {
         Schema::dropIfExists('service_translations');
         Schema::dropIfExists('service_surgery_phases');
         Schema::dropIfExists('service_faq');
+        Schema::dropIfExists('service_sample_images');
+        Schema::dropIfExists('service_result_galleries');
     }
 };

@@ -7,17 +7,30 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 
 class Helpers
 {
 
-    public static function saveWebpFile(UploadedFile $file, string $folder): string
+    /* public static function saveWebpFile(UploadedFile $file, string $folder): string
     {
         $manager = new ImageManager(new Driver());
         $image = $manager->read($file)->toWebp(80);
         $filename = time() . '_' . pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '.webp';
         $path = trim($folder, '/') . '/' . $filename;
         Storage::disk('public')->put($path, $image);
+        return $path;
+    } */
+
+    public static function saveWebpFile(UploadedFile $file, string $folder): string
+    {
+        $manager = new ImageManager(new Driver());
+        $image = $manager->read($file)->toWebp(80);
+        $randomName = Str::random(10);
+        $filename = $randomName . '.webp';
+        $path = trim($folder, '/') . '/' . $filename;
+        Storage::disk('public')->put($path, $image);
+        
         return $path;
     }
 
@@ -43,7 +56,7 @@ class Helpers
     }
 
     // Asegura que la URL tenga /translate al final
-    $baseUrl = rtrim(env('LIBRETRANSLATE_URL', 'http://145.223.74.156:9000'), '/');
+    $baseUrl = rtrim(env('LIBRETRANSLATE_URL'), '/');
     $url = $baseUrl . '/translate';
 
     $translations = [];

@@ -16,6 +16,10 @@ use Illuminate\Http\Request;
     Route::post('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 }); */
 
+Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+    return $request->user();
+});
+
 Route::middleware('web')->post('/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('web')->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
@@ -41,8 +45,6 @@ Route::post('refresh-token', [RefreshTokenController::class, 'refreshToken']);
 Route::prefix('service')->group(function () {
     // Listar todos los servicios
     Route::get('/', [ServiceController::class, 'list_services']);
-    
-    Route::get('/test', [ServiceController::class, 'test_upload']);
 
     // Ver detalles de un servicio específico
     Route::get('/{id}', [ServiceController::class, 'get_service']);
@@ -51,11 +53,11 @@ Route::prefix('service')->group(function () {
     Route::post('/', [ServiceController::class, 'create_service']);
 
     // Actualizar un servicio existente
-    Route::put('/{id}', [ServiceController::class, 'update_service']);
+    Route::match(['post', 'put', 'patch'], '/{id}', [ServiceController::class, 'update_service']);
 
     // Eliminar un servicio
     Route::delete('/{id}', [ServiceController::class, 'delete_service']);
 
     // Actualizar solo el estado del servicio
-    Route::patch('/update_status/{id}', [ServiceController::class, 'update_status']);
+    Route::post('/update_status/{id}', [ServiceController::class, 'update_status']);
 });
