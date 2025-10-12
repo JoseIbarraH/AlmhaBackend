@@ -9,6 +9,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\TeamMemberController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -58,4 +59,13 @@ Route::prefix('blog')->group(function () {
     Route::post('/', [BlogController::class, 'create_blog']);
     Route::match(['post', 'put', 'patch'], '/{id}', [BlogController::class, 'update_blog']);
     Route::delete('/{id}', [BlogController::class, 'delete_blog']);
+});
+
+Route::prefix('team_member')->group(function () {
+    Route::get('/', [TeamMemberController::class, 'list_teamMember']);
+    Route::get('/{id}', [TeamMemberController::class, 'get_teamMember']);
+    Route::post('/', [TeamMemberController::class, 'create_teamMember']);
+    Route::match(['post', 'put', 'patch'],'/{id}', [TeamMemberController::class, 'update_teamMember']);
+    Route::delete('/{id}', [TeamMemberController::class, 'delete_teamMember']);
+    Route::post('/update_status/{id}', [TeamMemberController::class, 'update_status']);
 });

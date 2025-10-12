@@ -49,7 +49,7 @@ class Helpers
         return $path;
     }
 
-    public static function translateBatch(array $texts, string $source = 'es', string $target = 'en', string $format = 'text'): array
+    public static function translateBatch(array $texts, string $source = 'es', string $target = 'en', string $format = 'html'): array
     {
         if (empty($texts)) {
             return [];

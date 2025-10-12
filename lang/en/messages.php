@@ -34,4 +34,7 @@ return [
             'deleteBlog' => 'Error deleting blog',
         ],
     ],
+    'TeamMember' => [
+        
+    ]
 ];

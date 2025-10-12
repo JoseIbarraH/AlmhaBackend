@@ -89,12 +89,12 @@ class BlogController extends Controller
     public function get_blog($id, Request $request)
     {
         try {
-            $blog = Blog::with(['blogTranslation' => fn($q) => $q->where('lang', 'es')])->findOrFail($id);
+            $blog = Blog::with(['blogTranslations' => fn($q) => $q->where('lang', 'es')])->findOrFail($id);
 
             $data = [
                 'id' => $blog->id,
                 'slug' => $blog->slug,
-                'image' => $blog->image,
+                'image' => url('storage', $blog->image),
                 'title' => $blog->blogTranslation->title,
                 'content' => $blog->blogTranslation->content,
                 'category' => $blog->category
@@ -252,8 +252,6 @@ class BlogController extends Controller
             ], 500);
         }
     }
-
-
 
     /**
      * Remove the specified resource from storage.

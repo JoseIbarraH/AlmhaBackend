@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\Service\UpdateRequest;
-use App\Models\Service;
-use App\Models\ServiceFaq;
-use App\Models\ServiceSurgeryPhase;
-use App\Models\ServiceTranslation;
-use App\Models\Media;
-use Illuminate\Http\Request;
-use App\Helpers\Helpers;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Dashboard\Service\StoreRequest;
-use Symfony\Component\Console\Helper\HelperSet;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use App\Models\ServiceTranslation;
+use Illuminate\Http\Request;
+use App\Models\ServiceFaq;
+use App\Helpers\Helpers;
+use App\Models\Service;
 
 class ServiceController extends Controller
 {
@@ -120,6 +118,7 @@ class ServiceController extends Controller
                 'status' => $service->status,
                 'title' => $translation->title ?? '',
                 'description' => $translation->description ?? '',
+                'service_image' => url('storage', $service->service_image),
                 'created_at' => $service->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
             ];
@@ -143,10 +142,9 @@ class ServiceController extends Controller
     // Crear un servicio
     public function create_service(StoreRequest $request)
     {
-        /* dd($request->all()); */
+        DB::beginTransaction();
         try {
             $data = $request->validated();
-            /* dd($data); */
             $service = Service::create([
                 'status' => $data['status'] ?? 'inactive',
                 'service_image' => ''
@@ -190,8 +188,6 @@ class ServiceController extends Controller
                 }
             }
 
-
-            // 4️⃣ Preguntas frecuentes
             if (!empty($data['frequently_asked_questions'])) {
                 foreach ($data['frequently_asked_questions'] as $faq) {
 
@@ -209,7 +205,6 @@ class ServiceController extends Controller
                 }
             }
 
-            // 5️⃣ Guardar imágenes de muestra
             if ($request->hasFile('sample_images')) {
                 $service->sampleImages()->create([
                     'technique' => Helpers::saveWebpFile($data['sample_images']['technique'], "images/service/{$service->id}/sample_images") ?? null,
@@ -218,7 +213,6 @@ class ServiceController extends Controller
                 ]);
             }
 
-            // 6️⃣ Guardar imágenes de resultados
             if ($request->hasFile('results_gallery')) {
                 foreach ($request->file('results_gallery') as $file) {
                     $service->resultGallery()->create([
@@ -227,7 +221,8 @@ class ServiceController extends Controller
                 }
             }
 
-            // 7️⃣ Respuesta final
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => __('messages.service.success.createService'),
@@ -241,6 +236,7 @@ class ServiceController extends Controller
             ], 201);
 
         } catch (\Throwable $e) {
+            DB::rollBack();
             Log::error('Error en create_service: ' . $e->getMessage());
 
             return response()->json([
@@ -254,7 +250,7 @@ class ServiceController extends Controller
     // Actualizar un servicio
     public function update_service(UpdateRequest $request, $id)
     {
-        /* dd($request->all(), $id); */
+        DB::beginTransaction();
         try {
             $service = Service::findOrFail($id);
             $data = $request->validated();
@@ -398,6 +394,7 @@ class ServiceController extends Controller
                 }
             }
 
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -412,6 +409,7 @@ class ServiceController extends Controller
             ]);
 
         } catch (\Throwable $e) {
+            DB::rollBack();
             Log::error('Error en update_service: ' . $e->getMessage());
 
             return response()->json([
