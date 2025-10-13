@@ -26,6 +26,13 @@ class DesignSetting extends Model
         return static::where('key', $key)->value('value') ?? $default;
     }
 
+    public static function getAll(string $key, $default = null)
+    {
+        $record = static::where('key', $key)->first();
+        return $record ?? $default;
+    }
+
+
     /**
      * Establecer o actualizar el valor de una configuración.
      */

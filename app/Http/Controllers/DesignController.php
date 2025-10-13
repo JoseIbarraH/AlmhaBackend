@@ -7,6 +7,7 @@ use App\Http\Requests\Dashboard\Design\CarouselBackgroundRequest;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
 use App\Models\DesignSetting;
 use Illuminate\Http\Request;
 use App\Models\DesignItem;
@@ -93,7 +94,7 @@ class DesignController extends Controller
 
     private function processFile($file, $designId = null)
     {
-        if ($file instanceof \Illuminate\Http\UploadedFile) {
+        if ($file instanceof UploadedFile) {
             if ($designId) {
                 $oldItem = DesignItem::getOne($designId, 'es');
                 if ($oldItem?->path && Storage::disk('public')->exists($oldItem->path)) {
@@ -209,12 +210,63 @@ class DesignController extends Controller
         try {
             $data = $request->validated();
 
-            
+            // Procesar backgrounds 1, 2 y 3
+            foreach (['background1', 'background2', 'background3'] as $backgroundType) {
+                if (!empty($data[$backgroundType]) && is_array($data[$backgroundType])) {
+                    $bg = DesignSetting::getAll($backgroundType);
+                    $backgroundData = $data[$backgroundType];
+                    $url = $backgroundData['url'];
+
+                    // Determinar si hay nueva imagen
+                    $updateData = [];
+
+                    if ($url instanceof UploadedFile) {
+                        // Eliminar imagen anterior
+                        $old = DesignItem::getOne($bg->id, 'es');
+                        if (!empty($old['path']) && Storage::disk('public')->exists($old['path'])) {
+                            Storage::disk('public')->delete($old['path']);
+                        }
+
+                        $updateData['path'] = Helpers::saveWebpFile($url, "images/design/background/{$backgroundType}");
+                    }
+
+                    // Preparar traducciones una sola vez
+                    $translations = Helpers::translateBatch(
+                        [$backgroundData['title'], $backgroundData['subtitle']],
+                        'es',
+                        'en'
+                    );
+
+                    // Configuración para ambos idiomas
+                    $languages = [
+                        'es' => [
+                            'title' => $backgroundData['title'],
+                            'subtitle' => $backgroundData['subtitle'],
+                        ],
+                        'en' => [
+                            'title' => $translations[0] ?? '',
+                            'subtitle' => $translations[1] ?? '',
+                        ],
+                    ];
+
+                    // Crear/actualizar para ambos idiomas
+                    foreach ($languages as $lang => $content) {
+                        DesignItem::updateOrCreate(
+                            [
+                                'design_id' => $bg->id,
+                                'lang' => $lang,
+                                'type' => $backgroundType,
+                            ],
+                            array_merge($content, $updateData)
+                        );
+                    }
+                }
+            }
 
             DB::commit();
             return response()->json([
                 'success' => true,
-                'messages' => __('messages.design.success.carouselImage'),
+                'messages' => __('messages.design.success.backgrounds'),
                 'data' => ''
             ]);
 
@@ -222,7 +274,7 @@ class DesignController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'messages' => __('messages.design.error.carouselImage'),
+                'messages' => __('messages.design.error.backgrounds'),
                 'error' => $e->getMessage()
             ]);
         }
