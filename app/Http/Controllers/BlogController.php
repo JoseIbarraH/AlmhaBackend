@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Dashboard\Blog\UpdateRequest;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\BlogTranslation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -120,6 +121,7 @@ class BlogController extends Controller
      */
     public function create_blog()
     {
+        DB::beginTransaction();
         try {
             $title = 'Nuevo Blog';
 
@@ -147,12 +149,15 @@ class BlogController extends Controller
                 'content' => '',
             ]);
 
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => __('messages.blog.success.createBlog'),
                 'data' => $blog
             ], 201);
         } catch (\Throwable $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => __('messages.blog.error.createBlog'),
@@ -166,6 +171,7 @@ class BlogController extends Controller
      */
     public function update_blog(UpdateRequest $request, string $id)
     {
+        DB::beginTransaction();
         try {
             $blog = Blog::findOrFail($id);
             $data = $request->validated();
@@ -238,6 +244,8 @@ class BlogController extends Controller
                 'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
             ];
 
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => __('messages.blog.success.updateBlog'),
@@ -245,6 +253,7 @@ class BlogController extends Controller
             ], 200);
 
         } catch (\Throwable $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => __('messages.blog.error.updateBlog'),
@@ -258,15 +267,19 @@ class BlogController extends Controller
      */
     public function delete_blog($id)
     {
+        DB::beginTransaction();
         try {
             $blog = Blog::findOrFail($id);
             $blog->delete();
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => __('messages.blog.success.deleteBlog')
             ]);
         } catch (\Throwable $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => __('messages.blog.error.deleteBlog')

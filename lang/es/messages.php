@@ -51,5 +51,16 @@ return [
             'updateStatus' => 'Error al actualizar el estado del miembro del equipo',
             'getTeamMember' => 'Error al obtener miembro del equipo'
         ]
+    ],
+    'design' => [
+        'success' => [
+            'carouselImage' => 'Carousel e Imagen actualizados correctamente',
+            'backgrounds' => 'Fondos actualizados correctamente',
+        ],
+        'error' => [
+            'carouselImage' => 'Error al actualizar el carrusel o la imagen',
+            'backgrounds' => 'Error al actualizar los fondos',
+        ]
     ]
+
 ];

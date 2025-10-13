@@ -381,6 +381,7 @@ class TeamMemberController extends Controller
 
     public function update_status(Request $request, $id)
     {
+        DB::beginTransaction();
         try {
             $team = TeamMember::findOrFail($id);
             $data = $request->validate([
@@ -388,12 +389,14 @@ class TeamMemberController extends Controller
             ]);
             $team->update(['status' => $data['status']]);
 
+            DB::commit();
             return response()->json([
                 'success' => true,
                 'message' => __('messages.teamMember.success.updateStatus'),
                 'data' => $team
             ]);
         } catch (\Throwable $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => __('messages.teamMember.error.updateStatus'),

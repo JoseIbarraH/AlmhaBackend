@@ -28,7 +28,7 @@ class UpdateRequest extends FormRequest
             'nullable',
             Rule::when(
                 $this->hasFile('service_image'),
-                ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:5120']
+                ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
             ),
             Rule::when(
                 is_string($this->input('service_image')),
@@ -53,13 +53,13 @@ class UpdateRequest extends FormRequest
         // Imágenes de muestra
 
         'sample_images' => 'array|nullable',
-        'sample_images.technique' => 'nullable|image|max:5120',
-        'sample_images.recovery' => 'nullable|image|max:5120',
-        'sample_images.postoperative_care' => 'nullable|image|max:5120',
+        'sample_images.technique' => 'nullable|image|max:15360',
+        'sample_images.recovery' => 'nullable|image|max:15360',
+        'sample_images.postoperative_care' => 'nullable|image|max:15360',
 
         // Galería de resultados
         'results_gallery' => 'array|nullable',
-        'results_gallery.*' => 'nullable|image|max:5120',
+        'results_gallery.*' => 'nullable|image|max:15360',
     ];
 }
 

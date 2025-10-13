@@ -25,7 +25,7 @@ class StoreRequest extends FormRequest
     {
         return [
             'status' => 'required|string|in:active,inactive',
-            'service_image' => 'nullable|image|max:5120',
+            'service_image' => 'nullable|image|max:15360',
 
             'title' => 'required|string',
             'description' => 'required|string',
@@ -44,9 +44,9 @@ class StoreRequest extends FormRequest
             // Imágenes de muestra
 
             'sample_images' => 'array|nullable',
-            'sample_images.technique' => 'nullable|image|max:5120',
-            'sample_images.recovery' => 'nullable|image|max:5120',
-            'sample_images.postoperative_care' => 'nullable|image|max:5120',
+            'sample_images.technique' => 'nullable|image|max:15360',
+            'sample_images.recovery' => 'nullable|image|max:15360',
+            'sample_images.postoperative_care' => 'nullable|image|max:15360',
 
             // Galería de resultados
             'results_gallery' => 'array|nullable',
@@ -59,25 +59,24 @@ class StoreRequest extends FormRequest
 
                     if ($value instanceof UploadedFile) {
                         if (!$value->isValid()) {
-                            $fail("El archivo en {$attribute} no es válido.");
+                            $fail(__('validation.file_invalid', ['attribute' => $attribute]));
                             return;
                         }
 
                         // Validar tipo y tamaño
                         $ext = strtolower($value->getClientOriginalExtension());
                         if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) {
-                            $fail("El formato del archivo en {$attribute} no es válido.");
+                            $fail(__('validation.file_format_invalid', ['attribute' => $attribute]));
                         }
 
-                        if ($value->getSize() > 102400 * 1024) { // 100 MB
-                            $fail("La imagen en {$attribute} supera el límite de 100MB.");
+                        if ($value->getSize() > 15360 * 1024) { // 10 MB
+                            $fail(__('validation.file_too_large_10mb', ['attribute' => $attribute]));
                         }
 
                         return;
                     }
 
-                    // ❌ Si no es ni string ni archivo
-                    $fail("El campo {$attribute} debe ser una imagen o una cadena de texto (URL).");
+                    $fail(__('validation.file_must_be_image_or_string', ['attribute' => $attribute]));
                 },
             ],
         ];

@@ -31,7 +31,7 @@ class UpdateRequest extends FormRequest
                 'nullable',
                 Rule::when(
                     $this->hasFile('image_name'),
-                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:102400']
+                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
                 ),
                 Rule::when(
                     is_string($this->input('image_name')),

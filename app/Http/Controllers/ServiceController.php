@@ -423,15 +423,19 @@ class ServiceController extends Controller
     // Eliminar un servicio
     public function delete_service($id)
     {
+        DB::beginTransaction();
         try {
             $service = Service::findOrFail($id);
             $service->delete();
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => __('messages.service.success.deleteService')
             ]);
         } catch (\Throwable $e) {
+            DB::rollBack();
             Log::error('Error en delete_service: ' . $e->getMessage());
             return response()->json([
                 'success' => false,

@@ -31,7 +31,7 @@ class StoreRequest extends FormRequest
                 'nullable',
                 Rule::when(
                     $this->hasFile('image'),
-                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:5120']
+                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
                 ),
                 Rule::when(
                     is_string($this->input('image')),

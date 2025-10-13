@@ -69,3 +69,7 @@ Route::prefix('team_member')->group(function () {
     Route::delete('/{id}', [TeamMemberController::class, 'delete_teamMember']);
     Route::post('/update_status/{id}', [TeamMemberController::class, 'update_status']);
 });
+
+Route::prefix('design')->group(function () {
+    Route::match(['post', 'put', 'patch'], '/carouselImage', [DesignController::class, 'update_carouselImage']);
+});
