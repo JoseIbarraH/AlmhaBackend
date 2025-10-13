@@ -21,7 +21,7 @@ class DesignSetting extends Model
     /**
      * Obtener el valor de una configuración por clave.
      */
-    public static function get(string $key, $default = null)
+    public static function getOne(string $key, $default = null)
     {
         return static::where('key', $key)->value('value') ?? $default;
     }
@@ -31,7 +31,6 @@ class DesignSetting extends Model
         $record = static::where('key', $key)->first();
         return $record ?? $default;
     }
-
 
     /**
      * Establecer o actualizar el valor de una configuración.

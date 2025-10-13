@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Dashboard\Design\BackgroundRequest;
 use App\Http\Requests\Dashboard\Design\CarouselBackgroundRequest;
+use App\Http\Requests\Dashboard\Design\CarouselNavbarRequest;
+use App\Http\Requests\Dashboard\Design\CarouselToolRequest;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +47,6 @@ class DesignController extends Controller
             return response()->json([
                 'success' => true,
                 'messages' => __('messages.design.success.carouselImage'),
-                'data' => ''
             ]);
 
         } catch (\Throwable $e) {
@@ -60,7 +61,7 @@ class DesignController extends Controller
 
     private function processImageVideo($designId, $item)
     {
-        $fileData = $this->processFile($item['url'], $designId);
+        $fileData = $this->processFile($item['url'], $designId, 'image_video');
         if (!$fileData)
             return;
 
@@ -92,7 +93,7 @@ class DesignController extends Controller
         );
     }
 
-    private function processFile($file, $designId = null)
+    private function processFile($file, $designId = null, $folder = 'carousel')
     {
         if ($file instanceof UploadedFile) {
             if ($designId) {
@@ -102,13 +103,21 @@ class DesignController extends Controller
                 }
             }
 
+            $mimeType = $file->getMimeType();
+            $type = match (true) {
+                str_starts_with($mimeType, 'image/') => 'image',
+                str_starts_with($mimeType, 'video/') => 'video',
+                default => 'other'
+            };
+
+            // Guardar según el tipo de archivo
+            $path = $type === 'video'
+                ? $file->store("images/design/{$folder}", 'public')
+                : Helpers::saveWebpFile($file, "images/design/{$folder}");
+
             return [
-                'path' => Helpers::saveWebpFile($file, $designId ? 'images/design/image_video' : 'images/design/carousel'),
-                'type' => match (true) {
-                    str_starts_with($file->getMimeType(), 'image/') => 'image',
-                    str_starts_with($file->getMimeType(), 'video/') => 'video',
-                    default => 'other'
-                }
+                'path' => $path,
+                'type' => $type
             ];
         }
 
@@ -139,7 +148,7 @@ class DesignController extends Controller
         $itemsData = [];
 
         foreach ($carouselUrls as $index => $item) {
-            $fileData = $this->processFile($item['url']);
+            $fileData = $this->processFile($item['url'], null, 'carousel');
             if (!$fileData)
                 continue;
 
@@ -148,6 +157,7 @@ class DesignController extends Controller
 
             $itemsData[$index] = [
                 'path' => $fileData['path'],
+                'type' => $fileData['type'],
                 'title' => $title,
                 'subtitle' => $subtitle,
             ];
@@ -182,6 +192,7 @@ class DesignController extends Controller
                         'lang' => $lang,
                         'type' => 'carousel',
                         'path' => $data['path'],
+                        'file_type' => $data['type'], // Agregado para distinguir imagen/video
                         'title' => $texts['title'],
                         'subtitle' => $texts['subtitle'],
                     ]);
@@ -204,19 +215,24 @@ class DesignController extends Controller
         }
     }
 
+    ////////////////////////////////////////////////////
+    // backgrounds update
+    ////////////////////////////////////////////////////
+
     public function update_backgrounds(BackgroundRequest $request)
     {
         DB::beginTransaction();
         try {
             $data = $request->validated();
-
+            $locale = $request->query('locale', app()->getLocale());
+            $ids = [];
             // Procesar backgrounds 1, 2 y 3
             foreach (['background1', 'background2', 'background3'] as $backgroundType) {
                 if (!empty($data[$backgroundType]) && is_array($data[$backgroundType])) {
                     $bg = DesignSetting::getAll($backgroundType);
                     $backgroundData = $data[$backgroundType];
                     $url = $backgroundData['url'];
-
+                    $ids[] = $bg->id;
                     // Determinar si hay nueva imagen
                     $updateData = [];
 
@@ -262,12 +278,23 @@ class DesignController extends Controller
                     }
                 }
             }
+            /* dd($ids); */
+            $response = [];
+            foreach ($ids as $index => $id) {
+                $item = DesignItem::getOne($id, $locale);
+
+                if ($item && isset($item['path'])) {
+                    $item['path'] = url("storage", $item['path']);
+                }
+
+                $response['background' . ($index + 1)] = $item;
+            }
 
             DB::commit();
             return response()->json([
                 'success' => true,
                 'messages' => __('messages.design.success.backgrounds'),
-                'data' => ''
+                'data' => $response
             ]);
 
         } catch (\Throwable $e) {
@@ -275,6 +302,295 @@ class DesignController extends Controller
             return response()->json([
                 'success' => false,
                 'messages' => __('messages.design.error.backgrounds'),
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    // Carusel navbar Update
+    ////////////////////////////////////////////////////
+
+    public function update_carouselNavbar(CarouselNavbarRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            $data = $request->validated();
+            $bg = DesignSetting::getAll('carouselNavbar');
+
+            // Obtener items existentes agrupados por idioma
+            $existingItems = DesignItem::where('design_id', $bg->id)
+                ->where('type', 'carouselNavbar')
+                ->get()
+                ->groupBy('lang');
+
+            $processedPaths = [];
+            $textsToTranslate = [];
+            $itemsData = [];
+
+            if (!empty($data['carouselNavbar']) && is_array($data['carouselNavbar'])) {
+
+                // Preparar datos y textos para traducir
+                foreach ($data['carouselNavbar'] as $index => $item) {
+                    $fileData = null;
+
+                    // Procesar archivo nuevo (imagen o video)
+                    if ($item['url'] instanceof UploadedFile) {
+                        $mimeType = $item['url']->getMimeType();
+                        $type = match (true) {
+                            str_starts_with($mimeType, 'image/') => 'image',
+                            str_starts_with($mimeType, 'video/') => 'video',
+                            default => 'other'
+                        };
+
+                        // Guardar según el tipo
+                        if ($type === 'video') {
+                            $path = $item['url']->store('images/design/carouselNavbar', 'public');
+                        } else {
+                            $path = Helpers::saveWebpFile($item['url'], 'images/design/carouselNavbar');
+                        }
+
+                        $fileData = [
+                            'path' => $path,
+                            'file_type' => $type
+                        ];
+                    }
+                    // Mantener path existente (string URL)
+                    elseif (is_string($item['url'])) {
+                        $ext = strtolower(pathinfo($item['url'], PATHINFO_EXTENSION));
+                        $type = match (true) {
+                            in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']) => 'image',
+                            in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']) => 'video',
+                            default => 'other'
+                        };
+
+                        $fileData = [
+                            'path' => $item['url'],
+                            'file_type' => $type
+                        ];
+                    }
+
+                    if (!$fileData)
+                        continue;
+
+                    $title = $item['title'] ?? '';
+                    $subtitle = $item['subtitle'] ?? '';
+
+                    $itemsData[$index] = [
+                        'path' => $fileData['path'],
+                        'file_type' => $fileData['file_type'],
+                        'title' => $title,
+                        'subtitle' => $subtitle,
+                    ];
+
+                    // Recopilar textos para traducir
+                    if ($title)
+                        $textsToTranslate[] = $title;
+                    if ($subtitle)
+                        $textsToTranslate[] = $subtitle;
+                }
+
+                // Traducir todos los textos de una vez
+                $translations = !empty($textsToTranslate)
+                    ? Helpers::translateBatch($textsToTranslate, 'es', 'en')
+                    : [];
+
+                $translationIndex = 0;
+
+                // Crear o actualizar items
+                foreach ($itemsData as $data) {
+                    $titleEn = $data['title'] ? ($translations[$translationIndex++] ?? '') : '';
+                    $subtitleEn = $data['subtitle'] ? ($translations[$translationIndex++] ?? '') : '';
+
+                    foreach ([
+                        'es' => ['title' => $data['title'], 'subtitle' => $data['subtitle']],
+                        'en' => ['title' => $titleEn, 'subtitle' => $subtitleEn]
+                    ] as $lang => $texts) {
+
+                        // Buscar item existente con el mismo path
+                        $existing = ($existingItems[$lang] ?? collect())->firstWhere('path', $data['path']);
+
+                        if ($existing) {
+                            // Actualizar solo si cambió algo
+                            if (
+                                $existing->title !== $texts['title'] ||
+                                $existing->subtitle !== $texts['subtitle'] ||
+                                $existing->file_type !== $data['file_type']
+                            ) {
+                                $existing->update(array_merge($texts, ['file_type' => $data['file_type']]));
+                            }
+                        } else {
+                            // Crear nuevo item
+                            DesignItem::create([
+                                'design_id' => $bg->id,
+                                'lang' => $lang,
+                                'type' => 'carouselNavbar',
+                                'path' => $data['path'],
+                                'file_type' => $data['file_type'],
+                                'title' => $texts['title'],
+                                'subtitle' => $texts['subtitle'],
+                            ]);
+                        }
+
+                        // Registrar paths procesados
+                        $processedPaths[$lang][] = $data['path'];
+                    }
+                }
+            }
+
+            // Eliminar items que ya no están en la lista
+            foreach (['es', 'en'] as $lang) {
+                $toDelete = ($existingItems[$lang] ?? collect())
+                    ->whereNotIn('path', $processedPaths[$lang] ?? []);
+
+                foreach ($toDelete as $item) {
+                    // Solo eliminar el archivo físico una vez (desde 'es')
+                    if ($lang === 'es' && $item->path && !filter_var($item->path, FILTER_VALIDATE_URL)) {
+                        if (Storage::disk('public')->exists($item->path)) {
+                            Storage::disk('public')->delete($item->path);
+                        }
+                    }
+                    $item->delete();
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'messages' => __('messages.design.success.carouselNavbar'),
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'messages' => __('messages.design.error.carouselNavbar'),
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    // Carusel tools navbar Update
+    ////////////////////////////////////////////////////
+
+    public function update_carouselTool(CarouselToolRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            $data = $request->validated();
+            $bg = DesignSetting::getAll('carouselTool');
+
+            // Obtener items existentes
+            $existingItems = DesignItem::where('design_id', $bg->id)
+                ->where('type', 'carouselTool')
+                ->get();
+
+            $processedPaths = [];
+            $itemsData = [];
+
+            if (!empty($data['carouselTool']) && is_array($data['carouselTool'])) {
+
+                // Preparar datos
+                foreach ($data['carouselTool'] as $index => $item) {
+                    $fileData = null;
+
+                    // Procesar archivo nuevo (imagen o video)
+                    if ($item['url'] instanceof UploadedFile) {
+                        $mimeType = $item['url']->getMimeType();
+                        $type = match (true) {
+                            str_starts_with($mimeType, 'image/') => 'image',
+                            str_starts_with($mimeType, 'video/') => 'video',
+                            default => 'other'
+                        };
+
+                        // Guardar según el tipo
+                        if ($type === 'video') {
+                            $path = $item['url']->store('images/design/carouselTool', 'public');
+                        } else {
+                            $path = Helpers::saveWebpFile($item['url'], 'images/design/carouselTool');
+                        }
+
+                        $fileData = [
+                            'path' => $path,
+                            'file_type' => $type
+                        ];
+                    }
+                    // Mantener path existente (string URL)
+                    elseif (is_string($item['url'])) {
+                        $ext = strtolower(pathinfo($item['url'], PATHINFO_EXTENSION));
+                        $type = match (true) {
+                            in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']) => 'image',
+                            in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']) => 'video',
+                            default => 'other'
+                        };
+
+                        $fileData = [
+                            'path' => $item['url'],
+                            'file_type' => $type
+                        ];
+                    }
+
+                    if (!$fileData)
+                        continue;
+
+                    $itemsData[$index] = [
+                        'path' => $fileData['path'],
+                        'file_type' => $fileData['file_type'],
+                    ];
+
+                    // Registrar paths procesados
+                    $processedPaths[] = $fileData['path'];
+                }
+
+                // Crear o actualizar items
+                foreach ($itemsData as $data) {
+                    // Buscar item existente con el mismo path
+                    $existing = $existingItems->firstWhere('path', $data['path']);
+
+                    if ($existing) {
+                        // Actualizar solo si cambió el tipo de archivo
+                        if ($existing->file_type !== $data['file_type']) {
+                            $existing->update(['file_type' => $data['file_type']]);
+                        }
+                    } else {
+                        // Crear nuevo item
+                        DesignItem::create([
+                            'design_id' => $bg->id,
+                            'lang' => 'es', // Solo idioma por defecto ya que no hay textos
+                            'type' => 'carouselTool',
+                            'path' => $data['path'],
+                            'file_type' => $data['file_type'],
+                        ]);
+                    }
+                }
+            }
+
+            // Eliminar items que ya no están en la lista
+            $toDelete = $existingItems->whereNotIn('path', $processedPaths);
+
+            foreach ($toDelete as $item) {
+                // Eliminar archivo físico si no es URL externa
+                if ($item->path && !filter_var($item->path, FILTER_VALIDATE_URL)) {
+                    if (Storage::disk('public')->exists($item->path)) {
+                        Storage::disk('public')->delete($item->path);
+                    }
+                }
+                $item->delete();
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'messages' => __('messages.design.success.carouselTool'),
+                'data' => ''
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'messages' => __('messages.design.error.carouselTool'),
                 'error' => $e->getMessage()
             ]);
         }

@@ -38,7 +38,6 @@ class DesignItem extends Model
         );
     }
 
-
     public static function getOne($id, $lang = 'es', $default = null)
     {
         return static::where('design_id', $id)

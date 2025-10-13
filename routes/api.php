@@ -71,6 +71,8 @@ Route::prefix('team_member')->group(function () {
 });
 
 Route::prefix('design')->group(function () {
-    Route::match(['post', 'put', 'patch'], '/carouselImage', [DesignController::class, 'update_carouselImage']);
-    Route::match(['post', 'put', 'patch'], '/backgrounds', [DesignController::class, 'update_backgrounds']);
+    Route::match(['post', 'patch'], '/carouselImage', [DesignController::class, 'update_carouselImage']);
+    Route::match(['post', 'patch'], '/backgrounds', [DesignController::class, 'update_backgrounds']);
+    Route::match(['post', 'patch'], '/carouselNavbar', [DesignController::class, 'update_carouselNavbar']);
+    Route::match(['post', 'patch'], '/carouselTool', [DesignController::class, 'update_carouselTool']);
 });

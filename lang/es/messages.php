@@ -56,10 +56,14 @@ return [
         'success' => [
             'carouselImage' => 'Carousel e Imagen actualizados correctamente',
             'backgrounds' => 'Fondos actualizados correctamente',
+            'carouselNavbar' => 'Carousel del navbar actualizado correctamente',
+            'carouselTool' => 'Carousel de herramientas actualizado correctamente'
         ],
         'error' => [
             'carouselImage' => 'Error al actualizar el carrusel o la imagen',
             'backgrounds' => 'Error al actualizar los fondos',
+            'carouselNavbar' => 'Error al actualizar el carousel del navbar',
+            'carouselTool' => 'Error al actualizar el carousel de herramientas'
         ]
     ]
 
