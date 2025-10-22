@@ -17,9 +17,115 @@ use App\Helpers\Helpers;
 
 class DesignController extends Controller
 {
-    public function index()
+    public function get_design(Request $request)
     {
+        $locale = $request->query('locale', app()->getLocale());
 
+        try {
+            $response = [];
+
+            // Helper para normalizar paths (array from getOne or model instances)
+            $formatStoredPath = function ($item) {
+                if (!$item)
+                    return null;
+
+                // if array-like
+                if (is_array($item) && isset($item['path'])) {
+                    if ($item['path'] && !filter_var($item['path'], FILTER_VALIDATE_URL)) {
+                        $item['path'] = Storage::disk('public')->url($item['path']);
+                    }
+                    return $item;
+                }
+
+                // if model instance
+                if (is_object($item) && isset($item->path)) {
+                    if ($item->path && !filter_var($item->path, FILTER_VALIDATE_URL)) {
+                        $item->path = Storage::disk('public')->url($item->path);
+                    }
+                    return $item;
+                }
+
+                return $item;
+            };
+
+            // Backgrounds 1..3
+            foreach (['background1', 'background2', 'background3'] as $index => $bgType) {
+                $setting = DesignSetting::getAll($bgType);
+                $item = null;
+                if ($setting) {
+                    $item = DesignItem::getOne($setting->id, $locale);
+                    $item = $formatStoredPath($item);
+                }
+                $response['background' . ($index + 1)] = $item;
+            }
+
+            // Carousel (main)
+            $carouselSetting = DesignSetting::getAll('carousel');
+            $response['carousel'] = [];
+            if ($carouselSetting) {
+                $items = DesignItem::where('design_id', $carouselSetting->id)
+                    ->where('type', 'carousel')
+                    ->where('lang', $locale)
+                    ->orderBy('id') // mantener orden predecible
+                    ->get()
+                    ->map(function ($it) use ($formatStoredPath) {
+                        $it = $formatStoredPath($it);
+                        return $it;
+                    })->values();
+                $response['carousel'] = $items;
+            }
+
+            // Carousel Navbar
+            $navbarSetting = DesignSetting::getAll('carouselNavbar');
+            $response['carouselNavbar'] = [];
+            if ($navbarSetting) {
+                $items = DesignItem::where('design_id', $navbarSetting->id)
+                    ->where('type', 'carouselNavbar')
+                    ->where('lang', $locale)
+                    ->orderBy('id')
+                    ->get()
+                    ->map(function ($it) use ($formatStoredPath) {
+                        $it = $formatStoredPath($it);
+                        return $it;
+                    })->values();
+                $response['carouselNavbar'] = $items;
+            }
+
+            // Carousel Tool
+            $toolSetting = DesignSetting::getAll('carouselTool');
+            $response['carouselTool'] = [];
+            if ($toolSetting) {
+                $items = DesignItem::where('design_id', $toolSetting->id)
+                    ->where('type', 'carouselTool')
+                    ->where('lang', $locale) // items may be only 'es' but keep filter
+                    ->orderBy('id')
+                    ->get()
+                    ->map(function ($it) use ($formatStoredPath) {
+                        $it = $formatStoredPath($it);
+                        return $it;
+                    })->values();
+                $response['carouselTool'] = $items;
+            }
+
+            // Image/Video single item (si existe)
+            $imageVideoSetting = DesignSetting::getAll('imageVideo');
+            $response['imageVideo'] = null;
+            if ($imageVideoSetting) {
+                $iv = DesignItem::getOne($imageVideoSetting->id, $locale);
+                $response['imageVideo'] = $formatStoredPath($iv);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $response
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'messages' => __('messages.design.error.getDesign') ?? 'Error fetching design',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     ////////////////////////////////////////////////////
@@ -231,7 +337,7 @@ class DesignController extends Controller
                 if (!empty($data[$backgroundType]) && is_array($data[$backgroundType])) {
                     $bg = DesignSetting::getAll($backgroundType);
                     $backgroundData = $data[$backgroundType];
-                    $url = $backgroundData['url'];
+                    $url = $backgroundData['path'];
                     $ids[] = $bg->id;
                     // Determinar si hay nueva imagen
                     $updateData = [];

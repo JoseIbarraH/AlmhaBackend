@@ -24,14 +24,14 @@ class BackgroundRequest extends FormRequest
     {
         return [
             'background1' => ['nullable', 'array'],
-            'background1.url' => [
+            'background1.path' => [
                 'nullable',
                 Rule::when(
-                    fn() => $this->hasFile('background1.url'),
+                    fn() => $this->hasFile('background1.path'),
                     ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
                 ),
                 Rule::when(
-                    fn() => is_string($this->input('background1.url')),
+                    fn() => is_string($this->input('background1.path')),
                     ['string']
                 ),
             ],
@@ -39,14 +39,14 @@ class BackgroundRequest extends FormRequest
             'background1.subtitle' => ['nullable', 'string', 'max:255'],
 
             'background2' => ['nullable', 'array'],
-            'background2.url' => [
+            'background2.path' => [
                 'nullable',
                 Rule::when(
-                    fn() => $this->hasFile('background2.url'),
+                    fn() => $this->hasFile('background2.path'),
                     ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
                 ),
                 Rule::when(
-                    fn() => is_string($this->input('background2.url')),
+                    fn() => is_string($this->input('background2.path')),
                     ['string']
                 ),
             ],
@@ -54,14 +54,14 @@ class BackgroundRequest extends FormRequest
             'background2.subtitle' => ['nullable', 'string', 'max:255'],
 
             'background3' => ['nullable', 'array'],
-            'background3.url' => [
+            'background3.path' => [
                 'nullable',
                 Rule::when(
-                    fn() => $this->hasFile('background3.url'),
+                    fn() => $this->hasFile('background3.path'),
                     ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
                 ),
                 Rule::when(
-                    fn() => is_string($this->input('background3.url')),
+                    fn() => is_string($this->input('background3.path')),
                     ['string']
                 ),
             ],
