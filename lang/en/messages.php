@@ -34,7 +34,37 @@ return [
             'deleteBlog' => 'Error deleting blog',
         ],
     ],
-    'TeamMember' => [
-        
+    'teamMember' => [
+        'success' => [
+            'list_teamMember' => 'Team member list retrieved successfully',
+            'getTeamMember' => 'Team member retrieved successfully',
+            'create_teamMember' => 'Team member created successfully',
+            'update_teamMember' => 'Team member updated successfully',
+            'delete_teamMember' => 'Team member deleted successfully',
+            'updateStatus' => 'Team member status updated successfully',
+        ],
+        'error' => [
+            'list_teamMember' => 'Error retrieving the team member list',
+            'create_teamMember' => 'Error creating team member',
+            'update_teamMember' => 'Error updating team member',
+            'delete_teamMember' => 'Error deleting team member',
+            'updateStatus' => 'Error updating team member status',
+            'getTeamMember' => 'Error retrieving team member'
+        ]
+    ],
+    'design' => [
+        'success' => [
+            'carouselImage' => 'Carousel and image updated successfully',
+            'backgrounds' => 'Backgrounds updated successfully',
+            'carouselNavbar' => 'Navbar carousel updated successfully',
+            'carouselTool' => 'Tools carousel updated successfully'
+        ],
+        'error' => [
+            'carouselImage' => 'Error updating the carousel or image',
+            'backgrounds' => 'Error updating backgrounds',
+            'carouselNavbar' => 'Error updating the navbar carousel',
+            'carouselTool' => 'Error updating the tools carousel'
+        ]
     ]
+
 ];

@@ -61,6 +61,14 @@ Route::prefix('blog')->group(function () {
     Route::delete('/{id}', [BlogController::class, 'delete_blog']);
 });
 
+Route::prefix('blog')->group(function () {
+    Route::get('/', [BlogController::class, 'list_blogs']);
+    Route::get('/{id}', [BlogController::class, 'get_blog']);
+    Route::post('/', [BlogController::class, 'create_blog']);
+    Route::match(['post', 'put', 'patch'], '/{id}', [BlogController::class, 'update_blog']);
+    Route::delete('/{id}', [BlogController::class, 'delete_blog']);
+});
+
 Route::prefix('team_member')->group(function () {
     Route::get('/', [TeamMemberController::class, 'list_teamMember']);
     Route::get('/{id}', [TeamMemberController::class, 'get_teamMember']);
@@ -71,9 +79,13 @@ Route::prefix('team_member')->group(function () {
 });
 
 Route::prefix('design')->group(function () {
+
     Route::get('/', [DesignController::class, 'get_design']);
-    Route::match(['post', 'patch'], '/carouselImage', [DesignController::class, 'update_carouselImage']);
-    Route::match(['post', 'patch'], '/backgrounds', [DesignController::class, 'update_backgrounds']);
-    Route::match(['post', 'patch'], '/carouselNavbar', [DesignController::class, 'update_carouselNavbar']);
-    Route::match(['post', 'patch'], '/carouselTool', [DesignController::class, 'update_carouselTool']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::match(['post', 'patch'], '/carouselImage', [DesignController::class, 'update_carouselImage']);
+        Route::match(['post', 'patch'], '/backgrounds', [DesignController::class, 'update_backgrounds']);
+        Route::match(['post', 'patch'], '/carouselNavbar', [DesignController::class, 'update_carouselNavbar']);
+        Route::match(['post', 'patch'], '/carouselTool', [DesignController::class, 'update_carouselTool']);
+    });
 });

@@ -23,12 +23,12 @@ class CarouselBackgroundRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'carousel' => ['required', 'boolean'],
-            'imageVideo' => ['required', 'boolean'],
+            'carouselSetting' => ['required', 'boolean'],
+            'imageVideoSetting' => ['required', 'boolean'],
 
             // Carousel URLs
-            'carouselUrls' => ['nullable', 'array'],
-            'carouselUrls.*.url' => [
+            'carousel' => ['nullable', 'array'],
+            'carousel.*.path' => [
                 'nullable',
                 function ($attribute, $value, $fail) {
                     if (request()->hasFile($attribute)) {
@@ -48,12 +48,12 @@ class CarouselBackgroundRequest extends FormRequest
                     }
                 },
             ],
-            'carouselUrls.*.title' => ['nullable', 'string'],
-            'carouselUrls.*.subtitle' => ['nullable', 'string'],
+            'carousel.*.title' => ['nullable', 'string'],
+            'carousel.*.subtitle' => ['nullable', 'string'],
 
             // Image/Video URL
-            'imageVideoUrl' => ['nullable', 'array'],
-            'imageVideoUrl.*.url' => [
+            'imageVideo' => ['nullable', 'array'],
+            'imageVideo.path' => [
                 'nullable',
                 function ($attribute, $value, $fail) {
                     if (request()->hasFile($attribute)) {
@@ -71,8 +71,8 @@ class CarouselBackgroundRequest extends FormRequest
                     }
                 },
             ],
-            'imageVideoUrl.*.title' => ['nullable', 'string'],
-            'imageVideoUrl.*.subtitle' => ['nullable', 'string'],
+            'imageVideo.title' => ['nullable', 'string'],
+            'imageVideo.subtitle' => ['nullable', 'string'],
         ];
     }
 

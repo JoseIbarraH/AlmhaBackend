@@ -28,7 +28,7 @@ class BackgroundRequest extends FormRequest
                 'nullable',
                 Rule::when(
                     fn() => $this->hasFile('background1.path'),
-                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
+                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:51200'] // 50MB max
                 ),
                 Rule::when(
                     fn() => is_string($this->input('background1.path')),
@@ -43,7 +43,7 @@ class BackgroundRequest extends FormRequest
                 'nullable',
                 Rule::when(
                     fn() => $this->hasFile('background2.path'),
-                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
+                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:51200'] // 50MB max
                 ),
                 Rule::when(
                     fn() => is_string($this->input('background2.path')),
@@ -58,7 +58,7 @@ class BackgroundRequest extends FormRequest
                 'nullable',
                 Rule::when(
                     fn() => $this->hasFile('background3.path'),
-                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
+                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:51200'] // 50MB max
                 ),
                 Rule::when(
                     fn() => is_string($this->input('background3.path')),
@@ -68,6 +68,5 @@ class BackgroundRequest extends FormRequest
             'background3.title' => ['nullable', 'string', 'max:255'],
             'background3.subtitle' => ['nullable', 'string', 'max:255'],
         ];
-
     }
 }
