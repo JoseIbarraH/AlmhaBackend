@@ -11,7 +11,7 @@ class CarouselToolRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
     }
 
     /**
@@ -23,7 +23,7 @@ class CarouselToolRequest extends FormRequest
     {
         return [
             'carouselTool' => ['nullable', 'array'],
-            'carouselTool.*.url' => [
+            'carouselTool.*.path' => [
                 'nullable',
                 function ($attribute, $value, $fail) {
                     if (request()->hasFile($attribute)) {
@@ -81,7 +81,7 @@ class CarouselToolRequest extends FormRequest
         }
 
         // Validar tamaño según tipo
-        $maxSize = $isVideo ? 102400 : 10240; // 100MB para videos, 10MB para imágenes (en KB)
+        $maxSize = $isVideo ? 102400 : 20480; // 100MB para videos, 10MB para imágenes (en KB)
 
         if ($file->getSize() > $maxSize * 1024) {
             $fail(__('validation.file_too_large', [

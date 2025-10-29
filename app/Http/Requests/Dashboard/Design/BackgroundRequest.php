@@ -12,7 +12,7 @@ class BackgroundRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
     }
 
     /**
@@ -28,7 +28,7 @@ class BackgroundRequest extends FormRequest
                 'nullable',
                 Rule::when(
                     fn() => $this->hasFile('background1.path'),
-                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:51200'] // 50MB max
+                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:20480']
                 ),
                 Rule::when(
                     fn() => is_string($this->input('background1.path')),
@@ -43,7 +43,7 @@ class BackgroundRequest extends FormRequest
                 'nullable',
                 Rule::when(
                     fn() => $this->hasFile('background2.path'),
-                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:51200'] // 50MB max
+                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:20480']
                 ),
                 Rule::when(
                     fn() => is_string($this->input('background2.path')),
@@ -58,7 +58,7 @@ class BackgroundRequest extends FormRequest
                 'nullable',
                 Rule::when(
                     fn() => $this->hasFile('background3.path'),
-                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:51200'] // 50MB max
+                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:20480']
                 ),
                 Rule::when(
                     fn() => is_string($this->input('background3.path')),

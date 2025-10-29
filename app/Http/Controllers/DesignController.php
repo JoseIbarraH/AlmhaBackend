@@ -7,6 +7,7 @@ use App\Http\Requests\Dashboard\Design\CarouselBackgroundRequest;
 use App\Http\Requests\Dashboard\Design\CarouselNavbarRequest;
 use App\Http\Requests\Dashboard\Design\CarouselToolRequest;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
@@ -268,30 +269,31 @@ class DesignController extends Controller
             }
 
             DB::commit();
-            return response()->json([
-                'success' => true,
-                'messages' => __('messages.design.success.carouselImage'),
-            ]);
+            return ApiResponse::success(
+                __('messages.design.success.carouselImage'),
+            );
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'messages' => __('messages.design.error.carouselImage'),
-                'error' => $e->getMessage()
-            ]);
+            return ApiResponse::error(
+                __('messages.design.error.carouselImage'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
     private function processImageVideo($designId, $item)
     {
+
+        log::info("info", $item);
         $fileData = $this->processFile($item['path'], $designId, 'image_video');
         if (!$fileData)
             return;
 
         $data = [
             'path' => $fileData['path'],
-            'type' => $fileData['type'],
+            'type' => "imageVideo",
             'title' => $item['title'] ?? '',
             'subtitle' => $item['subtitle'] ?? '',
         ];
@@ -347,8 +349,12 @@ class DesignController extends Controller
 
         if (is_string($file)) {
             $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+            $path = $this->removeAppUrl($file);
+            Log::info("cosa", [$path]);
+
             return [
-                'path' => $file,
+                'path' => $path,
                 'type' => match (true) {
                     in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']) => 'image',
                     in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']) => 'video',
@@ -358,6 +364,17 @@ class DesignController extends Controller
         }
 
         return null;
+    }
+
+    function removeAppUrl(string $url): string
+    {
+        $appUrl = config('app.url');
+
+        if (str_starts_with($url, "$appUrl/storage")) {
+            return ltrim(str_replace("$appUrl/storage", '', $url), '/');
+        }
+
+        return $url;
     }
 
     private function syncCarouselItems($designId, $carouselUrls)
@@ -495,8 +512,8 @@ class DesignController extends Controller
                             'subtitle' => $backgroundData['subtitle'],
                         ],
                         'en' => [
-                            'title' => $translations[0] ?? '',
-                            'subtitle' => $translations[1] ?? '',
+                            'title' => $translations[0] !== "" ? $translations[0] : null,
+                            'subtitle' => $translations[1] !== "" ? $translations[1] : null,
                         ],
                     ];
 
@@ -526,19 +543,19 @@ class DesignController extends Controller
             }
 
             DB::commit();
-            return response()->json([
-                'success' => true,
-                'messages' => __('messages.design.success.backgrounds'),
-                'data' => $response
-            ]);
+            return ApiResponse::success(
+                __('messages.design.success.backgrounds'),
+                $response
+            );
+
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'messages' => __('messages.design.error.backgrounds'),
-                'error' => $e->getMessage()
-            ]);
+            return ApiResponse::error(
+                __('messages.design.error.backgrounds'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -561,7 +578,7 @@ class DesignController extends Controller
         try {
             $data = $request->validated();
             $bg = DesignSetting::getAll('carouselNavbar');
-
+            Log::info($request);
             // Obtener items existentes agrupados por idioma
             $existingItems = DesignItem::where('design_id', $bg->id)
                 ->where('type', 'carouselNavbar')
@@ -579,8 +596,8 @@ class DesignController extends Controller
                     $fileData = null;
 
                     // Procesar archivo nuevo (imagen o video)
-                    if ($item['url'] instanceof UploadedFile) {
-                        $mimeType = $item['url']->getMimeType();
+                    if ($item['path'] instanceof UploadedFile) {
+                        $mimeType = $item['path']->getMimeType();
                         $type = match (true) {
                             str_starts_with($mimeType, 'image/') => 'image',
                             str_starts_with($mimeType, 'video/') => 'video',
@@ -589,9 +606,9 @@ class DesignController extends Controller
 
                         // Guardar según el tipo
                         if ($type === 'video') {
-                            $path = $item['url']->store('images/design/carouselNavbar', 'public');
+                            $path = $item['path']->store('images/design/carouselNavbar', 'public');
                         } else {
-                            $path = Helpers::saveWebpFile($item['url'], 'images/design/carouselNavbar');
+                            $path = Helpers::saveWebpFile($item['path'], 'images/design/carouselNavbar');
                         }
 
                         $fileData = [
@@ -600,8 +617,9 @@ class DesignController extends Controller
                         ];
                     }
                     // Mantener path existente (string URL)
-                    elseif (is_string($item['url'])) {
-                        $ext = strtolower(pathinfo($item['url'], PATHINFO_EXTENSION));
+                    elseif (is_string($item['path'])) {
+                        $pathOut = $this->removeAppUrl($item['path']);
+                        $ext = strtolower(pathinfo($pathOut, PATHINFO_EXTENSION));
                         $type = match (true) {
                             in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']) => 'image',
                             in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']) => 'video',
@@ -609,7 +627,7 @@ class DesignController extends Controller
                         };
 
                         $fileData = [
-                            'path' => $item['url'],
+                            'path' => $pathOut,
                             'file_type' => $type
                         ];
                     }
@@ -699,18 +717,19 @@ class DesignController extends Controller
             }
 
             DB::commit();
-            return response()->json([
-                'success' => true,
-                'messages' => __('messages.design.success.carouselNavbar'),
-            ]);
+
+            return ApiResponse::success(
+                __('messages.design.success.carouselNavbar')
+            );
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'messages' => __('messages.design.error.carouselNavbar'),
-                'error' => $e->getMessage()
-            ]);
+            Log::error($e->getMessage());
+            return ApiResponse::error(
+                __('messages.design.error.carouselNavbar'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -740,8 +759,8 @@ class DesignController extends Controller
                     $fileData = null;
 
                     // Procesar archivo nuevo (imagen o video)
-                    if ($item['url'] instanceof UploadedFile) {
-                        $mimeType = $item['url']->getMimeType();
+                    if ($item['path'] instanceof UploadedFile) {
+                        $mimeType = $item['path']->getMimeType();
                         $type = match (true) {
                             str_starts_with($mimeType, 'image/') => 'image',
                             str_starts_with($mimeType, 'video/') => 'video',
@@ -750,9 +769,9 @@ class DesignController extends Controller
 
                         // Guardar según el tipo
                         if ($type === 'video') {
-                            $path = $item['url']->store('images/design/carouselTool', 'public');
+                            $path = $item['path']->store('images/design/carouselTool', 'public');
                         } else {
-                            $path = Helpers::saveWebpFile($item['url'], 'images/design/carouselTool');
+                            $path = Helpers::saveWebpFile($item['path'], 'images/design/carouselTool');
                         }
 
                         $fileData = [
@@ -761,8 +780,9 @@ class DesignController extends Controller
                         ];
                     }
                     // Mantener path existente (string URL)
-                    elseif (is_string($item['url'])) {
-                        $ext = strtolower(pathinfo($item['url'], PATHINFO_EXTENSION));
+                    elseif (is_string($item['path'])) {
+                        $pathOut = $this->removeAppUrl($item['path']);
+                        $ext = strtolower(pathinfo($pathOut, PATHINFO_EXTENSION));
                         $type = match (true) {
                             in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']) => 'image',
                             in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']) => 'video',
@@ -770,7 +790,7 @@ class DesignController extends Controller
                         };
 
                         $fileData = [
-                            'path' => $item['url'],
+                            'path' => $pathOut,
                             'file_type' => $type
                         ];
                     }
@@ -824,19 +844,19 @@ class DesignController extends Controller
             }
 
             DB::commit();
-            return response()->json([
-                'success' => true,
-                'messages' => __('messages.design.success.carouselTool'),
-                'data' => ''
-            ]);
+            Log::info("Sirvio owo");
+            return ApiResponse::success(
+                __('messages.design.success.carouselTool')
+            );
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'messages' => __('messages.design.error.carouselTool'),
-                'error' => $e->getMessage()
-            ]);
+            Log::error($e->getMessage());
+            return ApiResponse::error(
+                __('messages.design.error.carouselTool'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 }

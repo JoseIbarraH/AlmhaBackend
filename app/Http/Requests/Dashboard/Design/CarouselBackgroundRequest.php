@@ -12,7 +12,7 @@ class CarouselBackgroundRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
     }
 
     /**
@@ -60,8 +60,8 @@ class CarouselBackgroundRequest extends FormRequest
                         $file = request()->file($attribute);
 
                         if (is_array($file)) {
-                            foreach ($file as $f) {
-                                $this->validateImageOrVideo($f, $attribute, $fail);
+                            foreach ($file as $i => $f) {
+                                $this->validateImageOrVideo($f, $attribute, $fail, $i);
                             }
                         } else {
                             $this->validateImageOrVideo($file, $attribute, $fail);
@@ -76,7 +76,7 @@ class CarouselBackgroundRequest extends FormRequest
         ];
     }
 
-    private function validateImageOrVideo($file, $attribute, $fail)
+    private function validateImageOrVideo($file, $attribute, $fail, $i = null)
     {
         // Validar que sea un archivo válido
         if (!$file instanceof \Illuminate\Http\UploadedFile) {
@@ -129,13 +129,13 @@ class CarouselBackgroundRequest extends FormRequest
 
                 // Validar dimensiones mínimas
                 if ($width < 200 || $height < 200) {
-                    $fail(__('validation.image_dimensions_min'));
+                    $fail(__('validation.image_dimensions_min', ['n' => $i]));
                     return;
                 }
 
                 // Validar dimensiones máximas
                 if ($width > 5000 || $height > 5000) {
-                    $fail(__('validation.image_dimensions_max'));
+                    $fail(__('validation.image_dimensions_max', ['n' => $i]));
                     return;
                 }
             }
@@ -163,5 +163,17 @@ class CarouselBackgroundRequest extends FormRequest
         ];
     }
 
+    public function attributes(): array
+    {
+        $attributes = [];
+
+        // Recorre todos los elementos del carrusel
+        foreach ($this->input('carousel', []) as $i => $item) {
+            // Genera un nombre dinámico para cada imagen
+            $attributes["carousel.$i.path"] = 'imagen ' . ($i + 1) . ' del carrusel';
+        }
+
+        return $attributes;
+    }
 
 }

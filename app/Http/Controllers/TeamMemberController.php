@@ -6,6 +6,7 @@ use App\Http\Requests\Dashboard\TeamMember\StoreRequest;
 use App\Http\Requests\Dashboard\TeamMember\UpdateRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\TeamMemberTranslation;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\TeamMemberImage;
@@ -57,9 +58,23 @@ class TeamMemberController extends Controller
             $total = TeamMember::count();
             $totalActivated = TeamMember::where('status', 'active')->count();
             $totalDeactivated = TeamMember::where('status', 'inactive')->count();
-            $lastBlogs = TeamMember::where('created_at', '>=', now()->subDays(15))->count();
+            $last = TeamMember::where('created_at', '>=', now()->subDays(15))->count();
 
-            return response()->json([
+            return ApiResponse::success(
+                __('messages.teamMember.success.list_teamMember'),
+                [
+                    'pagination' => $paginate,
+                    'filters' => $request->only('search'),
+                    'stats' => [
+                        'total' => $total,
+                        'totalActivated' => $totalActivated,
+                        'totalDeactivated' => $totalDeactivated,
+                        'lastCreated' => $last,
+                    ],
+                ]
+            );
+
+            /* return response()->json([
                 'success' => true,
                 'message' => __('messages.teamMember.success.list_teamMember'),
                 'data' => [
@@ -72,15 +87,21 @@ class TeamMemberController extends Controller
                         'lastBlogs' => $lastBlogs,
                     ],
                 ]
-            ]);
+            ]); */
 
         } catch (\Throwable $e) {
             Log::error('Error en list_teamMember: ' . $e->getMessage());
-            return response()->json([
+            return ApiResponse::error(
+                __('messages.teamMember.error.list_teamMember'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+
+            /* return response()->json([
                 'success' => false,
                 'message' => __('messages.teamMember.error.list_teamMember'),
                 'error' => $e->getMessage()
-            ], 500);
+            ], 500); */
         }
     }
 
