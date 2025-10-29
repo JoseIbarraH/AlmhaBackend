@@ -20,7 +20,7 @@ class TeamMemberController extends Controller
     {
         try {
             $locale = $request->query('locale', app()->getLocale());
-            $perPage = 12;
+            $perPage = 8;
 
             // Query principal con relaciones
             $query = TeamMember::with([
@@ -73,21 +73,6 @@ class TeamMemberController extends Controller
                     ],
                 ]
             );
-
-            /* return response()->json([
-                'success' => true,
-                'message' => __('messages.teamMember.success.list_teamMember'),
-                'data' => [
-                    'pagination' => $paginate,
-                    'filters' => $request->only('search'),
-                    'stats' => [
-                        'total' => $total,
-                        'totalActivated' => $totalActivated,
-                        'totalDeactivated' => $totalDeactivated,
-                        'lastBlogs' => $lastBlogs,
-                    ],
-                ]
-            ]); */
 
         } catch (\Throwable $e) {
             Log::error('Error en list_teamMember: ' . $e->getMessage());

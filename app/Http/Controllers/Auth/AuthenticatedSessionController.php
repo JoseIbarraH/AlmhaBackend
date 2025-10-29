@@ -17,30 +17,45 @@ class AuthenticatedSessionController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-            'remember' => 'boolean'
-        ]);
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+                'remember' => 'boolean'
+            ]);
 
-        $credentials = $request->only('email', 'password');
-        $remember = $request->boolean('remember');
+            $credentials = $request->only('email', 'password');
+            $remember = $request->boolean('remember');
 
-        // Intentar autenticar con las credenciales
-        if (!Auth::guard('web')->attempt($credentials, $remember)) {
+            // Intentar autenticar con las credenciales
+            if (!Auth::guard('web')->attempt($credentials, $remember)) {
+                return response()->json([
+                    'message' => 'Credenciales inválidas'
+                ], 401);
+            }
+
+            // Regenerar sesión para prevenir session fixation
+            $request->session()->regenerate();
+
+            // Retornar usuario autenticado
             return response()->json([
-                'message' => 'Credenciales inválidas'
-            ], 401);
+                'message' => 'Autenticación exitosa',
+                'user' => Auth::user()
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Manejo de errores de validación
+            return response()->json([
+                'message' => 'Datos inválidos',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            // Manejo de cualquier otro error inesperado
+            return response()->json([
+                'message' => 'Ocurrió un error inesperado',
+                'error' => $e->getMessage()
+            ], 500);
         }
 
-        // Regenerar sesión para prevenir session fixation
-        $request->session()->regenerate();
-
-        // Retornar usuario autenticado
-        return response()->json([
-            'message' => 'Autenticación exitosa',
-            'user' => Auth::user()
-        ]);
     }
 
     /* public function destroy(Request $request)

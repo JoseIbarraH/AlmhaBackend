@@ -32,17 +32,6 @@ Route::post('/reset-password', [NewPasswordController::class, 'store']);
 
 Route::post('refresh-token', [RefreshTokenController::class, 'refreshToken']);
 
-/* Route::middleware(['auth:sanctum', 'token.not.expired'])->group(function () {
-    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
-
-    Route::get('/validate-token', function (Request $request) {
-        return response()->json([
-            'valid' => true,
-            'user' => $request->user(),
-        ]);
-    });
-}); */
 
 Route::prefix('service')->group(function () {
     Route::get('/', [ServiceController::class, 'list_services']);
@@ -61,14 +50,6 @@ Route::prefix('blog')->group(function () {
     Route::delete('/{id}', [BlogController::class, 'delete_blog']);
 });
 
-/* Route::prefix('blog')->group(function () {
-    Route::get('/', [BlogController::class, 'list_blogs']);
-    Route::get('/{id}', [BlogController::class, 'get_blog']);
-    Route::post('/', [BlogController::class, 'create_blog']);
-    Route::match(['post', 'put', 'patch'], '/{id}', [BlogController::class, 'update_blog']);
-    Route::delete('/{id}', [BlogController::class, 'delete_blog']);
-});
- */
 Route::prefix('team_member')->group(function () {
     Route::get('/', [TeamMemberController::class, 'list_teamMember']);
     Route::get('/{id}', [TeamMemberController::class, 'get_teamMember']);
