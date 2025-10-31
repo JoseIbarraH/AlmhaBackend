@@ -350,7 +350,7 @@ class DesignController extends Controller
         if (is_string($file)) {
             $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
-            $path = $this->removeAppUrl($file);
+            $path = Helpers::removeAppUrl($file);
             Log::info("cosa", [$path]);
 
             return [
@@ -366,16 +366,6 @@ class DesignController extends Controller
         return null;
     }
 
-    function removeAppUrl(string $url): string
-    {
-        $appUrl = config('app.url');
-
-        if (str_starts_with($url, "$appUrl/storage")) {
-            return ltrim(str_replace("$appUrl/storage", '', $url), '/');
-        }
-
-        return $url;
-    }
 
     private function syncCarouselItems($designId, $carouselUrls)
     {
@@ -618,7 +608,7 @@ class DesignController extends Controller
                     }
                     // Mantener path existente (string URL)
                     elseif (is_string($item['path'])) {
-                        $pathOut = $this->removeAppUrl($item['path']);
+                        $pathOut = Helpers::removeAppUrl($item['path']);
                         $ext = strtolower(pathinfo($pathOut, PATHINFO_EXTENSION));
                         $type = match (true) {
                             in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']) => 'image',
@@ -781,7 +771,7 @@ class DesignController extends Controller
                     }
                     // Mantener path existente (string URL)
                     elseif (is_string($item['path'])) {
-                        $pathOut = $this->removeAppUrl($item['path']);
+                        $pathOut = Helpers::removeAppUrl($item['path']);
                         $ext = strtolower(pathinfo($pathOut, PATHINFO_EXTENSION));
                         $type = match (true) {
                             in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']) => 'image',

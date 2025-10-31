@@ -85,6 +85,16 @@ class Helpers
         return $translations;
     }
 
+    public static function removeAppUrl(string $url): string
+    {
+        $appUrl = config('app.url');
+
+        if (str_starts_with($url, "$appUrl/storage")) {
+            return ltrim(str_replace("$appUrl/storage", '', $url), '/');
+        }
+
+        return $url;
+    }
 
 
 }
