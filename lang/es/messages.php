@@ -24,14 +24,16 @@ return [
             'getBlog' => 'Blog obtenido correctamente',
             'createBlog' => 'Blog inicial creado correctamente',
             'updateBlog' => 'Blog actualizado correctamente',
-            'deleteBlog' => 'Blog eliminado correctamente'
+            'deleteBlog' => 'Blog eliminado correctamente',
+            'updateStatus' => 'Estado actualizado correctamente'
         ],
         'error' => [
             'listBlogs' => 'Error al obtener los blogs',
             'getBlog' => 'Error al obtener el blog',
             'createBlog' => 'Error al crear el blog inicial',
             'updateBlog' => 'Error al actualizar el blog',
-            'deleteBlog' => 'Error al eliminar el blog'
+            'deleteBlog' => 'Error al eliminar el blog',
+            'updateStatus' => 'Estado actualizado correctamente'
         ]
     ],
     'teamMember' => [
@@ -65,6 +67,9 @@ return [
             'carouselNavbar' => 'Error al actualizar el carousel del navbar',
             'carouselTool' => 'Error al actualizar el carousel de herramientas'
         ]
+    ],
+    'profile' => [
+        'infoProfile' => 'Perfil actualizado correctamente'
     ]
 
 ];

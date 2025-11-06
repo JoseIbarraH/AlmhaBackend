@@ -23,13 +23,11 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 });
 
 Route::middleware('web')->post('/login', [AuthenticatedSessionController::class, 'store']);
-Route::middleware(['web','auth:sanctum'])->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
+Route::middleware(['web', 'auth:sanctum'])->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
 Route::post('/register', [RegisteredUserController::class, 'store']);
-
 Route::post('/forgot-password', [PasswordResetLinkController::class, 'store']);
 Route::post('/reset-password', [NewPasswordController::class, 'store']);
-
 Route::post('refresh-token', [RefreshTokenController::class, 'refreshToken']);
 
 
@@ -48,15 +46,21 @@ Route::prefix('blog')->group(function () {
     Route::post('/', [BlogController::class, 'create_blog']);
     Route::match(['post', 'put', 'patch'], '/{id}', [BlogController::class, 'update_blog']);
     Route::delete('/{id}', [BlogController::class, 'delete_blog']);
+    Route::post('/update_status/{id}', [BlogController::class, 'update_status']);
+    Route::post('/upload_image/{id}', [BlogController::class, 'upload_image']);
+    Route::delete('/delete_image/{id}', [BlogController::class, 'delete_image']);
 });
 
 Route::prefix('team_member')->group(function () {
     Route::get('/', [TeamMemberController::class, 'list_teamMember']);
     Route::get('/{id}', [TeamMemberController::class, 'get_teamMember']);
-    Route::post('/', [TeamMemberController::class, 'create_teamMember']);
-    Route::match(['post', 'put', 'patch'],'/{id}', [TeamMemberController::class, 'update_teamMember']);
-    Route::delete('/{id}', [TeamMemberController::class, 'delete_teamMember']);
-    Route::post('/update_status/{id}', [TeamMemberController::class, 'update_status']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/', [TeamMemberController::class, 'create_teamMember']);
+        Route::match(['post', 'put', 'patch'], '/{id}', [TeamMemberController::class, 'update_teamMember']);
+        Route::delete('/{id}', [TeamMemberController::class, 'delete_teamMember']);
+        Route::post('/update_status/{id}', [TeamMemberController::class, 'update_status']);
+    });
 });
 
 Route::prefix('design')->group(function () {
@@ -69,4 +73,8 @@ Route::prefix('design')->group(function () {
         Route::match(['post', 'patch'], '/carouselNavbar', [DesignController::class, 'update_carouselNavbar']);
         Route::match(['post', 'patch'], '/carouselTool', [DesignController::class, 'update_carouselTool']);
     });
+});
+
+Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
+    Route::post('/info', [ProfileController::class, 'update']);
 });

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Dashboard\Blog\UpdateRequest;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
 use App\Models\BlogTranslation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,7 +23,7 @@ class BlogController extends Controller
     {
         try {
             $locale = $request->query('locale', app()->getLocale());
-            $perPage = 12;
+            $perPage = 8;
 
             $query = Blog::join('blog_translations as t', function ($join) use ($locale) {
                 $join->on('blogs.id', '=', 't.blog_id')
@@ -50,37 +52,45 @@ class BlogController extends Controller
 
             // 🔹 Convertir la ruta de la imagen a URL completa
             $paginate->getCollection()->transform(function ($blog) {
-                $blog->image = $blog->image ? url("storage/{$blog->image}") : null;
-                return $blog;
+                return [
+                    'id' => $blog->id,
+                    'title' => $blog->title,
+                    'slug' => $blog->slug,
+                    'status' => $blog->status,
+                    'category' => $blog->category,
+                    'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
+                ];
             });
 
             // 🔹 Datos adicionales
             $total = Blog::count();
             $totalActivated = Blog::where('status', 'active')->count();
             $totalDeactivated = Blog::where('status', 'inactive')->count();
-            $lastBlogs = Blog::where('created_at', '>=', now()->subDays(15))->count();
+            $last = Blog::where('created_at', '>=', now()->subDays(15))->count();
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.blog.success.listBlogs'),
-                'data' => [
+            return ApiResponse::success(
+                __('messages.blog.success.listBlogs'),
+                [
                     'pagination' => $paginate,
                     'filters' => $request->only('search'),
                     'stats' => [
                         'total' => $total,
                         'totalActivated' => $totalActivated,
                         'totalDeactivated' => $totalDeactivated,
-                        'lastBlogs' => $lastBlogs,
+                        'lastCreated' => $last,
                     ],
                 ]
-            ]);
+            );
+
         } catch (\Throwable $e) {
             Log::error('Error en list_blogs: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.blog.error.listBlogs'),
-                'error' => $e->getMessage(),
-            ], 500);
+
+            return ApiResponse::error(
+                __('messages.blog.error.listBlogs'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -90,44 +100,51 @@ class BlogController extends Controller
     public function get_blog($id, Request $request)
     {
         try {
-            $blog = Blog::with(['blogTranslations' => fn($q) => $q->where('lang', 'es')])->findOrFail($id);
+            $blog = Blog::with(['blogTranslations' => fn($q) => $q->where('lang', 'es')])
+                ->where('id', $id) // o slug
+                ->orWhere('slug', $id)
+                ->firstOrFail();
 
             $data = [
                 'id' => $blog->id,
                 'slug' => $blog->slug,
-                'image' => url('storage', $blog->image),
+                'image' => $blog->image ? url('storage', $blog->image) : null,
                 'title' => $blog->blogTranslation->title,
                 'content' => $blog->blogTranslation->content,
-                'category' => $blog->category
+                'category' => $blog->category,
+                'status' => $blog->status
             ];
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.blog.success.getBlog'),
-                'data' => $data
-            ]);
+            return ApiResponse::success(
+                __('messages.blog.success.getBlog'),
+                $data
+            );
         } catch (\Throwable $e) {
             Log::error('Error en get_blogs: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.blog.error.getBlog'),
-                'error' => $e->getMessage(),
-            ], 500);
+
+            return ApiResponse::error(
+                __('messages.blog.error.getBlog'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function create_blog()
+    public function create_blog(Request $request)
     {
         DB::beginTransaction();
         try {
-            $title = 'Nuevo Blog';
+            $data = $request->validate([
+                'title' => 'string'
+            ]);
+            $data['title'] = $data['title'] ?? 'Título por defecto';
 
             $blog = Blog::create([
                 'user_id' => auth()->id() ?? '1',
-                'slug' => $this->generateUniqueSlug($title), // o lo generas luego con el título
+                'slug' => $this->generateUniqueSlug($data['title']), // o lo generas luego con el título
                 'image' => null,
                 'category' => 'general',
                 'writer' => auth()->user()->name ?? 'Administrador',
@@ -138,14 +155,14 @@ class BlogController extends Controller
             BlogTranslation::create([
                 'blog_id' => $blog->id,
                 'lang' => 'es',
-                'title' => $title,
+                'title' => $data['title'],
                 'content' => '',
             ]);
 
             BlogTranslation::create([
                 'blog_id' => $blog->id,
                 'lang' => 'en',
-                'title' => Helpers::translateBatch([$title], 'es', 'en')[0] ?? '',
+                'title' => Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? '',
                 'content' => '',
             ]);
 
@@ -171,11 +188,13 @@ class BlogController extends Controller
      */
     public function update_blog(UpdateRequest $request, string $id)
     {
+        Log::info('Datos: ', $request->all());
         DB::beginTransaction();
         try {
             $blog = Blog::findOrFail($id);
             $data = $request->validated();
             $locale = $request->query('locale', app()->getLocale()); // 'es' por defecto
+            $updates = [];
 
             // --- ACTUALIZAR TÍTULO Y SLUG ---
             $translationEs = $blog->blogTranslations()->firstOrNew(['lang' => 'es']);
@@ -199,14 +218,21 @@ class BlogController extends Controller
                 $blog->update(['category' => $data['category']]);
             }
 
-            // --- ACTUALIZAR IMAGEN ---
-            if (isset($data['image']) && !is_string($data['image'])) {
-                if (!empty($blog->image) && Storage::disk('public')->exists($blog->image)) {
-                    Storage::disk('public')->delete($blog->image);
-                }
 
-                $path = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");
-                $blog->update(['image' => $path]);
+            // --- ACTUALIZAR IMAGEN ---
+            if (!empty($data['image'])) {
+                if ($data['image'] instanceof UploadedFile) {
+                    if (!empty($blog->image) && Storage::disk('public')->exists($blog->image)) {
+                        Storage::disk('public')->delete($blog->image);
+                    }
+
+                    $path = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");
+                    $updates['image'] = $path;
+                }
+            }
+
+            if (!empty($updates)) {
+                $blog->update($updates);
             }
 
             // --- ACTUALIZAR CONTENIDO ---
@@ -217,8 +243,9 @@ class BlogController extends Controller
 
                     // Traducción automática al inglés
                     $translationEn = $blog->blogTranslations()->firstOrNew(['lang' => 'en']);
-                    $translationEn->content = Helpers::translateBatch([$data['content']], 'es', 'en')[0]
-                        ?? $translationEs->content;
+                    $tr = Helpers::translateBatch([$data['content']], 'es', 'en')[0] ?? $translationEs->content;
+                    Log::info("Tenemos traduccion? ", [$tr]);
+                    $translationEn->content = $tr;
                     $translationEn->save();
                 }
             }
@@ -300,4 +327,107 @@ class BlogController extends Controller
 
         return $slug;
     }
+
+    public function update_status(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $team = Blog::findOrFail($id);
+            $data = $request->validate([
+                'status' => 'required|in:active,inactive'
+            ]);
+            $team->update(['status' => $data['status']]);
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => __('messages.teamMember.success.updateStatus'),
+                'data' => $team
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => __('messages.teamMember.error.updateStatus'),
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function upload_image(Request $request, $id)
+    {
+        // Validar que el usuario esté autenticado
+        if (!auth()->check()) {
+            return response()->json([
+                'error' => ['message' => 'No autorizado']
+            ], 401);
+        }
+
+        // Validar el archivo
+        $request->validate([
+            'upload' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048'
+        ]);
+
+        try {
+            $image = $request->file('upload');
+
+            $filename = uniqid() . '_' . time() . '.' . $image->getClientOriginalExtension();
+
+            $path = $image->storeAs("images/blog/{$id}/image_content", $filename, 'public');
+
+            $url = asset('storage/' . $path);
+
+            return response()->json([
+                'url' => $url
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => [
+                    'message' => 'Error al subir la imagen: ' . $e->getMessage()
+                ]
+            ], 500);
+        }
+    }
+
+
+    public function delete_image(Request $request, $id)
+    {
+
+        if (!auth()->check()) {
+            return response()->json([
+                'error' => ['message' => 'No autorizado']
+            ], 401);
+        }
+
+        $request->validate([
+            'url' => 'required|string'
+        ]);
+
+        try {
+            $url = $request->input('url');
+
+            $path = str_replace(asset('storage') . '/', '', $url);
+
+            // Eliminar archivo físico
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+
+                return response()->json([
+                    'message' => 'Imagen eliminada correctamente',
+                    'deleted' => $url
+                ]);
+            }
+
+            return response()->json([
+                'error' => ['message' => 'Imagen no encontrada']
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => ['message' => 'Error al eliminar imagen: ' . $e->getMessage()]
+            ], 500);
+        }
+    }
 }
+
