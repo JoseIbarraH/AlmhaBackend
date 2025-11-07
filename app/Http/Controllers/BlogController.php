@@ -23,7 +23,7 @@ class BlogController extends Controller
     {
         try {
             $locale = $request->query('locale', app()->getLocale());
-            $perPage = 8;
+            $perPage = 9;
 
             $query = Blog::join('blog_translations as t', function ($join) use ($locale) {
                 $join->on('blogs.id', '=', 't.blog_id')

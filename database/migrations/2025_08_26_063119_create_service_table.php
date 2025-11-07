@@ -12,8 +12,9 @@ return new class extends Migration {
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
-            $table->string('service_image')->nullable();
+            $table->string('image')->nullable();
             $table->enum('status', ['active', 'inactive']);
+            $table->string('slug')->unique();
             $table->timestamps();
         });
 

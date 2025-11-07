@@ -7,9 +7,11 @@ use App\Http\Requests\Dashboard\Service\StoreRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use App\Models\ServiceTranslation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use App\Models\ServiceFaq;
 use App\Helpers\Helpers;
 use App\Models\Service;
@@ -21,7 +23,7 @@ class ServiceController extends Controller
     {
         try {
             $locale = $request->query('locale', app()->getLocale());
-            $perPage = 12;
+            $perPage = 9;
 
             $query = Service::with([
                 'serviceTranslation' => fn($q) => $q->where('lang', $locale),
@@ -44,16 +46,18 @@ class ServiceController extends Controller
             }
 
             // Paginación
-            $services = $query->paginate($perPage);
+            /* $services = $query->paginate($perPage); */
+            $paginate = $query->paginate($perPage)->appends($request->only('search'));
 
             // Transformar la colección paginada
-            $services->getCollection()->transform(function ($service) {
+            $paginate->getCollection()->transform(function ($service) {
                 $translation = $service->serviceTranslation->first();
 
                 return [
                     'id' => $service->id,
                     'status' => $service->status,
-                    'service_image' => $service->service_image ? url("storage/{$service->service_image}") : null,
+                    'slug' => $service->slug,
+                    'image' => $service->image ? url("storage/{$service->image}") : null,
                     'title' => $translation->title ?? '',
                     'description' => $translation->description ?? '',
                     'surgery_phases' => $service->surgeryPhases->map(fn($phase) => [
@@ -80,19 +84,32 @@ class ServiceController extends Controller
                 ];
             });
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.service.success.listServices'),
-                'data' => $services
-            ]);
+            $total = Service::count();
+            $totalActivated = Service::where('status', 'active')->count();
+            $totalDeactivated = Service::where('status', 'inactive')->count();
+            $last = Service::where('created_at', '>=', now()->subDays(15))->count();
+
+            return ApiResponse::success(
+                __('messages.service.success.listServices'),
+                [
+                    'pagination' => $paginate,
+                    'filters' => $request->only('search'),
+                    'stats' => [
+                        'total' => $total,
+                        'totalActivated' => $totalActivated,
+                        'totalDeactivated' => $totalDeactivated,
+                        'lastCreated' => $last,
+                    ],
+                ]
+            );
 
         } catch (\Throwable $e) {
             Log::error('Error en list_services: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.service.error.listServices'),
-                'error' => $e->getMessage()
-            ], 500);
+            return ApiResponse::error(
+                __('messages.service.error.listServices'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -100,7 +117,114 @@ class ServiceController extends Controller
     public function get_service($id, Request $request)
     {
         try {
-            $locale = $request->query('locale', app()->getLocale()); // o 'es' por default
+            $locale = 'es';
+
+            $service = Service::with([
+                'serviceTranslation' => fn($q) => $q->where('lang', $locale),
+                'frequentlyAskedQuestions' => fn($q) => $q->where('lang', $locale),
+                'surgeryPhases' => fn($q) => $q->where('lang', $locale),
+                'sampleImages',
+                'resultGallery'
+            ])->findOrFail($id);
+
+            Log::info($service);
+
+            // Obtener traducción del idioma solicitado
+            $translation = $service->serviceTranslation->first();
+
+            $data = [
+                'id' => $service->id,
+                'status' => $service->status,
+                'image' => $service->image ? asset('storage/' . $service->image) : null,
+                'created_at' => $service->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
+
+                // Traducción del servicio
+                'title' => $translation->title ?? '',
+                'description' => $translation->description ?? '',
+                'lang' => $locale,
+
+                // Preguntas frecuentes (verificar si existe)
+                'frequently_asked_questions' => $service->frequentlyAskedQuestions
+                    ? $service->frequentlyAskedQuestions->map(function ($faq) {
+                        return [
+                            'id' => $faq->id,
+                            'question' => $faq->question ?? '',
+                            'answer' => $faq->answer ?? ''
+                        ];
+                    })->toArray()
+                    : [],
+
+                // Fases de cirugía (verificar si existe)
+                'surgery_phases' => $service->surgeryPhases && $service->surgeryPhases->isNotEmpty()
+                    ? (function ($phase) {
+                        return [
+                            'id' => $phase->id,
+                            'lang' => $phase->lang,
+                            'recovery_time' => is_string($phase->recovery_time)
+                                ? json_decode($phase->recovery_time, true)
+                                : ($phase->recovery_time ?? []),
+                            'preoperative_recommendations' => is_string($phase->preoperative_recommendations)
+                                ? json_decode($phase->preoperative_recommendations, true)
+                                : ($phase->preoperative_recommendations ?? []),
+                            'postoperative_recommendations' => is_string($phase->postoperative_recommendations)
+                                ? json_decode($phase->postoperative_recommendations, true)
+                                : ($phase->postoperative_recommendations ?? []),
+                        ];
+                    })($service->surgeryPhases->first())
+                    : [
+                        'id' => 0,
+                        'lang' => '',
+                        'recovery_time' => [],
+                        'preoperative_recommendations' => [],
+                        'postoperative_recommendations' => [],
+                    ],
+
+                // Imágenes de muestra (verificar si existe)
+                'sample_images' => $service->sampleImages
+                    ? [
+                        'id' => $service->sampleImages->id,
+                        'technique' => $service->sampleImages->technique ? asset('storage/' . $service->sampleImages->technique) : null,
+                        'recovery' => $service->sampleImages->recovery ? asset('storage/' . $service->sampleImages->recovery) : null,
+                        'postoperative_care' => $service->sampleImages->postoperative_care ? asset('storage/' . $service->sampleImages->postoperative_care) : null,
+                    ]
+                    : [],
+
+                // Galería de resultados (verificar si existe)
+                'result_gallery' => $service->resultGallery
+                    ? $service->resultGallery->map(function ($result) {
+                        return [
+                            'id' => $result->id,
+                            'path' => $result->path ? asset('storage/' . $result->path) : null,
+                        ];
+                    })->toArray()
+                    : [],
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => __('messages.service.success.getService'),
+                'data' => $data,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('Error en get_service: ' . $e->getMessage(), [
+                'service_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => __('messages.service.error.getService'),
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+            ], 500);
+        }
+    }
+
+    public function get_service_client($id, Request $request)
+    {
+        try {
+            $locale = $request->query('locale', app()->getLocale());
 
             $service = Service::with([
                 'serviceTranslation' => fn($q) => $q->where('lang', $locale),
@@ -116,11 +240,66 @@ class ServiceController extends Controller
             $data = [
                 'id' => $service->id,
                 'status' => $service->status,
-                'title' => $translation->title ?? '',
-                'description' => $translation->description ?? '',
-                'service_image' => url('storage', $service->service_image),
+                'image' => $service->image ? asset('storage/' . $service->image) : null,
                 'created_at' => $service->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
+
+                // Traducción del servicio
+                'title' => $translation->title ?? '',
+                'description' => $translation->description ?? '',
+                'lang' => $locale,
+
+                // Preguntas frecuentes (verificar si existe)
+                'frequently_asked_questions' => $service->frequentlyAskedQuestions
+                    ? $service->frequentlyAskedQuestions->map(function ($faq) {
+                        return [
+                            'id' => $faq->id,
+                            'question' => $faq->question ?? '',
+                            'answer' => $faq->answer ?? '',
+                            'order' => $faq->order ?? 0,
+                        ];
+                    })->toArray()
+                    : [],
+
+                // Fases de cirugía (verificar si existe)
+                'surgery_phases' => $service->surgeryPhases
+                    ? $service->surgeryPhases->map(function ($phase) {
+                        return [
+                            'id' => $phase->id,
+                            'lang' => $phase->lang,
+                            'recovery_time' => is_string($phase->recovery_time)
+                                ? json_decode($phase->recovery_time, true)
+                                : ($phase->recovery_time ?? []),
+                            'preoperative_recommendations' => is_string($phase->preoperative_recommendations)
+                                ? json_decode($phase->preoperative_recommendations, true)
+                                : ($phase->preoperative_recommendations ?? []),
+                            'postoperative_recommendations' => is_string($phase->postoperative_recommendations)
+                                ? json_decode($phase->postoperative_recommendations, true)
+                                : ($phase->postoperative_recommendations ?? []),
+                        ];
+                    })->toArray()
+                    : [],
+
+
+                // Imágenes de muestra (verificar si existe)
+                'sample_images' => $service->sampleImages
+                    ? [
+                        'id' => $service->sampleImages->id,
+                        'technique' => $service->sampleImages->technique ? asset('storage/' . $service->sampleImages->technique) : null,
+                        'recovery' => $service->sampleImages->recovery ? asset('storage/' . $service->sampleImages->recovery) : null,
+                        'postoperative_care' => $service->sampleImages->postoperative_care ? asset('storage/' . $service->sampleImages->postoperative_care) : null,
+                    ]
+                    : [],
+
+                // Galería de resultados (verificar si existe)
+                'result_gallery' => $service->resultGallery
+                    ? $service->resultGallery->map(function ($result) {
+                        return [
+                            'id' => $result->id,
+                            'path' => $result->path ? asset('storage', $result->path) : null,
+                        ];
+                    })->toArray()
+                    : [],
             ];
 
             return response()->json([
@@ -130,11 +309,15 @@ class ServiceController extends Controller
             ]);
 
         } catch (\Throwable $e) {
-            Log::error('Error en get_service: ' . $e->getMessage());
+            Log::error('Error en get_service: ' . $e->getMessage(), [
+                'service_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => __('messages.service.error.getService'),
-                'error' => $e->getMessage(),
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
             ], 500);
         }
     }
@@ -145,80 +328,46 @@ class ServiceController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->validated();
+
+            // Crear servicio
             $service = Service::create([
                 'status' => $data['status'] ?? 'inactive',
-                'service_image' => ''
+                'image' => '',
+                'slug' => ''
             ]);
 
-            $service->service_image = Helpers::saveWebpFile($data['service_image'], "images/service/{$service->id}/service_image");
-            $service->save();
-
-            ServiceTranslation::create([
-                'service_id' => $service->id,
-                'lang' => 'es',
-                'title' => $data['title'],
-                'description' => $data['description'],
+            $service->image = Helpers::saveWebpFile($data['image'], "images/service/{$service->id}/service_image");
+            // Mover imagen a carpeta definitiva
+            $service->update([
+                'image' => $service->image
             ]);
 
-            ServiceTranslation::create([
-                'service_id' => $service->id,
-                'lang' => 'en',
-                'title' => Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? '',
-                'description' => Helpers::translateBatch([$data['description']], 'es', 'en')[0] ?? '',
+            // Crear traducciones (ES y EN)
+            $this->createTranslations($service, $data);
+
+            // Generar y guardar slug
+            $service->update([
+                'slug' => $this->generateUniqueSlug($service->serviceTranslation->where('lang', 'es')->first()->title)
             ]);
 
+            // Crear fases de cirugía (si existen)
             if (!empty($data['surgery_phases'])) {
-                foreach ($data['surgery_phases'] as $phase) {
-                    $fields = [
-                        'recovery_time',
-                        'preoperative_recommendations',
-                        'postoperative_recommendations',
-                    ];
-
-                    $translated = collect($fields)->mapWithKeys(fn($f) => [
-                        $f => explode(', ', Helpers::translateBatch(
-                            [(array) $phase[$f] ? implode(', ', (array) $phase[$f]) : ''],
-                            'es',
-                            'en'
-                        )[0] ?? '')
-                    ])->toArray();
-
-                    $service->surgeryPhases()->create($phase + ['lang' => 'es']);
-                    $service->surgeryPhases()->create($translated + ['lang' => 'en']);
-                }
+                $this->createSurgeryPhases($service, $data['surgery_phases']);
             }
 
+            // Crear FAQs (si existen)
             if (!empty($data['frequently_asked_questions'])) {
-                foreach ($data['frequently_asked_questions'] as $faq) {
-
-                    $service->frequentlyAskedQuestions()->create([
-                        'question' => $faq['question'] ?? '',
-                        'answer' => $faq['answer'] ?? '',
-                        'lang' => 'es',
-                    ]);
-
-                    $service->frequentlyAskedQuestions()->create([
-                        'question' => Helpers::translateBatch([$faq['question'] ?? ''], 'es', 'en')[0] ?? '',
-                        'answer' => Helpers::translateBatch([$faq['answer'] ?? ''], 'es', 'en')[0] ?? '',
-                        'lang' => 'en',
-                    ]);
-                }
+                $this->createFAQs($service, $data['frequently_asked_questions']);
             }
 
+            // Guardar imágenes de muestra
             if ($request->hasFile('sample_images')) {
-                $service->sampleImages()->create([
-                    'technique' => Helpers::saveWebpFile($data['sample_images']['technique'], "images/service/{$service->id}/sample_images") ?? null,
-                    'recovery' => Helpers::saveWebpFile($data['sample_images']['recovery'], "images/service/{$service->id}/sample_images") ?? null,
-                    'postoperative_care' => Helpers::saveWebpFile($data['sample_images']['postoperative_care'], "images/service/{$service->id}/sample_images") ?? null
-                ]);
+                $this->saveSampleImages($service, $data['sample_images']);
             }
 
+            // Guardar galería de resultados
             if ($request->hasFile('results_gallery')) {
-                foreach ($request->file('results_gallery') as $file) {
-                    $service->resultGallery()->create([
-                        'path' => Helpers::saveWebpFile($file, "images/service/{$service->id}/results_gallery") ?? null
-                    ]);
-                }
+                $this->saveResultsGallery($service, $request->file('results_gallery'));
             }
 
             DB::commit();
@@ -237,13 +386,116 @@ class ServiceController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error en create_service: ' . $e->getMessage());
+            Log::error('Error en create_service', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,
                 'message' => __('messages.service.error.createService'),
-                'error' => $e->getMessage(),
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
             ], 500);
+        }
+    }
+
+    private function createTranslations(Service $service, array $data): void
+    {
+        $translations = [
+            'es' => [
+                'title' => $data['title'],
+                'description' => $data['description'],
+            ],
+            'en' => [
+                'title' => Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? $data['title'],
+                'description' => Helpers::translateBatch([$data['description']], 'es', 'en')[0] ?? $data['description'],
+            ]
+        ];
+
+        foreach ($translations as $lang => $trans) {
+            $service->serviceTranslation()->create([
+                'lang' => $lang,
+                'title' => $trans['title'],
+                'description' => $trans['description'],
+            ]);
+        }
+    }
+
+    private function createSurgeryPhases(Service $service, array $phases): void
+    {
+        foreach ($phases as $phase) {
+            // Crear versión ES
+            $service->surgeryPhases()->create($phase + ['lang' => 'es']);
+
+            // Traducir y crear versión EN
+            $fieldsToTranslate = ['title', 'description', 'recovery_time', 'preoperative_recommendations', 'postoperative_recommendations'];
+
+            $translated = collect($fieldsToTranslate)
+                ->filter(fn($field) => !empty($phase[$field]))
+                ->mapWithKeys(function ($field) use ($phase) {
+                    $value = is_array($phase[$field]) ? implode(', ', $phase[$field]) : $phase[$field];
+                    $translatedValue = Helpers::translateBatch([$value], 'es', 'en')[0] ?? $value;
+
+                    return [$field => is_array($phase[$field]) ? explode(', ', $translatedValue) : $translatedValue];
+                })
+                ->toArray();
+
+            $service->surgeryPhases()->create($translated + ['lang' => 'en']);
+        }
+    }
+
+    private function createFAQs(Service $service, array $faqs): void
+    {
+        foreach ($faqs as $faq) {
+            $question = $faq['question'] ?? '';
+            $answer = $faq['answer'] ?? '';
+            $order = $faq['order'] ?? 0;
+
+            // Versión ES
+            $service->frequentlyAskedQuestions()->create([
+                'question' => $question,
+                'answer' => $answer,
+                'order' => $order,
+                'lang' => 'es',
+            ]);
+
+            // Versión EN (traducida)
+            $service->frequentlyAskedQuestions()->create([
+                'question' => Helpers::translateBatch([$question], 'es', 'en')[0] ?? $question,
+                'answer' => Helpers::translateBatch([$answer], 'es', 'en')[0] ?? $answer,
+                'order' => $order,
+                'lang' => 'en',
+            ]);
+        }
+    }
+
+    private function saveSampleImages(Service $service, array $images): void
+    {
+        $paths = [];
+        $fields = ['technique', 'recovery', 'postoperative_care'];
+
+        foreach ($fields as $field) {
+            if (!empty($images[$field])) {
+                $paths[$field] = Helpers::saveWebpFile(
+                    $images[$field],
+                    "images/service/{$service->id}/sample_images"
+                );
+            }
+        }
+
+        if (!empty($paths)) {
+            $service->sampleImages()->create($paths);
+        }
+    }
+
+    private function saveResultsGallery(Service $service, array $files): void
+    {
+        foreach ($files as $file) {
+            $path = Helpers::saveWebpFile($file, "images/service/{$service->id}/results_gallery");
+
+            if ($path) {
+                $service->resultGallery()->create(['path' => $path]);
+            }
         }
     }
 
@@ -256,12 +508,11 @@ class ServiceController extends Controller
             $data = $request->validated();
             /* dd($data); */
 
-            // 1️⃣ Actualizar status solo si cambió
             if (($data['status'] ?? null) !== $service->status) {
                 $service->update(['status' => $data['status']]);
             }
 
-            if (isset($data['service_image']) && !is_string($data['service_image'])) {
+            if (isset($data['image']) && !is_string($data['service_image'])) {
                 if (!empty($service->service_image) && Storage::disk('public')->exists($service->service_image)) {
                     Storage::disk('public')->delete($service->service_image);
                 }
@@ -269,7 +520,6 @@ class ServiceController extends Controller
                 $service->update(['service_image' => $path]);
             }
 
-            // 2️⃣ Obtener traducciones actuales
             $translations = [
                 'es' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'es']),
                 'en' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'en']),
@@ -467,5 +717,19 @@ class ServiceController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function generateUniqueSlug($title)
+    {
+        $slug = Str::slug($title);
+        $originalSlug = $slug;
+        $count = 1;
+
+        while (Service::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $count;
+            $count++;
+        }
+
+        return $slug;
     }
 }

@@ -25,9 +25,10 @@ class StoreRequest extends FormRequest
     {
         return [
             'status' => 'required|string|in:active,inactive',
-            'service_image' => 'nullable|image|max:15360',
+            'image' => 'nullable|image|max:15360',
 
             'title' => 'required|string',
+            'slug' => 'nullable',
             'description' => 'required|string',
 
             // Fases quirúrgicas
