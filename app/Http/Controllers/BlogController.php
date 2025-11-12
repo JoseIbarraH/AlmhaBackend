@@ -130,6 +130,41 @@ class BlogController extends Controller
         }
     }
 
+    public function get_blog_client($id, Request $request)
+    {
+        try {
+            $locale = $request->query('locale', app()->getLocale());
+
+            $blog = Blog::with(['blogTranslations' => fn($q) => $q->where('lang', $locale)])
+                ->where('id', $id) // o slug
+                ->orWhere('slug', $id)
+                ->firstOrFail();
+
+            $data = [
+                'id' => $blog->id,
+                'slug' => $blog->slug,
+                'image' => $blog->image ? url('storage', $blog->image) : null,
+                'title' => $blog->blogTranslation->title,
+                'content' => $blog->blogTranslation->content,
+                'category' => $blog->category,
+                'status' => $blog->status
+            ];
+
+            return ApiResponse::success(
+                __('messages.blog.success.getBlog'),
+                $data
+            );
+        } catch (\Throwable $e) {
+            Log::error('Error en get_blogs: ' . $e->getMessage());
+
+            return ApiResponse::error(
+                __('messages.blog.error.getBlog'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -144,7 +179,7 @@ class BlogController extends Controller
 
             $blog = Blog::create([
                 'user_id' => auth()->id() ?? '1',
-                'slug' => $this->generateUniqueSlug($data['title']), // o lo generas luego con el título
+                'slug' => Helpers::generateUniqueSlug(Blog::class, $data['title'], 'slug'), // o lo generas luego con el título
                 'image' => null,
                 'category' => 'general',
                 'writer' => auth()->user()->name ?? 'Administrador',
@@ -168,18 +203,18 @@ class BlogController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.blog.success.createBlog'),
-                'data' => $blog
-            ], 201);
+            return ApiResponse::success(
+                __('messages.blog.success.createBlog'),
+                $blog,
+                201
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.blog.error.createBlog'),
-                'error' => $e->getMessage()
-            ], 500);
+            return ApiResponse::error(
+                __('messages.blog.error.createBlog'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -199,7 +234,7 @@ class BlogController extends Controller
             // --- ACTUALIZAR TÍTULO Y SLUG ---
             $translationEs = $blog->blogTranslations()->firstOrNew(['lang' => 'es']);
             if (($data['title'] ?? null) !== ($translationEs->title ?? null)) {
-                $slug = $this->generateUniqueSlug($data['title']);
+                $slug = Helpers::generateUniqueSlug(Blog::class, $data['title'], 'slug');
                 $blog->update(['slug' => $slug]);
 
                 // Español
@@ -273,19 +308,18 @@ class BlogController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.blog.success.updateBlog'),
-                'data' => $dataResponse,
-            ], 200);
+            return ApiResponse::success(
+                __('messages.blog.success.updateBlog'),
+                $dataResponse,
+            );
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.blog.error.updateBlog'),
-                'error' => $e->getMessage(),
-            ], 500);
+            return ApiResponse::error(
+                __('messages.blog.error.updateBlog'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -301,31 +335,18 @@ class BlogController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.blog.success.deleteBlog')
-            ]);
+            return ApiResponse::success(
+                __('messages.blog.success.deleteBlog')
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.blog.error.deleteBlog')
-            ]);
+
+            return ApiResponse::error(
+                __('messages.blog.error.deleteBlog'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
-    }
-
-    public function generateUniqueSlug($title)
-    {
-        $slug = Str::slug($title);
-        $originalSlug = $slug;
-        $count = 1;
-
-        while (Blog::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count;
-            $count++;
-        }
-
-        return $slug;
     }
 
     public function update_status(Request $request, $id)
@@ -339,18 +360,17 @@ class BlogController extends Controller
             $team->update(['status' => $data['status']]);
 
             DB::commit();
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.teamMember.success.updateStatus'),
-                'data' => $team
-            ]);
+            return ApiResponse::success(
+                __('messages.teamMember.success.updateStatus'),
+                $team
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.teamMember.error.updateStatus'),
-                'error' => $e->getMessage()
-            ], 500);
+            return ApiResponse::error(
+                __('messages.teamMember.error.updateStatus'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -358,9 +378,10 @@ class BlogController extends Controller
     {
         // Validar que el usuario esté autenticado
         if (!auth()->check()) {
-            return response()->json([
-                'error' => ['message' => 'No autorizado']
-            ], 401);
+            return ApiResponse::error(
+                message: __('messages.blog.error.uploadImage'),
+                code: 401
+            );
         }
 
         // Validar el archivo
@@ -382,14 +403,13 @@ class BlogController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => [
-                    'message' => 'Error al subir la imagen: ' . $e->getMessage()
-                ]
-            ], 500);
+            return ApiResponse::error(
+                __('messages.blog.error.uploadImage'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
-
 
     public function delete_image(Request $request, $id)
     {
@@ -419,14 +439,16 @@ class BlogController extends Controller
                 ]);
             }
 
-            return response()->json([
-                'error' => ['message' => 'Imagen no encontrada']
-            ], 404);
-
+            return ApiResponse::error(
+                message: __('messages.blog.error.deleteImage'),
+                code: 404
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => ['message' => 'Error al eliminar imagen: ' . $e->getMessage()]
-            ], 500);
+
+            return ApiResponse::error(
+                errors: ['exception' => $e->getMessage()],
+                code: 500
+            );
         }
     }
 }

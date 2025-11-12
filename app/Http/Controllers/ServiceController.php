@@ -11,7 +11,6 @@ use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use App\Models\ServiceTranslation;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use App\Models\ServiceFaq;
 use App\Helpers\Helpers;
 use App\Models\Service;
@@ -191,7 +190,7 @@ class ServiceController extends Controller
                     : [],
 
                 // Galería de resultados (verificar si existe)
-                'result_gallery' => $service->resultGallery
+                'results_gallery' => $service->resultGallery
                     ? $service->resultGallery->map(function ($result) {
                         return [
                             'id' => $result->id,
@@ -201,11 +200,10 @@ class ServiceController extends Controller
                     : [],
             ];
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.service.success.getService'),
-                'data' => $data,
-            ]);
+            return ApiResponse::success(
+                __('messages.service.success.getService'),
+                $data
+            );
 
         } catch (\Throwable $e) {
             Log::error('Error en get_service: ' . $e->getMessage(), [
@@ -213,11 +211,11 @@ class ServiceController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.service.error.getService'),
-                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
-            ], 500);
+            return ApiResponse::error(
+                __('messages.service.error.getService'),
+                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                500
+            );
         }
     }
 
@@ -302,11 +300,10 @@ class ServiceController extends Controller
                     : [],
             ];
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.service.success.getService'),
-                'data' => $data,
-            ]);
+            return ApiResponse::success(
+                __('messages.service.success.getService'),
+                $data,
+            );
 
         } catch (\Throwable $e) {
             Log::error('Error en get_service: ' . $e->getMessage(), [
@@ -314,20 +311,23 @@ class ServiceController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.service.error.getService'),
-                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
-            ], 500);
+            return ApiResponse::error(
+                __('messages.service.error.getService'),
+                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                500
+            );
         }
     }
-
-    // Crear un servicio
+    /**
+     * Crear un servicio StoreRequest
+     */
     public function create_service(StoreRequest $request)
     {
+        Log::info("Llego: ", [$request->all()]);
         DB::beginTransaction();
         try {
-            $data = $request->validated();
+            $data = $request->all();
+            Log::info("Validados: ", [$data]);
 
             // Crear servicio
             $service = Service::create([
@@ -347,7 +347,11 @@ class ServiceController extends Controller
 
             // Generar y guardar slug
             $service->update([
-                'slug' => $this->generateUniqueSlug($service->serviceTranslation->where('lang', 'es')->first()->title)
+                'slug' => Helpers::generateUniqueSlug(
+                    modelClass: Service::class,
+                    title: $service->serviceTranslation->where('lang', 'es')->first()->title,
+                    slugColumn: 'slug'
+                )
             ]);
 
             // Crear fases de cirugía (si existen)
@@ -372,18 +376,16 @@ class ServiceController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.service.success.createService'),
-                'data' => $service->load([
+            return ApiResponse::success(
+                __('messages.service.success.createService'),
+                $service->load([
                     'serviceTranslation',
                     'surgeryPhases',
                     'frequentlyAskedQuestions',
                     'sampleImages',
                     'resultGallery',
                 ]),
-            ], 201);
-
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Error en create_service', [
@@ -391,11 +393,11 @@ class ServiceController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.service.error.createService'),
-                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
-            ], 500);
+            return ApiResponse::error(
+                __('messages.service.error.createService'),
+                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                500
+            );
         }
     }
 
@@ -506,167 +508,225 @@ class ServiceController extends Controller
         try {
             $service = Service::findOrFail($id);
             $data = $request->validated();
-            /* dd($data); */
 
-            if (($data['status'] ?? null) !== $service->status) {
-                $service->update(['status' => $data['status']]);
-            }
+            Log::info("Paso validacion: ", [$data, $id]);
 
-            if (isset($data['image']) && !is_string($data['service_image'])) {
-                if (!empty($service->service_image) && Storage::disk('public')->exists($service->service_image)) {
-                    Storage::disk('public')->delete($service->service_image);
-                }
-                $path = Helpers::saveWebpFile($data['service_image'], "images/service/{$service->id}/service_image");
-                $service->update(['service_image' => $path]);
-            }
-
-            $translations = [
-                'es' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'es']),
-                'en' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'en']),
-            ];
-
-            $fields = ['title', 'description'];
-            $changed = collect($fields)->filter(fn($f) => ($data[$f] ?? '') !== $translations['es']->$f);
-
-            if ($changed->isNotEmpty()) {
-                $translations['es']->update([
-                    'title' => $data['title'],
-                    'description' => $data['description'] ?? '',
-                ]);
-
-                $translations['en']->update([
-                    'title' => $changed->contains('title')
-                        ? Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? ''
-                        : $translations['en']->title,
-                    'description' => $changed->contains('description')
-                        ? Helpers::translateBatch([$data['description'] ?? ''], 'es', 'en')[0] ?? ''
-                        : $translations['en']->description,
-                ]);
-            }
-
-            if (!empty($data['frequently_asked_questions'])) {
-                // Traer los IDs existentes de la base de datos
-                $existingFaqs = $service->frequentlyAskedQuestions()->pluck('id')->toArray();
-                $incomingIds = [];
-
-                foreach ($data['frequently_asked_questions'] as $faqData) {
-                    $faqId = $faqData['id'] ?? null;
-
-                    // Español
-                    $faqEs = $faqId
-                        ? ServiceFaq::find($faqId)
-                        : new ServiceFaq(['service_id' => $service->id, 'lang' => 'es']);
-
-                    $faqEs->fill([
-                        'question' => $faqData['question'] ?? '',
-                        'answer' => $faqData['answer'] ?? '',
-                    ])->save();
-
-                    $incomingIds[] = $faqEs->id;
-
-                    // Inglés
-                    $faqEn = ServiceFaq::firstOrNew([
-                        'service_id' => $service->id,
-                        'lang' => 'en',
-                        'id' => $faqId, // asegura que se actualice el mismo registro
-                    ]);
-
-                    $faqEn->fill([
-                        'question' => Helpers::translateBatch([$faqEs->question], 'es', 'en')[0] ?? '',
-                        'answer' => Helpers::translateBatch([$faqEs->answer], 'es', 'en')[0] ?? '',
-                    ])->save();
-                }
-
-                // Opcional: eliminar FAQs que ya no estén en el request
-                $toDelete = array_diff($existingFaqs, $incomingIds);
-                if (!empty($toDelete)) {
-                    ServiceFaq::whereIn('id', $toDelete)->delete();
-                }
-            }
-
-
-            if ($request->hasFile('sample_images')) {
-                $sample = $service->sampleImages;
-
-                // Cargamos los paths existentes (si hay)
-                $technique = $sample->technique ?? null;
-                $recovery = $sample->recovery ?? null;
-                $postoperative_care = $sample->postoperative_care ?? null;
-
-                // Procesamos cada campo nuevo solo si se envió un archivo
-                foreach (['technique', 'recovery', 'postoperative_care'] as $field) {
-                    if (isset($data['sample_images'][$field]) && !is_string($data['sample_images'][$field])) {
-                        // Borrar anterior si existía
-                        if ($sample && $sample->$field && Storage::disk('public')->exists($sample->$field)) {
-                            Storage::disk('public')->delete($sample->$field);
-                        }
-
-                        // Guardar nuevo archivo
-                        ${$field} = Helpers::saveWebpFile(
-                            $data['sample_images'][$field],
-                            "images/service/{$service->id}/sample_images"
-                        );
-                    }
-                }
-
-                // Solo un update/create con los resultados finales
-                $service->sampleImages()->updateOrCreate(
-                    ['service_id' => $service->id],
-                    compact('technique', 'recovery', 'postoperative_care')
-                );
-            }
-
-            if (isset($data['results_gallery'])) {
-                $existingImages = $service->resultGallery()->pluck('path')->toArray();
-                $newImages = [];
-
-                foreach ($data['results_gallery'] as $item) {
-                    // Si es string => imagen ya existente, se conserva
-                    if (is_string($item)) {
-                        $newImages[] = $item;
-                    }
-                    // Si es un archivo nuevo => se guarda y se agrega
-                    elseif ($item instanceof \Illuminate\Http\UploadedFile) {
-                        $path = Helpers::saveWebpFile($item, "images/service/{$service->id}/results_gallery");
-                        $newImages[] = $path;
-                        $service->resultGallery()->create(['path' => $path]);
-                    }
-                }
-
-                // 🧹 Eliminar las imágenes que estaban antes pero ya no llegan
-                $toDelete = array_diff($existingImages, $newImages);
-
-                foreach ($toDelete as $path) {
-                    if (Storage::disk('public')->exists($path)) {
-                        Storage::disk('public')->delete($path);
-                    }
-                    $service->resultGallery()->where('path', $path)->delete();
-                }
-            }
+            $this->updateServiceStatus($service, $data);
+            $this->updateServiceImage($service, $data);
+            $this->updateTranslations($service, $data);
+            $this->updateSurgeryPhases($service, $data);
+            $this->updateFaqs($service, $data);
+            $this->updateSampleImages($service, $data);
+            $this->updateResultsGallery($service, $data);
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.service.success.updateService'),
-                'data' => $service->load([
+            return ApiResponse::success(
+                __('messages.service.success.updateService'),
+                $service->load([
                     'serviceTranslation',
                     'surgeryPhases',
                     'frequentlyAskedQuestions',
                     'sampleImages',
                     'resultGallery',
                 ]),
-            ]);
+            );
 
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Error en update_service: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.service.error.updateService'),
-                'error' => $e->getMessage(),
-            ], 500);
+            return ApiResponse::error(
+                __('messages.service.error.updateService'),
+                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                500
+            );
+        }
+    }
+
+    private function updateServiceStatus(Service $service, array $data): void
+    {
+        if (isset($data['status']) && $data['status'] !== $service->status) {
+            $service->update(['status' => $data['status']]);
+        }
+
+        if (isset($data['title']) && ($data['title'] !== $service->title)) {
+            $service->update([
+                'slug' => Helpers::generateUniqueSlug(
+                    modelClass: Service::class,
+                    title: $data['title'],
+                    slugColumn: 'slug'
+                )
+            ]);
+        }
+    }
+
+    private function updateServiceImage(Service $service, array $data): void
+    {
+        if (empty($data['image']) || is_string($data['image'])) {
+            return;
+        }
+
+        if ($service->image && Storage::disk('public')->exists($service->image)) {
+            Storage::disk('public')->delete($service->image);
+        }
+
+        $path = Helpers::saveWebpFile($data['image'], "images/service/{$service->id}/service_image");
+        $service->update(['image' => $path]);
+    }
+
+    private function updateTranslations(Service $service, array $data): void
+    {
+        $translations = [
+            'es' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'es']),
+            'en' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'en']),
+        ];
+
+        $fields = ['title', 'description'];
+        $changed = collect($fields)->filter(fn($f) => isset($data[$f]) && $data[$f] !== $translations['es']->$f);
+
+        if ($changed->isEmpty()) {
+            return;
+        }
+
+        $translations['es']->update([
+            'title' => $data['title'],
+            'description' => $data['description'] ?? '',
+        ]);
+
+        $toTranslate = $changed->mapWithKeys(fn($field) => [$field => $data[$field] ?? ''])->toArray();
+        $translated = Helpers::translateBatch(array_values($toTranslate), 'es', 'en');
+
+        $translations['en']->update([
+            'title' => $changed->contains('title') ? $translated[0] : $translations['en']->title,
+            'description' => $changed->contains('description') ? $translated[1] ?? '' : $translations['en']->description,
+        ]);
+    }
+
+    private function updateSurgeryPhases(Service $service, array $data): void
+    {
+        if (empty($data['surgery_phases'])) {
+            return;
+        }
+
+        $service->surgeryPhases()->delete();
+
+        $phase = $data['surgery_phases'];
+        $service->surgeryPhases()->create($phase + ['lang' => 'es']);
+
+        $fieldsToTranslate = ['recovery_time', 'preoperative_recommendations', 'postoperative_recommendations'];
+        $toTranslate = collect($fieldsToTranslate)
+            ->filter(fn($field) => !empty($phase[$field]))
+            ->map(fn($field) => is_array($phase[$field]) ? implode(', ', $phase[$field]) : $phase[$field])
+            ->values()
+            ->toArray();
+
+        if (empty($toTranslate)) {
+            return;
+        }
+
+        $translated = Helpers::translateBatch($toTranslate, 'es', 'en');
+        $translatedData = [];
+        $index = 0;
+
+        foreach ($fieldsToTranslate as $field) {
+            if (!empty($phase[$field])) {
+                $value = $translated[$index++] ?? $phase[$field];
+                $translatedData[$field] = is_array($phase[$field]) ? explode(', ', $value) : $value;
+            }
+        }
+
+        $service->surgeryPhases()->create($translatedData + ['lang' => 'en']);
+    }
+
+    private function updateFaqs(Service $service, array $data): void
+    {
+        if (empty($data['frequently_asked_questions'])) {
+            return;
+        }
+
+        $existingIds = $service->frequentlyAskedQuestions()->pluck('id')->toArray();
+        $incomingIds = [];
+
+        foreach ($data['frequently_asked_questions'] as $faqData) {
+            $faqId = $faqData['id'] ?? null;
+
+            $faqEs = $faqId ? ServiceFaq::find($faqId) : new ServiceFaq(['service_id' => $service->id, 'lang' => 'es']);
+            $faqEs->fill([
+                'question' => $faqData['question'] ?? '',
+                'answer' => $faqData['answer'] ?? '',
+            ])->save();
+
+            $incomingIds[] = $faqEs->id;
+
+            $faqEn = ServiceFaq::firstOrNew(['service_id' => $service->id, 'lang' => 'en', 'id' => $faqId]);
+            $translations = Helpers::translateBatch([$faqEs->question, $faqEs->answer], 'es', 'en');
+
+            $faqEn->fill([
+                'question' => $translations[0] ?? '',
+                'answer' => $translations[1] ?? '',
+            ])->save();
+        }
+
+        $toDelete = array_diff($existingIds, $incomingIds);
+        if (!empty($toDelete)) {
+            ServiceFaq::whereIn('id', $toDelete)->delete();
+        }
+    }
+
+    private function updateSampleImages(Service $service, array $data): void
+    {
+        if (!isset($data['sample_images'])) {
+            return;
+        }
+
+        $sample = $service->sampleImages;
+        $fields = ['technique', 'recovery', 'postoperative_care'];
+        $updates = [];
+
+        foreach ($fields as $field) {
+            if (isset($data['sample_images'][$field]) && !is_string($data['sample_images'][$field])) {
+                if ($sample?->$field && Storage::disk('public')->exists($sample->$field)) {
+                    Storage::disk('public')->delete($sample->$field);
+                }
+
+                $updates[$field] = Helpers::saveWebpFile(
+                    $data['sample_images'][$field],
+                    "images/service/{$service->id}/sample_images"
+                );
+            } else {
+                $updates[$field] = $sample?->$field;
+            }
+        }
+
+        $service->sampleImages()->updateOrCreate(['service_id' => $service->id], $updates);
+    }
+
+    private function updateResultsGallery(Service $service, array $data): void
+    {
+        if (!isset($data['results_gallery'])) {
+            return;
+        }
+
+        $existingImages = $service->resultGallery()->pluck('path')->toArray();
+        $newImages = [];
+
+        foreach ($data['results_gallery'] as $item) {
+            if (is_string($item)) {
+                $newImages[] = Helpers::removeAppUrl($item);
+            } elseif ($item instanceof \Illuminate\Http\UploadedFile) {
+                $path = Helpers::saveWebpFile($item, "images/service/{$service->id}/results_gallery");
+                $newImages[] = $path;
+                $service->resultGallery()->create(['path' => $path]);
+            }
+        }
+
+        $toDelete = array_diff($existingImages, $newImages);
+        foreach ($toDelete as $path) {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+            $service->resultGallery()->where('path', $path)->delete();
         }
     }
 
@@ -680,18 +740,17 @@ class ServiceController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.service.success.deleteService')
-            ]);
+            return ApiResponse::success(
+                __('messages.service.success.deleteService')
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Error en delete_service: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.error.success.deleteService'),
-                'error' => $e->getMessage()
-            ], 500);
+            return ApiResponse::error(
+                __('messages.error.success.deleteService'),
+                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                500
+            );
         }
     }
 
@@ -705,31 +764,16 @@ class ServiceController extends Controller
             ]);
             $service->update(['status' => $data['status']]);
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.service.success.updateStatus'),
-                'data' => $service
-            ]);
+            return ApiResponse::success(
+                __('messages.service.success.updateStatus'),
+                $service
+            );
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.service.error.updateStatus'),
-                'error' => $e->getMessage()
-            ], 500);
+            return ApiResponse::error(
+                __('messages.service.error.updateStatus'),
+                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                500
+            );
         }
-    }
-
-    public function generateUniqueSlug($title)
-    {
-        $slug = Str::slug($title);
-        $originalSlug = $slug;
-        $count = 1;
-
-        while (Service::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count;
-            $count++;
-        }
-
-        return $slug;
     }
 }

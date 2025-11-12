@@ -120,16 +120,15 @@ class DesignController extends Controller
                 $response['carouselStatic']['imageVideo'] = $formatStoredPath($iv);
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $response
-            ]);
+            return ApiResponse::success(
+                data: $response
+            );
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'messages' => __('messages.design.error.getDesign') ?? 'Error fetching design',
-                'error' => $e->getMessage()
-            ], 500);
+
+            return ApiResponse::error(
+                message: __('messages.design.error.getDesign'),
+                code: 500
+            );
         }
     }
 
@@ -233,17 +232,17 @@ class DesignController extends Controller
                 $iv = DesignItem::getOne($imageVideoSetting->id, $locale);
                 $response['carouselStatic']['imageVideo'] = $formatStoredPath($iv);
             }
-
-            return response()->json([
-                'success' => true,
-                'data' => $response
-            ]);
+            Log::info("Design: ", [$response]);
+            return ApiResponse::success(
+                data: $response
+            );
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'messages' => __('messages.design.error.getDesign') ?? 'Error fetching design',
-                'error' => $e->getMessage()
-            ], 500);
+            return ApiResponse::error(
+                __('messages.design.error.getDesign') ?? 'Error fetching design',
+                ['execption' => $e->getMessage()],
+                500
+            );
+
         }
     }
 
@@ -366,7 +365,6 @@ class DesignController extends Controller
         return null;
     }
 
-
     private function syncCarouselItems($designId, $carouselUrls)
     {
         $existingItems = DesignItem::where('design_id', $designId)
@@ -484,7 +482,7 @@ class DesignController extends Controller
                             $updateData['path'] = Helpers::saveWebpFile($url, "images/design/background/{$backgroundType}");
                         } elseif (str_starts_with($mimeType, 'video/')) {
                             // Procesar como video
-                            $updateData['path'] = $this->saveVideoFile($url, "images/design/background/{$backgroundType}");
+                            $updateData['path'] = Helpers::saveVideoFile($url, "images/design/background/{$backgroundType}");
                         }
                     }
 
@@ -547,15 +545,6 @@ class DesignController extends Controller
                 500
             );
         }
-    }
-
-    /**
-     * Guardar archivo de video
-     */
-    private function saveVideoFile(UploadedFile $file, string $path): string
-    {
-        $filename = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
-        return $file->storeAs($path, $filename, 'public');
     }
 
     ////////////////////////////////////////////////////

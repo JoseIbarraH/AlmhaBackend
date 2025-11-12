@@ -33,7 +33,9 @@ return [
             'createBlog' => 'Error al crear el blog inicial',
             'updateBlog' => 'Error al actualizar el blog',
             'deleteBlog' => 'Error al eliminar el blog',
-            'updateStatus' => 'Estado actualizado correctamente'
+            'updateStatus' => 'Error al actualizar el estado',
+            'uploadImage' => 'Error al subir la imagen',
+            'deleteImage' => 'Imagen no encontrada',
         ]
     ],
     'teamMember' => [
@@ -59,17 +61,29 @@ return [
             'carouselImage' => 'Carousel e Imagen actualizados correctamente',
             'backgrounds' => 'Fondos actualizados correctamente',
             'carouselNavbar' => 'Carousel del navbar actualizado correctamente',
-            'carouselTool' => 'Carousel de herramientas actualizado correctamente'
+            'carouselTool' => 'Carousel de herramientas actualizado correctamente',
+            'getDesign' => 'Diseños obtenidos correctamente'
         ],
         'error' => [
             'carouselImage' => 'Error al actualizar el carrusel o la imagen',
             'backgrounds' => 'Error al actualizar los fondos',
             'carouselNavbar' => 'Error al actualizar el carousel del navbar',
-            'carouselTool' => 'Error al actualizar el carousel de herramientas'
+            'carouselTool' => 'Error al actualizar el carousel de herramientas',
+            'getDesign' => 'Error al obtener los diseños'
         ]
     ],
     'profile' => [
-        'infoProfile' => 'Perfil actualizado correctamente'
+        'success' => [
+            'infoProfile' => 'Perfil actualizado correctamente',
+            'updatePassword' => 'Contraseña actualizada correctamente'
+        ],
+        'error' => [
+            'updatePassword' => 'Error al actualizar la contraseña'
+        ]
+    ],
+    'auth' => [
+        'success' => [
+            
+        ]
     ]
-
 ];

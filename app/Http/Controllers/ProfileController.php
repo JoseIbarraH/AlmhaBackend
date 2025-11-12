@@ -31,7 +31,6 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
-        Log::info('Llegada: ', [$request->all()]);
         try {
             $user = $request->user();
 
@@ -47,8 +46,6 @@ class ProfileController extends Controller
             }
 
             $user->save();
-
-            Log::info('Perfil actualizado correctamente', ['user_id' => $user->id]);
 
             return ApiResponse::success(
                 __('messages.profile.infoProfile'),

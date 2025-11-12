@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -16,6 +15,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+            $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
@@ -35,6 +35,52 @@ return new class extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
+
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id();
+            $table->string('code')->unique();
+            $table->timestamps();
+        });
+
+        Schema::create('role_translations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('role_id')->constrained()->cascadeOnDelete();
+            $table->string('lang', 5);
+            $table->string('title');
+            $table->string('description')->nullable();
+            $table->timestamps();
+
+            $table->unique(['role_id', 'lang']);
+        });
+
+        Schema::create('role_user', function (Blueprint $table) {
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('role_id')->constrained()->onDelete('cascade');
+            $table->primary(['user_id', 'role_id']);
+        });
+
+        Schema::create('permissions', function (Blueprint $table) {
+            $table->id();
+            $table->string('code')->unique();
+            $table->timestamps();
+        });
+
+        Schema::create('permission_translations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('permission_id')->constrained()->cascadeOnDelete();
+            $table->string('lang', 5);
+            $table->string('title');
+            $table->string('description')->nullable();
+            $table->timestamps();
+
+            $table->unique(['permission_id', 'lang']);
+        });
+
+        Schema::create('permission_role', function (Blueprint $table) {
+            $table->foreignId('role_id')->constrained()->onDelete('cascade');
+            $table->foreignId('permission_id')->constrained()->onDelete('cascade');
+            $table->primary(['role_id', 'permission_id']);
+        });
     }
 
     /**
@@ -45,5 +91,11 @@ return new class extends Migration
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('roles');
+        Schema::dropIfExists('role_translations');
+        Schema::dropIfExists('role_user');
+        Schema::dropIfExists('permissions');
+        Schema::dropIfExists('permission_translations');
+        Schema::dropIfExists('role_permission');
     }
 };

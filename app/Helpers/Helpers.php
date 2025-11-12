@@ -9,18 +9,9 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
+
 class Helpers
 {
-
-    /* public static function saveWebpFile(UploadedFile $file, string $folder): string
-    {
-        $manager = new ImageManager(new Driver());
-        $image = $manager->read($file)->toWebp(80);
-        $filename = time() . '_' . pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '.webp';
-        $path = trim($folder, '/') . '/' . $filename;
-        Storage::disk('public')->put($path, $image);
-        return $path;
-    } */
 
     public static function saveWebpFile(UploadedFile $file, string $folder): string
     {
@@ -32,6 +23,12 @@ class Helpers
         Storage::disk('public')->put($path, $image);
 
         return $path;
+    }
+
+    public static function saveVideoFile(UploadedFile $file, string $path): string
+    {
+        $filename = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
+        return $file->storeAs($path, $filename, 'public');
     }
 
     public static function saveWebpFileWaterMaker(UploadedFile $file, string $folder): string
@@ -85,6 +82,8 @@ class Helpers
         return $translations;
     }
 
+
+
     public static function removeAppUrl(string $url): string
     {
         $appUrl = config('app.url');
@@ -96,5 +95,17 @@ class Helpers
         return $url;
     }
 
+    public static function generateUniqueSlug(string $modelClass, string $title, string $slugColumn = 'slug'): string
+    {
+        $slug = Str::slug($title);
+        $originalSlug = $slug;
+        $count = 1;
 
+        while ($modelClass::where($slugColumn, $slug)->exists()) {
+            $slug = "{$originalSlug}-{$count}";
+            $count++;
+        }
+
+        return $slug;
+    }
 }

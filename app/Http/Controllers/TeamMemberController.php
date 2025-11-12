@@ -88,6 +88,53 @@ class TeamMemberController extends Controller
     public function get_teamMember($id, Request $request)
     {
         try {
+            $locale = 'es';
+
+            $team = TeamMember::with([
+                'teamMemberTranslations' => fn($q) => $q->where('lang', $locale),
+                'teamMemberImages' => fn($q) => $q->where('lang', $locale),
+            ])->findOrFail($id);
+
+            // Obtener traducción del idioma solicitado
+            $translation = $team->teamMemberTranslations?->first();
+
+            $data = [
+                'id' => $team->id,
+                'status' => $team->status,
+                'name' => $team->name ?? '',
+                'image' => url('storage', $team->image),
+                'biography' => $translation->biography ?? '',
+                'specialization' => $translation->specialization ?? '',
+                'results' => $team->teamMemberImages->map(fn($img) => [
+                    'id' => $img->id,
+                    'team_member_id' => $img->team_member_id,
+                    'lang' => $img->lang,
+                    'url' => url('storage', $img->url), // 👈 agrega el dominio
+                    'description' => $img->description,
+                    'created_at' => $img->created_at,
+                    'updated_at' => $img->updated_at,
+                ]),
+                'created_at' => $team->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $team->updated_at->format('Y-m-d H:i:s'),
+            ];
+            return ApiResponse::success(
+                __('messages.teamMember.success.getTeamMember'),
+                $data
+            );
+
+        } catch (\Throwable $e) {
+            Log::error('Error en get_service: ' . $e->getMessage());
+            return ApiResponse::error(
+                __('messages.teamMember.error.getTeamMember'),
+                [['exception' => $e->getMessage()]],
+                500
+            );
+        }
+    }
+
+    public function get_teamMember_client($id, Request $request)
+    {
+        try {
             $locale = $request->query('locale', app()->getLocale()); // o 'es' por default
 
             $team = TeamMember::with([
@@ -118,19 +165,18 @@ class TeamMemberController extends Controller
                 'updated_at' => $team->updated_at->format('Y-m-d H:i:s'),
             ];
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.teamMember.success.getTeamMember'),
-                'data' => $data,
-            ]);
+            return ApiResponse::success(
+                __('messages.teamMember.success.getTeamMember'),
+                $data
+            );
 
         } catch (\Throwable $e) {
             Log::error('Error en get_service: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.teamMember.error.getTeamMember'),
-                'error' => $e->getMessage(),
-            ], 500);
+            return ApiResponse::error(
+                __('messages.teamMember.error.getTeamMember'),
+                [['exception' => $e->getMessage()]],
+                500
+            );
         }
     }
 
@@ -394,19 +440,19 @@ class TeamMemberController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.teamMember.success.delete_teamMember')
-            ], 200);
+            return ApiResponse::success(
+                __('messages.teamMember.success.delete_teamMember')
+            );
+
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Error en update_teamMember: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.teamMember.error.delete_teamMember'),
-                'error' => $e->getMessage(),
-            ], 500);
+            return ApiResponse::error(
+                __('messages.teamMember.error.delete_teamMember'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -421,18 +467,18 @@ class TeamMemberController extends Controller
             $team->update(['status' => $data['status']]);
 
             DB::commit();
-            return response()->json([
-                'success' => true,
-                'message' => __('messages.teamMember.success.updateStatus'),
-                'data' => $team
-            ]);
+            return ApiResponse::success(
+                __('messages.teamMember.success.updateStatus'),
+                $data
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.teamMember.error.updateStatus'),
-                'error' => $e->getMessage()
-            ], 500);
+
+            return ApiResponse::error(
+                __('messages.teamMember.error.updateStatus'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 }

@@ -32,10 +32,15 @@ class StoreRequest extends FormRequest
             'description' => 'required|string',
 
             // Fases quirúrgicas
-            'surgery_phases' => 'array|nullable',
-            'surgery_phases.*.recovery_time' => 'required_with:surgery_phases.*|string',
-            'surgery_phases.*.preoperative_recommendations' => 'required_with:surgery_phases.*|string',
-            'surgery_phases.*.postoperative_recommendations' => 'required_with:surgery_phases.*|string',
+            'surgery_phases' => 'nullable|array',
+            'surgery_phases.recovery_time' => 'nullable|array',
+            'surgery_phases.recovery_time.*' => 'string',
+
+            'surgery_phases.preoperative_recommendations' => 'nullable|array',
+            'surgery_phases.preoperative_recommendations.*' => 'string',
+
+            'surgery_phases.postoperative_recommendations' => 'nullable|array',
+            'surgery_phases.postoperative_recommendations.*' => 'string',
 
             // Preguntas frecuentes
             'frequently_asked_questions' => 'array|nullable',
