@@ -4,11 +4,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Traits\LogsActivity;
 
 class TeamMember extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',

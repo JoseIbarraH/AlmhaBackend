@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\LogsActivity;
 
 class Blog extends Model
 {
+    use HasFactory, LogsActivity;
+
     protected $fillable = [
         'user_id',
         'slug',

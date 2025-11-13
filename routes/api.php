@@ -63,7 +63,8 @@ Route::prefix('design')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
     Route::post('/info', [ProfileController::class, 'update']);
-    Route::put('password', [PasswordController::class, 'update']);
+    Route::post('/password', [PasswordController::class, 'update']);
+    Route::delete('/delete', [ProfileController::class, 'destroy']);
 });
 
 require __DIR__ . '/auth.php';
