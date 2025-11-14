@@ -36,18 +36,36 @@ Route::prefix('blog')->group(function () {
     });
 });
 
-Route::prefix('team_member')->group(function () {
+/* Route::prefix('team_member')->group(function () {
     Route::get('/', [TeamMemberController::class, 'list_teamMember']);
     Route::get('/client/{id}', [TeamMemberController::class, 'get_teamMember_client']);
 
     Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/{id}', [TeamMemberController::class, 'get_teamMember']);
-        Route::post('/', [TeamMemberController::class, 'create_teamMember']);
-        Route::match(['post', 'put', 'patch'], '/{id}', [TeamMemberController::class, 'update_teamMember']);
-        Route::delete('/{id}', [TeamMemberController::class, 'delete_teamMember']);
-        Route::post('/update_status/{id}', [TeamMemberController::class, 'update_status']);
+        Route::get('/{id}', [TeamMemberController::class, 'get_teamMember'])->middleware('permission:view_team');
+        Route::post('/', [TeamMemberController::class, 'create_teamMember'])->middleware('permission:create_team');
+        Route::match(['post', 'put', 'patch'], '/{id}', [TeamMemberController::class, 'update_teamMember'])->middleware('permission:update_team');
+        Route::delete('/{id}', [TeamMemberController::class, 'delete_teamMember'])->middleware('permission:delete_team');
+        Route::post('/update_status/{id}', [TeamMemberController::class, 'update_status'])->middleware('permission:update_team_status');
+    });
+}); */
+
+Route::prefix('team_member')->controller(TeamMemberController::class)->group(function () {
+
+    // Públicas
+    Route::get('/client', 'list_teamMember_client');
+    Route::get('/client/{id}', 'get_teamMember_client');
+
+    // Protegidas
+    Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
+        Route::get('/', 'list_teamMember');
+        Route::get('/{id}', 'get_teamMember');
+        Route::post('/', 'create_teamMember');
+        Route::match(['post', 'put', 'patch'], '/{id}', 'update_teamMember');
+        Route::delete('/{id}', 'delete_teamMember');
+        Route::post('/update_status/{id}', 'update_status');
     });
 });
+
 
 Route::prefix('design')->group(function () {
 

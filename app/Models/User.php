@@ -23,6 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'status'
     ];
 
     /**
@@ -60,7 +61,12 @@ class User extends Authenticatable
 
     public function hasPermission($permissionCode)
     {
-        return $this->roles->flatMap->permissions->contains('code', $permissionCode);
+        return $this->roles()
+            ->where('status', 'active') // solo roles activos
+            ->whereHas('permissions', function ($q) use ($permissionCode) {
+                $q->where('code', $permissionCode);
+            })
+            ->exists();
     }
 
 }

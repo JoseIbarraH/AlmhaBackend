@@ -2,16 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Http\Requests\ProfileUpdateRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Responses\ApiResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
@@ -58,21 +54,63 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
+        DB::beginTransaction();
 
-        $user = $request->user();
+        try {
+            $request->validate([
+                'password' => ['required', 'current_password'],
+            ]);
 
-        Auth::logout();
+            $user = $request->user();
 
-        $user->delete();
+            Auth::guard('web')->logout();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+            $user->update([
+                'status' => 'inactive',
+            ]);
 
-        return Redirect::to('/');
+            $user->tokens()->delete();
+
+            // Invalidar sesión
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            DB::commit();
+
+            return ApiResponse::success(
+                message: __('messages.profile.success.deactivateAccount'),
+                code: 200
+            );
+
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            \Log::error("❌ Deactivate User Error 1:", [
+                'user_id' => $request->user()->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return ApiResponse::error(
+                message: __('messages.profile.error.invalidPassword'),
+                code: 422,
+                errors: $e->errors()
+            );
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error("❌ Deactivate User Error 2:", [
+                'user_id' => $request->user()->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return ApiResponse::error(
+                message: __('messages.profile.error.deactivateAccount'),
+                code: 500
+            );
+        }
     }
+
+
 }

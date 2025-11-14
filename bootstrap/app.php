@@ -21,7 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
             'token.not.expired' => \App\Http\Middleware\EnsureAccessTokenNotExpired::class,
-            'permission' => \App\Http\Middleware\PermissionMiddleware::class
+            'permission' => \App\Http\Middleware\PermissionMiddleware::class,
+            'permission.map' => \App\Http\Middleware\PermissionMapperMiddleware::class,
         ]);
 
         //

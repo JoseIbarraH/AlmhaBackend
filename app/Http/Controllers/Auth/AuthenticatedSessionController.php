@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Responses\ApiResponse;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Http\Request;
 
@@ -13,6 +14,8 @@ class AuthenticatedSessionController extends Controller
 
     public function store(Request $request)
     {
+        DB::beginTransaction();
+
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -22,31 +25,27 @@ class AuthenticatedSessionController extends Controller
         $credentials = $request->only('email', 'password');
         $remember = $request->boolean('remember');
 
-        // Intentar autenticar con el guard correcto
         if (!Auth::guard('web')->attempt($credentials, $remember)) {
+            DB::rollBack();
             return ApiResponse::error(
                 message: 'Credenciales inválidas',
                 code: 401
             );
         }
 
-        // Regenerar sesión para prevenir session fixation
         $request->session()->regenerate();
 
-        // Cargar usuario con roles y permisos
         $user = Auth::guard('web')->user()->load('roles.permissions');
 
-        // Validar si el usuario está activo
         if ($user->status !== 'active') {
-            Auth::guard('web')->logout(); // usar el guard correcto
-
+            Auth::guard('web')->logout();
+            DB::rollBack();
             return ApiResponse::error(
                 message: 'Este usuario se encuentra deshabilitado. Por favor contacte al administrador.',
                 code: 403
             );
         }
-
-        // Retornar usuario autenticado con ApiResponse
+        DB::commit();
         return ApiResponse::success(
             'Autenticación exitosa',
             $user

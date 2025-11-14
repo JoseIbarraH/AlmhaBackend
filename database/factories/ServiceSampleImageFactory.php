@@ -14,7 +14,7 @@ class ServiceSampleImageFactory extends Factory
         return [
             'technique' => $this->faker->sentence(6),
             'recovery' => $this->faker->sentence(10),
-            'postoperative_care' => $this->faker->paragraph(),
+            'postoperative_care' => $this->faker->sentence(10),
         ];
     }
 }

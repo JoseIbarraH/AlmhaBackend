@@ -17,6 +17,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Jose Carlos Ibarra Herrera',
                 'password' => Hash::make('12345678'), // cambia la contraseña después
+                'status' => 'active'
             ]
         );
 

@@ -39,6 +39,7 @@ return new class extends Migration {
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
+            $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->timestamps();
         });
 
@@ -88,14 +89,14 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
-        Schema::dropIfExists('roles');
         Schema::dropIfExists('role_translations');
         Schema::dropIfExists('role_user');
-        Schema::dropIfExists('permissions');
         Schema::dropIfExists('permission_translations');
-        Schema::dropIfExists('role_permission');
+        Schema::dropIfExists('permission_role');
+        Schema::dropIfExists('permissions');
+        Schema::dropIfExists('roles');
+        Schema::dropIfExists('users');
     }
 };

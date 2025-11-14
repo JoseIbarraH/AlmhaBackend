@@ -13,10 +13,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([ServiceSeeder::class]);
-        /* $this->call(BlogSeeder::class);
+        /* php artisan migrate:fresh --seed */
+
         $this->call(UserSeeder::class);
+        $this->call(BlogSeeder::class);
+        $this->call(ServiceSeeder::class);
         $this->call(TeamMemberSeeder::class);
-        $this->call(RolesAndPermissionsSeeder::class); */
+        $this->call(RolesAndPermissionsSeeder::class);
     }
 }

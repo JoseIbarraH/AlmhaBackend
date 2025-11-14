@@ -75,15 +75,18 @@ return [
     'profile' => [
         'success' => [
             'infoProfile' => 'Perfil actualizado correctamente',
-            'updatePassword' => 'Contraseña actualizada correctamente'
+            'updatePassword' => 'Contraseña actualizada correctamente',
+            'deleteAccount' => 'Cuenta eliminada correctamente'
         ],
         'error' => [
-            'updatePassword' => 'Error al actualizar la contraseña'
+            'updatePassword' => 'Error al actualizar la contraseña',
+            'invalidPassword' => 'Contraseña incorrecta',
+            'deleteAccount' => 'Error al eliminar la cuenta'
         ]
     ],
     'auth' => [
         'success' => [
-            
+
         ]
     ]
 ];

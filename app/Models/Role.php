@@ -7,7 +7,12 @@ use App\Models\RoleTranslation;
 
 class Role extends Model
 {
-    protected $fillable = ['code'];
+    protected $fillable = ['code', 'status'];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class);
+    }
 
     public function translations()
     {
