@@ -1,8 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Setting;
 
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rules\Password;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +18,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(Request $request)
+    public function update_account(Request $request)
     {
         try {
             $user = $request->user();
@@ -54,7 +57,7 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request)
+    public function destroy_account(Request $request)
     {
         DB::beginTransaction();
 
@@ -112,5 +115,41 @@ class ProfileController extends Controller
         }
     }
 
+    public function change_password(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'current_password' => ['required', 'current_password'],
+                'password' => ['required', Password::defaults(), 'confirmed'],
+            ]);
 
+            $request->user()->update([
+                'password' => Hash::make($validated['password']),
+            ]);
+
+            return ApiResponse::success(
+                message: __('messages.profile.success.updatePassword'),
+                code: 200
+            );
+
+        } catch (ValidationException $e) {
+            // Captura específica de errores de validación
+            $errors = $e->validator->errors()->all();
+
+            return ApiResponse::error(
+                message: $errors[0] ?? __('messages.profile.error.updatePassword'),
+                errors: $errors[0],
+                code: 422
+            );
+
+        } catch (\Throwable $e) {
+            // Cualquier otro error inesperado
+            Log::error("Password Error: ", [$e]);
+
+            return ApiResponse::error(
+                message: __('messages.profile.error.updatePassword'),
+                code: 500
+            );
+        }
+    }
 }

@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Setting\ProfileController;
+use App\Http\Controllers\Setting\RoleController;
 use App\Http\Controllers\TeamMemberController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\BlogController;
@@ -36,19 +36,6 @@ Route::prefix('blog')->group(function () {
     });
 });
 
-/* Route::prefix('team_member')->group(function () {
-    Route::get('/', [TeamMemberController::class, 'list_teamMember']);
-    Route::get('/client/{id}', [TeamMemberController::class, 'get_teamMember_client']);
-
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/{id}', [TeamMemberController::class, 'get_teamMember'])->middleware('permission:view_team');
-        Route::post('/', [TeamMemberController::class, 'create_teamMember'])->middleware('permission:create_team');
-        Route::match(['post', 'put', 'patch'], '/{id}', [TeamMemberController::class, 'update_teamMember'])->middleware('permission:update_team');
-        Route::delete('/{id}', [TeamMemberController::class, 'delete_teamMember'])->middleware('permission:delete_team');
-        Route::post('/update_status/{id}', [TeamMemberController::class, 'update_status'])->middleware('permission:update_team_status');
-    });
-}); */
-
 Route::prefix('team_member')->controller(TeamMemberController::class)->group(function () {
 
     // Públicas
@@ -66,7 +53,6 @@ Route::prefix('team_member')->controller(TeamMemberController::class)->group(fun
     });
 });
 
-
 Route::prefix('design')->group(function () {
 
     Route::get('/', [DesignController::class, 'get_design']);
@@ -79,10 +65,17 @@ Route::prefix('design')->group(function () {
     });
 });
 
-Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
-    Route::post('/info', [ProfileController::class, 'update']);
-    Route::post('/password', [PasswordController::class, 'update']);
-    Route::delete('/delete', [ProfileController::class, 'destroy']);
+Route::middleware('auth:sanctum')->prefix('setting')->group(function () {
+    Route::prefix('profile')->controller(ProfileController::class)->group(function () {
+        Route::post('/info', 'update_account');
+        Route::post('/password', 'change_password');
+        Route::delete('/delete', 'destroy_account');
+    });
+
+    Route::prefix('role')->controller(RoleController::class)->group( function () {
+        Route::post('/', 'create_role');
+        Route::patch('/{id}', 'update_role');
+    });
 });
 
 require __DIR__ . '/auth.php';

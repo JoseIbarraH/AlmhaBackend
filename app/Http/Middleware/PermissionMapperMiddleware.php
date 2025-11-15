@@ -12,10 +12,10 @@ class PermissionMapperMiddleware
         $user = $request->user();
 
         if (!$user) {
-            \Log::warning("🚫 Request sin autenticación", [
+            /* \Log::warning("🚫 Request sin autenticación", [
                 'ip' => $request->ip(),
                 'route' => $request->path(),
-            ]);
+            ]); */
 
             return response()->json(['error' => 'No autenticado'], 401);
         }
@@ -28,28 +28,25 @@ class PermissionMapperMiddleware
         $module = str_replace('Controller', '', $controller);
         $module = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $module));
 
-        // Sacar key del método
-        $key = explode('_', $action)[0];
-
         // Buscar permiso
-        $permission = config("permissions.$module.$key");
+        $permission = config("permissions.$module.$action");
 
         // Si NO existe en el mapa de permisos
         if (!$permission) {
-            \Log::warning("⚠️ No permission mapping found for route", [
+            /* \Log::warning("⚠️ No permission mapping found for route", [
                 'module_detected' => $module,
                 'action_method' => $action,
-                'key_generated' => $key,
-                'expected_config_path' => "permissions.$module.$key",
+                'key_generated' => $action,
+                'expected_config_path' => "permissions.$module.$action",
                 'route' => $request->path(),
                 'http_method' => $request->method(),
-            ]);
+            ]); */
 
             // Dejamos pasar sin bloquear
             return $next($request);
         }
 
-        \Log::info("🔍 Permission check initiated", [
+        /* \Log::info("🔍 Permission check initiated", [
             'user_id' => $user->id,
             'roles' => $user->roles->pluck('name'),
             'module' => $module,
@@ -58,24 +55,25 @@ class PermissionMapperMiddleware
             'route' => $request->path(),
             'http_method' => $request->method(),
         ]);
+        */
 
-        // Verificar permiso
         if (!$user->hasPermission($permission)) {
-            \Log::error("⛔ Permission denied", [
+
+            /* \Log::error("⛔ Permission denied", [
                 'user_id' => $user->id,
                 'user_permissions' => $user->permissions->pluck('name'),
                 'missing_permission' => $permission,
                 'module' => $module,
                 'method' => $action,
-            ]);
+            ]); */
 
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
-        \Log::info("✅ Permission granted", [
+        /* \Log::info("✅ Permission granted", [
             'user_id' => $user->id,
             'permission' => $permission
-        ]);
+        ]); */
 
         return $next($request);
     }

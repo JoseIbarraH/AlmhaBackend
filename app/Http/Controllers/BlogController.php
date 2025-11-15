@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
 use App\Models\BlogTranslation;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use App\Helpers\Helpers;
 use App\Models\Blog;
 

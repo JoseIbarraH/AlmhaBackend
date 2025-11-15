@@ -15,10 +15,10 @@ class DatabaseSeeder extends Seeder
     {
         /* php artisan migrate:fresh --seed */
 
+        $this->call(RolesAndPermissionsSeeder::class);
         $this->call(UserSeeder::class);
         $this->call(BlogSeeder::class);
-        $this->call(ServiceSeeder::class);
         $this->call(TeamMemberSeeder::class);
-        $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(ServiceSeeder::class);
     }
 }

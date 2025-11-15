@@ -4,12 +4,12 @@ return [
 
     // Permisos para team_member
     'team_member' => [
-        'list'           => 'view_team',
-        'get'            => 'view_team',
-        'create'         => 'create_team',
-        'update'         => 'update_team',
-        'delete'         => 'delete_team',
-        'update_status'  => 'update_team_status'
+        'list_teamMember'           => 'view_team',
+        'get_teamMember'            => 'view_team',
+        'create_teamMember'         => 'create_team',
+        'update_teamMember'         => 'update_team',
+        'delete_teamMember'         => 'delete_team',
+        'update_status'             => 'update_team_status'
     ],
 
 

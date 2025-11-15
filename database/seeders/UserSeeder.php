@@ -2,8 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Seeder;
+use App\Models\Permission;
 use App\Models\User;
 use App\Models\Role;
 
@@ -11,6 +12,16 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        $superAdminRole = Role::firstOrCreate(
+            ['code' => 'super_admin'],
+            [
+                'title' => 'Super Administrador',
+                'description' => 'Acceso completo a todo el sistema'
+            ]
+        );
+        $allPermissions = Permission::pluck('id');
+        $superAdminRole->permissions()->sync($allPermissions);
+
         // 🔹 Crear usuario inicial
         $user = User::firstOrCreate(
             ['email' => 'jcibarrah1423@gmail.com'], // evita duplicados
@@ -21,11 +32,9 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // 🔹 Asignar rol super_admin
-        $superAdminRole = Role::where('code', 'super_admin')->first();
-
         if ($superAdminRole) {
-            $user->roles()->syncWithoutDetaching([$superAdminRole->id]);
+            $user->roles()->sync([$superAdminRole->id]);
+            echo "Asigno Rol. \n";
         }
 
         echo "✅ Usuario super_admin creado correctamente.\n";
