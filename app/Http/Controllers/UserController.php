@@ -26,4 +26,41 @@ class UserController extends Controller
         ]);
     }
 
+    public function list_user(Request $request)
+    {
+        try {
+            $locale = $request->query('locale', app()->getLocale());
+            $perPage = 5;
+
+            $query = User::select('id', 'name', 'email');
+
+            // Buscar solo por nombre y email
+            if ($request->filled('search')) {
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+
+            $users = $query->paginate($perPage)->appends($request->only('search'));
+
+            return ApiResponse::success(
+                __('messages.user.success.list'),
+                $users
+            );
+        } catch (\Throwable $th) {
+            \Log::error("Error list_user: ", [$th]);
+
+            return ApiResponse::error(
+                __('messages.user.error.list'),
+                ['error' => $th->getMessage()],
+                500
+            );
+        }
+    }
+
+
+
 }

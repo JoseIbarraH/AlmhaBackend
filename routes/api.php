@@ -82,7 +82,8 @@ Route::middleware('auth:sanctum')->prefix('setting')->group(function () {
         Route::get('/', 'list_role');
         Route::get('/permits', 'list_permission');
         Route::post('/', 'create_role');
-        Route::patch('/{id}', 'update_role');
+        Route::match(['post', 'put', 'patch'],'/{id}', 'update_role');
+        Route::post('/update_status/{id}', 'update_status');
     });
 });
 

@@ -90,7 +90,8 @@ return [
             'createRoles' => 'Rol creado correctamente',
             'updateRoles' => 'Rol actualizado correctamente',
             'updateStatus' => 'Estado del Rol actualizado correctamente',
-            'deleteRole' => 'Rol eliminado correctamente'
+            'deleteRole' => 'Rol eliminado correctamente',
+
         ],
         'error' => [
             'listRoles' => 'Error al obtener la lista de roles',
@@ -98,7 +99,8 @@ return [
             'updateRoles' => 'Error al actualizar el rol',
             'updateStatus' => 'Error al actualizar el estado del rol',
             'deleteRole' => 'Error al eliminar el rol',
-            'deleteAdminRole' => 'No puedes eliminar el rol Super Admin'
+            'deleteAdminRole' => 'No puedes eliminar el rol Super Admin',
+            'updateAdminRole' => 'No puedes deshabilitar el rol Super Admin'
         ]
     ],
     'permission' => [

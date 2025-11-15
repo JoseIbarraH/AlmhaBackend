@@ -16,90 +16,130 @@ class RoleController extends Controller
 {
     public function create_role(Request $request)
     {
+        \Log::info("llego: ", [$request->all()]);
         DB::beginTransaction();
+
         try {
+            // 1. VALIDACIÓN
             $request->validate([
-                'code' => 'required|string|unique:roles',
-                'title' => 'required|string|unique:roles',
+                'code' => 'required|string|unique:roles,code',
+                'title' => 'required|string|unique:role_translations,title',
                 'description' => 'nullable|string',
+                'status' => 'required|in:active,inactive',
                 'permits' => 'nullable|array',
-                'permits.*' => 'integer|exists:permissions,id',
+                'permits.*' => 'string|exists:permissions,code', // valida códigos
             ]);
 
+            \Log::info("llego y valido: ", [$request->all()]);
+
+            // 2. SI NO HAY CODE SE GENERA DEL TITLE
             $code = $request->code ?? Str::slug($request->title, '_');
 
+            // 3. CREAR ROLE
             $role = Role::create([
                 'code' => $code,
-                'status' => 'inactive,'
+                'status' => $request->status,
             ]);
 
+            // 4. TRANSLATIONS
             RoleTranslation::create([
+                'role_id' => $role->id,
                 'lang' => 'es',
                 'title' => $request->title,
                 'description' => $request->description
             ]);
 
             RoleTranslation::create([
+                'role_id' => $role->id,
                 'lang' => 'en',
                 'title' => Helpers::translateBatch([$request->title])[0] ?? '',
                 'description' => Helpers::translateBatch([$request->description])[0] ?? ''
             ]);
 
+            // 5. SYNC PERMISOS (por código → se convierten a IDs)
             if ($request->filled('permits')) {
-                $role->permissions()->sync($request->permits);
+                $permissionIds = Permission::whereIn('code', $request->permits)->pluck('id')->toArray();
+                $role->permissions()->sync($permissionIds);
             }
 
             DB::commit();
+
             return ApiResponse::success(
                 __('messages.role.success.createRoles'),
                 $role,
                 201
             );
+
         } catch (\Throwable $th) {
             DB::rollBack();
+            \Log::info("Error? ", [$th]);
+
             return ApiResponse::error(
                 __('messages.role.error.createRoles'),
-                $role,
+                ['error' => $th->getMessage()],
                 500
             );
         }
-
     }
 
     public function update_role(Request $request, $id)
     {
         DB::beginTransaction();
+
         try {
+
             $role = Role::findOrFail($id);
+
+            // buscar traducción ES
+            $translationEs = RoleTranslation::where('role_id', $role->id)
+                ->where('lang', 'es')
+                ->first();
 
             $request->validate([
                 'code' => 'required|string|unique:roles,code,' . $role->id,
-                'title' => 'required|string|unique:roles,title,' . $role->id,
+                'title' => 'required|string|unique:role_translations,title,' . ($translationEs->id ?? 'NULL'),
                 'description' => 'nullable|string',
                 'permits' => 'nullable|array',
-                'permits.*' => 'integer|exists:permissions,id',
+                'permits.*' => 'string|exists:permissions,code',
             ]);
 
+            // actualizar solo role
             $role->update([
+                'code' => $request->code,
+                'status' => $request->status ?? $role->status,
+            ]);
+
+            // actualizar traducción ES
+            $translationEs->update([
                 'title' => $request->title,
                 'description' => $request->description,
             ]);
 
+            // permisos
             if ($request->filled('permits')) {
-                $role->permissions()->sync($request->permits);
+
+
+                $permissionIds = Permission::whereIn('code', $request->permits)
+                    ->pluck('id')
+                    ->toArray();
+
+                $role->permissions()->sync($permissionIds);
             }
+
             DB::commit();
+
             return ApiResponse::success(
                 __('messages.role.success.updateRoles'),
                 $role,
                 200
-            )
-            ;
+            );
+
         } catch (\Throwable $th) {
             DB::rollBack();
+
             return ApiResponse::error(
                 __('messages.role.error.updateRoles'),
-                $role,
+                ['error' => $th->getMessage()],
                 500
             );
         }
@@ -113,7 +153,7 @@ class RoleController extends Controller
 
             $query = Role::join('role_translations as r', function ($join) use ($locale) {
                 $join->on('Roles.id', '=', 'r.role_id')->where('r.lang', $locale);
-            })->select('roles.id', 'roles.code', 'r.title', 'r.description', 'roles.created_at', 'roles.updated_at')
+            })->select('roles.id', 'roles.code', 'roles.status', 'r.title', 'r.description', 'roles.created_at', 'roles.updated_at')
                 ->orderBy('roles.created_at', 'desc');
 
             if ($request->filled('search')) {
@@ -127,8 +167,14 @@ class RoleController extends Controller
                 return [
                     'id' => $role->id,
                     'code' => $role->code,
+                    'status' => $role->status,
                     'title' => $role->title,
                     'description' => $role->description,
+                    'permits' => \DB::table('permission_role')
+                        ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
+                        ->where('permission_role.role_id', $role->id)
+                        ->select('permissions.id', 'permissions.code')
+                        ->get(),
                     'created_at' => $role->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $role->updated_at->format('Y-m-d H:i:s')
                 ];
@@ -158,6 +204,15 @@ class RoleController extends Controller
             $data = $request->validate([
                 'status' => 'required|in:active,inactive'
             ]);
+
+            if ($role->code === 'super_admin') {
+                return ApiResponse::error(
+                    __('messages.role.error.updateAdminRole'),
+                    [],
+                    403
+                );
+            }
+
             $role->update(['status' => $data['status']]);
 
             DB::commit();
@@ -181,7 +236,6 @@ class RoleController extends Controller
 
         try {
             $role = Role::findOrFail($id);
-
             if ($role->code === 'super_admin') {
                 return ApiResponse::error(
                     __('messages.role.error.deleteAdminRole'),
