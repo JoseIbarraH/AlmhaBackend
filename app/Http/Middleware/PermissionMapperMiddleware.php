@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Log;
 
 class PermissionMapperMiddleware
 {
@@ -33,16 +34,6 @@ class PermissionMapperMiddleware
 
         // Si NO existe en el mapa de permisos
         if (!$permission) {
-            /* \Log::warning("⚠️ No permission mapping found for route", [
-                'module_detected' => $module,
-                'action_method' => $action,
-                'key_generated' => $action,
-                'expected_config_path' => "permissions.$module.$action",
-                'route' => $request->path(),
-                'http_method' => $request->method(),
-            ]); */
-
-            // Dejamos pasar sin bloquear
             return $next($request);
         }
 
@@ -59,7 +50,7 @@ class PermissionMapperMiddleware
 
         if (!$user->hasPermission($permission)) {
 
-            /* \Log::error("⛔ Permission denied", [
+            /* Log::error("⛔ Permission denied", [
                 'user_id' => $user->id,
                 'user_permissions' => $user->permissions->pluck('name'),
                 'missing_permission' => $permission,
@@ -74,6 +65,12 @@ class PermissionMapperMiddleware
             'user_id' => $user->id,
             'permission' => $permission
         ]); */
+
+        $activeRole = $user->roles()->where('status', 'active')->exists();
+
+        if (!$activeRole) {
+            return response()->json(['error' => 'Rol inactivo'], 403);
+        }
 
         return $next($request);
     }

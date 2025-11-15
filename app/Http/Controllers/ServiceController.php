@@ -18,7 +18,7 @@ use App\Models\Service;
 class ServiceController extends Controller
 {
     // Listar servicios
-    public function list_services(Request $request)
+    public function list_service(Request $request)
     {
         try {
             $locale = $request->query('locale', app()->getLocale());

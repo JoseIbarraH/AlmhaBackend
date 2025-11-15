@@ -39,11 +39,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete_blogs',
             'update_blogs_status',
 
-            'view_team',
-            'create_team',
-            'update_team',
-            'delete_team',
-            'update_team_status',
+            'view_teams',
+            'create_teams',
+            'update_teams',
+            'delete_teams',
+            'update_teams_status',
 
             'view_reports',
             'delete_reports',
@@ -85,11 +85,11 @@ class RolesAndPermissionsSeeder extends Seeder
                 'delete_blogs' => ['title' => 'Eliminar blogs', 'description' => 'Eliminar publicaciones del blog'],
                 'update_blogs_status' => ['title' => 'Actualizar estado de blogs', 'description' => 'Publicar o despublicar entradas del blog'],
 
-                'view_team' => ['title' => 'Ver equipo', 'description' => 'Ver miembros del equipo'],
-                'create_team' => ['title' => 'Registrar equipo', 'description' => 'Agregar nuevos miembros al equipo'],
-                'update_team' => ['title' => 'Editar equipo', 'description' => 'Editar información de miembros del equipo'],
-                'delete_team' => ['title' => 'Eliminar equipo', 'description' => 'Eliminar miembros del equipo'],
-                'update_team_status' => ['title' => 'Actualizar estado del equipo', 'description' => 'Activar o desactivar miembros del equipo'],
+                'view_teams' => ['title' => 'Ver equipo', 'description' => 'Ver miembros del equipo'],
+                'create_teams' => ['title' => 'Registrar equipo', 'description' => 'Agregar nuevos miembros al equipo'],
+                'update_teams' => ['title' => 'Editar equipo', 'description' => 'Editar información de miembros del equipo'],
+                'delete_teams' => ['title' => 'Eliminar equipo', 'description' => 'Eliminar miembros del equipo'],
+                'update_teams_status' => ['title' => 'Actualizar estado del equipo', 'description' => 'Activar o desactivar miembros del equipo'],
 
                 'view_reports' => ['title' => 'Ver reportes', 'description' => 'Ver reportes del sistema'],
                 'delete_reports' => ['title' => 'Eliminar reportes', 'description' => 'Eliminar reportes del sistema'],
@@ -129,11 +129,11 @@ class RolesAndPermissionsSeeder extends Seeder
                 'delete_blogs' => ['title' => 'Delete blogs', 'description' => 'Delete blog posts'],
                 'update_blogs_status' => ['title' => 'Update blogs status', 'description' => 'Publish or unpublish blog entries'],
 
-                'view_team' => ['title' => 'View team', 'description' => 'View team members'],
-                'create_team' => ['title' => 'Register team', 'description' => 'Add new team members'],
-                'update_team' => ['title' => 'Edit team', 'description' => 'Edit team member information'],
-                'delete_team' => ['title' => 'Delete team', 'description' => 'Remove team members'],
-                'update_team_status' => ['title' => 'Update team status', 'description' => 'Activate or deactivate team members'],
+                'view_teams' => ['title' => 'View team', 'description' => 'View team members'],
+                'create_teams' => ['title' => 'Register team', 'description' => 'Add new team members'],
+                'update_teams' => ['title' => 'Edit team', 'description' => 'Edit team member information'],
+                'delete_teams' => ['title' => 'Delete team', 'description' => 'Remove team members'],
+                'update_teams_status' => ['title' => 'Update team status', 'description' => 'Activate or deactivate team members'],
 
                 'view_reports' => ['title' => 'View reports', 'description' => 'View system reports'],
                 'delete_reports' => ['title' => 'Delete reports', 'description' => 'Delete system reports'],
@@ -178,7 +178,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'team' => [
                 'es' => ['title' => 'Equipo', 'description' => 'Acceso al módulo de equipo'],
                 'en' => ['title' => 'Team', 'description' => 'Access to the team module'],
-                'permissions' => ['view_team', 'create_team', 'update_team', 'delete_team', 'update_team_status']
+                'permissions' => ['view_teams', 'create_teams', 'update_teams', 'delete_teams', 'update_teams_status']
             ],
             'blog' => [
                 'es' => ['title' => 'Blog', 'description' => 'Acceso al módulo de blog'],
@@ -193,7 +193,11 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         foreach ($roles as $code => $data) {
-            $role = Role::firstOrCreate(['code' => $code, 'status' => 'active']);
+            // Crear o actualizar rol correctamente
+            $role = Role::firstOrCreate(
+                ['code' => $code],
+                ['status' => 'active']
+            );
 
             foreach (['es', 'en'] as $lang) {
                 RoleTranslation::updateOrCreate(
@@ -202,11 +206,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 );
             }
 
-            $permIds = Permission::whereIn('code', $data['permissions'])->pluck('id');
+            $permIds = Permission::whereIn('code', $data['permissions'])->pluck('id')->toArray();
+
             $role->permissions()->sync($permIds);
         }
-
-        $role->permissions()->sync(['1', '1']);
 
         echo "✅ Roles y permisos creados correctamente con títulos y descripciones multilenguaje.\n";
     }

@@ -8,36 +8,42 @@ use App\Http\Controllers\DesignController;
 use App\Http\Controllers\BlogController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('service')->group(function () {
-    Route::get('/', [ServiceController::class, 'list_services']);
-    Route::get('/client/{id}', [ServiceController::class, 'get_service_client']);
+Route::prefix('service')->controller(ServiceController::class)->group(function () {
+    Route::prefix('client')->group(function () {
+        Route::get('/', 'list_service_client');
+        Route::get('/{id}', 'get_service_client');
+    });
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/{id}', [ServiceController::class, 'get_service']);
-        Route::post('/', [ServiceController::class, 'create_service']);
-        Route::match(['post', 'put', 'patch'], '/{id}', [ServiceController::class, 'update_service']);
-        Route::delete('/{id}', [ServiceController::class, 'delete_service']);
-        Route::post('/update_status/{id}', [ServiceController::class, 'update_status']);
+    Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
+        Route::get('/',  'list_service');
+        Route::get('/{id}',  'get_service');
+        Route::post('/',  'create_service');
+        Route::match(['post', 'put', 'patch'], '/{id}',  'update_service');
+        Route::delete('/{id}',  'delete_service');
+        Route::post('/update_status/{id}',  'update_status');
     });
 });
 
-Route::prefix('blog')->group(function () {
-    Route::get('/', [BlogController::class, 'list_blogs']);
-    Route::get('/client/{id}', [BlogController::class, 'get_blog_client']);
+Route::prefix('blog')->controller(BlogController::class)->group(function () {
+    // Rutas públicas
+    Route::get('/client', 'list_blog_client');
+    Route::get('/client/{id}', 'get_blog_client');
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/{id}', [BlogController::class, 'get_blog']);
-        Route::post('/', [BlogController::class, 'create_blog']);
-        Route::match(['post', 'put', 'patch'], '/{id}', [BlogController::class, 'update_blog']);
-        Route::delete('/{id}', [BlogController::class, 'delete_blog']);
-        Route::post('/update_status/{id}', [BlogController::class, 'update_status']);
-        Route::post('/upload_image/{id}', [BlogController::class, 'upload_image']);
-        Route::delete('/delete_image/{id}', [BlogController::class, 'delete_image']);
+    // Rutas protegidas
+    Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
+        Route::get('/', 'list_blog');
+        Route::get('/{id}', 'get_blog');
+        Route::post('/', 'create_blog');
+        Route::match(['post', 'put', 'patch'], '/{id}', 'update_blog');
+        Route::delete('/{id}', 'delete_blog');
+        Route::post('/update_status/{id}', 'update_status');
+        Route::post('/upload_image/{id}', 'upload_image');
+        Route::delete('/delete_image/{id}', 'delete_image');
     });
 });
+
 
 Route::prefix('team_member')->controller(TeamMemberController::class)->group(function () {
-
     // Públicas
     Route::get('/client', 'list_teamMember_client');
     Route::get('/client/{id}', 'get_teamMember_client');
@@ -73,6 +79,8 @@ Route::middleware('auth:sanctum')->prefix('setting')->group(function () {
     });
 
     Route::prefix('role')->controller(RoleController::class)->group( function () {
+        Route::get('/', 'list_role');
+        Route::get('/permits', 'list_permission');
         Route::post('/', 'create_role');
         Route::patch('/{id}', 'update_role');
     });

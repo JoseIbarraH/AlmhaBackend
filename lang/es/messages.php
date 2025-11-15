@@ -84,9 +84,29 @@ return [
             'deleteAccount' => 'Error al eliminar la cuenta'
         ]
     ],
-    'auth' => [
+    'role' => [
         'success' => [
-
+            'listRoles' => 'Lista de roles obtenida correctamente',
+            'createRoles' => 'Rol creado correctamente',
+            'updateRoles' => 'Rol actualizado correctamente',
+            'updateStatus' => 'Estado del Rol actualizado correctamente',
+            'deleteRole' => 'Rol eliminado correctamente'
+        ],
+        'error' => [
+            'listRoles' => 'Error al obtener la lista de roles',
+            'createRoles' => 'Error al crear el rol',
+            'updateRoles' => 'Error al actualizar el rol',
+            'updateStatus' => 'Error al actualizar el estado del rol',
+            'deleteRole' => 'Error al eliminar el rol',
+            'deleteAdminRole' => 'No puedes eliminar el rol Super Admin'
+        ]
+    ],
+    'permission' => [
+        'success' => [
+            'listPermissions' => 'Lista de permisos obtenida correctamente'
+        ],
+        'error' => [
+            'listPermissions' => 'Error al obtener la lista de permisos'
         ]
     ]
 ];

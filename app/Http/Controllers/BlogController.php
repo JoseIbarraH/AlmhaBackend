@@ -18,7 +18,7 @@ class BlogController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function list_blogs(Request $request)
+    public function list_blog(Request $request)
     {
         try {
             $locale = $request->query('locale', app()->getLocale());
@@ -352,21 +352,21 @@ class BlogController extends Controller
     {
         DB::beginTransaction();
         try {
-            $team = Blog::findOrFail($id);
+            $blog = Blog::findOrFail($id);
             $data = $request->validate([
                 'status' => 'required|in:active,inactive'
             ]);
-            $team->update(['status' => $data['status']]);
+            $blog->update(['status' => $data['status']]);
 
             DB::commit();
             return ApiResponse::success(
-                __('messages.teamMember.success.updateStatus'),
-                $team
+                __('messages.blog.success.updateStatus'),
+                $blog
             );
         } catch (\Throwable $e) {
             DB::rollBack();
             return ApiResponse::error(
-                __('messages.teamMember.error.updateStatus'),
+                __('messages.blog.error.updateStatus'),
                 ['exception' => $e->getMessage()],
                 500
             );
