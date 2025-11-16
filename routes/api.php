@@ -6,6 +6,7 @@ use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('service')->controller(ServiceController::class)->group(function () {
@@ -15,12 +16,12 @@ Route::prefix('service')->controller(ServiceController::class)->group(function (
     });
 
     Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
-        Route::get('/',  'list_service');
-        Route::get('/{id}',  'get_service');
-        Route::post('/',  'create_service');
-        Route::match(['post', 'put', 'patch'], '/{id}',  'update_service');
-        Route::delete('/{id}',  'delete_service');
-        Route::post('/update_status/{id}',  'update_status');
+        Route::get('/', 'list_service');
+        Route::get('/{id}', 'get_service');
+        Route::post('/', 'create_service');
+        Route::match(['post', 'put', 'patch'], '/{id}', 'update_service');
+        Route::delete('/{id}', 'delete_service');
+        Route::post('/update_status/{id}', 'update_status');
     });
 });
 
@@ -42,7 +43,6 @@ Route::prefix('blog')->controller(BlogController::class)->group(function () {
     });
 });
 
-
 Route::prefix('team_member')->controller(TeamMemberController::class)->group(function () {
     // Públicas
     Route::get('/client', 'list_teamMember_client');
@@ -59,15 +59,16 @@ Route::prefix('team_member')->controller(TeamMemberController::class)->group(fun
     });
 });
 
-Route::prefix('design')->group(function () {
+Route::prefix('design')->controller(DesignController::class)->group(function () {
 
-    Route::get('/', [DesignController::class, 'get_design']);
+    Route::get('/', 'get_design_client');
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::match(['post', 'patch'], '/carouselImage', [DesignController::class, 'update_carouselImage']);
-        Route::match(['post', 'patch'], '/backgrounds', [DesignController::class, 'update_backgrounds']);
-        Route::match(['post', 'patch'], '/carouselNavbar', [DesignController::class, 'update_carouselNavbar']);
-        Route::match(['post', 'patch'], '/carouselTool', [DesignController::class, 'update_carouselTool']);
+    Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
+        Route::get('/', 'get_design');
+        Route::match(['post', 'patch'], '/carouselImage', 'update_carouselImage');
+        Route::match(['post', 'patch'], '/backgrounds', 'update_backgrounds');
+        Route::match(['post', 'patch'], '/carouselNavbar', 'update_carouselNavbar');
+        Route::match(['post', 'patch'], '/carouselTool', 'update_carouselTool');
     });
 });
 
@@ -78,11 +79,17 @@ Route::middleware('auth:sanctum')->prefix('setting')->group(function () {
         Route::delete('/delete', 'destroy_account');
     });
 
-    Route::prefix('role')->controller(RoleController::class)->group( function () {
+    Route::prefix('role')->controller(RoleController::class)->group(function () {
         Route::get('/', 'list_role');
         Route::get('/permits', 'list_permission');
         Route::post('/', 'create_role');
-        Route::match(['post', 'put', 'patch'],'/{id}', 'update_role');
+        Route::match(['post', 'put', 'patch'], '/{id}', 'update_role');
+        Route::post('/update_status/{id}', 'update_status');
+        Route::delete('/{id}', 'delete_role');
+    });
+
+    Route::prefix('user')->controller(UserController::class)->group(function () {
+        Route::get('/', 'list_user');
         Route::post('/update_status/{id}', 'update_status');
     });
 });

@@ -23,6 +23,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'create_roles',
             'update_roles',
             'delete_roles',
+            'update_roles_status',
 
             'view_permissions',
             'assign_permissions',
@@ -69,6 +70,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'create_roles' => ['title' => 'Crear roles', 'description' => 'Crear nuevos roles de usuario'],
                 'update_roles' => ['title' => 'Editar roles', 'description' => 'Editar roles existentes'],
                 'delete_roles' => ['title' => 'Eliminar roles', 'description' => 'Eliminar roles del sistema'],
+                'update_roles_status' => ['title' => 'Actualizar estado de rol', 'description' => 'Activar o desactivar roles'],
 
                 'view_permissions' => ['title' => 'Ver permisos', 'description' => 'Ver la lista de permisos disponibles'],
                 'assign_permissions' => ['title' => 'Asignar permisos', 'description' => 'Asignar permisos a roles'],
@@ -113,6 +115,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'create_roles' => ['title' => 'Create roles', 'description' => 'Create new user roles'],
                 'update_roles' => ['title' => 'Edit roles', 'description' => 'Edit existing roles'],
                 'delete_roles' => ['title' => 'Delete roles', 'description' => 'Delete roles from the system'],
+                'update_roles_status' => ['title' => 'Update role status', 'description' => 'Activate or deactivate roles'],
 
                 'view_permissions' => ['title' => 'View permissions', 'description' => 'View the list of available permissions'],
                 'assign_permissions' => ['title' => 'Assign permissions', 'description' => 'Assign permissions to roles'],

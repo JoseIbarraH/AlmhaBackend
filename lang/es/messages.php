@@ -103,6 +103,14 @@ return [
             'updateAdminRole' => 'No puedes deshabilitar el rol Super Admin'
         ]
     ],
+    'user' => [
+        'success' => [
+            'updateStatus' => 'Estado actualizado correctamente'
+        ],
+        'error' => [
+            'updateStatus' => 'Error al actualizar el estado'
+        ]
+    ],
     'permission' => [
         'success' => [
             'listPermissions' => 'Lista de permisos obtenida correctamente'

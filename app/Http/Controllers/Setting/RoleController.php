@@ -23,11 +23,11 @@ class RoleController extends Controller
             // 1. VALIDACIÓN
             $request->validate([
                 'code' => 'required|string|unique:roles,code',
-                'title' => 'required|string|unique:role_translations,title',
+                'title' => 'nullable|string|unique:role_translations,title',
                 'description' => 'nullable|string',
                 'status' => 'required|in:active,inactive',
                 'permits' => 'nullable|array',
-                'permits.*' => 'string|exists:permissions,code', // valida códigos
+                'permits.*' => 'string|exists:permissions,code',
             ]);
 
             \Log::info("llego y valido: ", [$request->all()]);
