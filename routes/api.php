@@ -2,11 +2,11 @@
 
 use App\Http\Controllers\Setting\ProfileController;
 use App\Http\Controllers\Setting\RoleController;
+use App\Http\Controllers\Setting\UserController;
 use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\BlogController;
-use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('service')->controller(ServiceController::class)->group(function () {
@@ -62,13 +62,13 @@ Route::prefix('team_member')->controller(TeamMemberController::class)->group(fun
 Route::prefix('design')->controller(DesignController::class)->group(function () {
 
     Route::get('/', 'get_design_client');
+    Route::match(['post', 'patch'], '/carousel/{id}', 'update_carousel');
 
     Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
         Route::get('/', 'get_design');
-        Route::match(['post', 'patch'], '/carouselImage', 'update_carouselImage');
-        Route::match(['post', 'patch'], '/backgrounds', 'update_backgrounds');
+        /* Route::match(['post', 'patch'], '/backgrounds', 'update_backgrounds');
         Route::match(['post', 'patch'], '/carouselNavbar', 'update_carouselNavbar');
-        Route::match(['post', 'patch'], '/carouselTool', 'update_carouselTool');
+        Route::match(['post', 'patch'], '/carouselTool', 'update_carouselTool'); */
     });
 });
 

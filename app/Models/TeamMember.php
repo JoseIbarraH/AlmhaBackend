@@ -10,7 +10,10 @@ class TeamMember extends Model
 {
     use HasFactory, LogsActivity;
 
+    protected $table = 'team_members';
+
     protected $fillable = [
+        'user_id',
         'name',
         'status',
         'image'

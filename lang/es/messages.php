@@ -100,7 +100,8 @@ return [
             'updateStatus' => 'Error al actualizar el estado del rol',
             'deleteRole' => 'Error al eliminar el rol',
             'deleteAdminRole' => 'No puedes eliminar el rol Super Admin',
-            'updateAdminRole' => 'No puedes deshabilitar el rol Super Admin'
+            'updateAdminRole' => 'No puedes eliminar el rol Super Admin',
+            'updateStatusAdminRole' => 'No puedes deshabilitar el rol Super Admin'
         ]
     ],
     'user' => [

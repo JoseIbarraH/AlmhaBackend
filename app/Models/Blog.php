@@ -11,6 +11,7 @@ class Blog extends Model
 {
     use HasFactory, LogsActivity;
 
+    protected $table = 'blogs';
     protected $fillable = [
         'user_id',
         'slug',

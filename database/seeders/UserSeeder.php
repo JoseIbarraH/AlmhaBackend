@@ -37,6 +37,6 @@ class UserSeeder extends Seeder
             echo "Asigno Rol. \n";
         }
 
-        echo "✅ Usuario super_admin creado correctamente.\n";
+        echo "Usuario super_admin creado correctamente.\n";
     }
 }

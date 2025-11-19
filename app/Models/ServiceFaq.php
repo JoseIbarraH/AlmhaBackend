@@ -9,12 +9,16 @@ class ServiceFaq extends Model
 {
     use HasFactory;
 
+    protected $table = 'service_faqs';
+
     protected $fillable = [
         'service_id',
         'question',
         'answer',
         'lang'
     ];
+
+    public $timestamps = false;
 
     protected $touches = ['service'];
 

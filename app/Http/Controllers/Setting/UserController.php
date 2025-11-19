@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Setting;
 
 use Illuminate\Auth\Events\Registered;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Responses\ApiResponse;
@@ -42,7 +43,7 @@ class UserController extends Controller
                     'roles.translations' => function ($q) use ($locale) {
                         $q->where('lang', $locale);
                     }
-                ]);
+                ])->where('id', '!=', auth()->id());
 
             if ($request->filled('search')) {
                 $search = $request->search;

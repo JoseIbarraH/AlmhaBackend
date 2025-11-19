@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class DesignSetting extends Model
 {
+    protected $table = 'design_settings';
+
     protected $fillable = [
         'key',
         'value'
     ];
 
-    public $timestamps = true;
+    public $timestamps = false;
 
     public function designItems()
     {

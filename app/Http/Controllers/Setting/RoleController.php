@@ -87,8 +87,14 @@ class RoleController extends Controller
         DB::beginTransaction();
 
         try {
-
             $role = Role::findOrFail($id);
+            if ($role->code === 'super_admin') {
+                return ApiResponse::error(
+                    __('messages.role.error.updateAdminRole'),
+                    [],
+                    403
+                );
+            }
 
             // buscar traducción ES
             $translationEs = RoleTranslation::where('role_id', $role->id)
@@ -207,7 +213,7 @@ class RoleController extends Controller
 
             if ($role->code === 'super_admin') {
                 return ApiResponse::error(
-                    __('messages.role.error.updateAdminRole'),
+                    __('messages.role.error.updateStatusAdminRole'),
                     [],
                     403
                 );

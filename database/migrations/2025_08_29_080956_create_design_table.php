@@ -15,29 +15,31 @@ return new class extends Migration
             $table->id();
             $table->string('key');
             $table->boolean('value')->default(false);
-            $table->timestamps();
         });
 
         DB::table('design_settings')->insert([
-            ['key' => 'imageVideo', 'value' => false, 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'carousel', 'value' => true, 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'carouselNavbar', 'value' => true, 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'carouselTool', 'value' => true, 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'background1', 'value' => true, 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'background2', 'value' => true, 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'background3', 'value' => true, 'created_at' => now(), 'updated_at' => now()],
-
+            ['key' => 'imageVideo', 'value' => false],
+            ['key' => 'carousel', 'value' => true],
+            ['key' => 'carouselNavbar', 'value' => true],
+            ['key' => 'carouselTool', 'value' => true],
+            ['key' => 'background1', 'value' => true],
+            ['key' => 'background2', 'value' => true],
+            ['key' => 'background3', 'value' => true],
         ]);
 
         Schema::create('design_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('design_id')->constrained('design_settings')->onDelete('cascade');
-            $table->string('lang', 5)->default('es');
             $table->string('type');
             $table->string('path');
+        });
+
+        Schema::create('design_item_translations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('item_id')->constrained('design_items')->onDelete('cascade');
+            $table->string('lang', 5)->default('es');
             $table->string('title')->nullable();
             $table->string('subtitle')->nullable();
-            $table->timestamps();
         });
     }
 
@@ -47,5 +49,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('designs');
+        Schema::dropIfExists('design_items');
+        Schema::dropIfExists('design_item_translations');
     }
 };

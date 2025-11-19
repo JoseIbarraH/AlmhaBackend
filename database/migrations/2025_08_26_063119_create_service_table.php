@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('image')->nullable();
             $table->enum('status', ['active', 'inactive']);
             $table->string('slug')->unique();
@@ -24,7 +25,6 @@ return new class extends Migration {
             $table->string('lang', 5)->default('es');;
             $table->text('description');
             $table->string('title');
-            $table->timestamps();
         });
 
         Schema::create('service_surgery_phases', function (Blueprint $table) {
@@ -34,7 +34,6 @@ return new class extends Migration {
             $table->json('recovery_time')->nullable();
             $table->json('postoperative_recommendations')->nullable();
             $table->json('preoperative_recommendations')->nullable();
-            $table->timestamps();
         });
 
         Schema::create('service_faqs', function (Blueprint $table) {
@@ -43,7 +42,6 @@ return new class extends Migration {
             $table->string('lang', 5)->default('es');
             $table->string('question', 255);
             $table->text('answer');
-            $table->timestamps();
         });
 
         Schema::create('service_sample_images', function (Blueprint $table) {
@@ -52,14 +50,12 @@ return new class extends Migration {
             $table->string('technique')->nullable();
             $table->string('recovery')->nullable();
             $table->string('postoperative_care')->nullable();
-            $table->timestamps();
         });
 
         Schema::create('service_result_galleries', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_id')->constrained('services')->onDelete('cascade');
             $table->string('path');
-            $table->timestamps();
         });
     }
 

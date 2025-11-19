@@ -15,10 +15,10 @@ class BlogFactory extends Factory
         $title = $this->faker->sentence(4);
 
         return [
-            'user_id' => 1, // puedes ajustar si tienes usuarios
+            'user_id' => 1,
             'slug' => Str::slug($title) . '-' . Str::random(5),
             'image' => $this->faker->imageUrl(800, 600, 'blog', true),
-            'category' => $this->faker->randomElement(['general', 'facial', 'bodily', 'non-surgical']),
+            'category_id' => $this->faker->randomElement([1, 2, 3, 4]),
             'writer' => $this->faker->name(),
             'view' => $this->faker->numberBetween(0, 5000),
             'status' => $this->faker->randomElement(['active', 'inactive']),

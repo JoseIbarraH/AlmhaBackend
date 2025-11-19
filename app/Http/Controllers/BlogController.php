@@ -177,7 +177,7 @@ class BlogController extends Controller
             $data['title'] = $data['title'] ?? 'Título por defecto';
 
             $blog = Blog::create([
-                'user_id' => auth()->id() ?? '1',
+                'user_id' => auth()->id(),
                 'slug' => Helpers::generateUniqueSlug(Blog::class, $data['title'], 'slug'), // o lo generas luego con el título
                 'image' => null,
                 'category' => 'general',

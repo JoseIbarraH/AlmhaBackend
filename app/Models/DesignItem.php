@@ -6,53 +6,43 @@ use Illuminate\Database\Eloquent\Model;
 
 class DesignItem extends Model
 {
+
     protected $fillable = [
         'design_id',
-        'lang',
         'type',
         'path',
-        'title',
-        'subtitle'
     ];
+    
+    protected $table = 'design_items';
+
+    protected $appends = ['full_path'];
 
     protected $touches = ['designSetting'];
+
+    public $timestamps = false;
 
     public function designSetting()
     {
         return $this->belongsTo(DesignSetting::class, 'design_id');
     }
 
-    public static function set(array $attributes): self
+    public function translations()
     {
-        return static::updateOrCreate(
-            [
-                'design_id' => $attributes['design_id'],
-                'lang' => $attributes['lang'],
-                'path' => $attributes['path'] ?? null, // clave única si existe
-            ],
-            [
-                'type' => $attributes['type'] ?? 'other',
-                'title' => $attributes['title'] ?? '',
-                'subtitle' => $attributes['subtitle'] ?? '',
-            ]
-        );
+        return $this->hasMany(DesignItemTranslation::class, 'item_id');
     }
 
-    public static function getOne($id, $lang = 'es', $default = null)
+    public function translation($lang = null)
     {
-        return static::where('design_id', $id)
-            ->where('lang', $lang)
-            ->first() ?? $default;
+        $lang = $lang ?? app()->getLocale();
+        return $this->translations()->where('lang', $lang)->first();
     }
 
-    public static function getAll($id, $lang = 'es', $default = null)
+    public function getFullPathAttribute()
     {
-        $items = static::where('design_id', $id)
-            ->where('lang', $lang)
-            ->get();
+        if (!$this->path) {
+            return null;
+        }
 
-        return $items->isNotEmpty() ? $items : $default;
+        return url('/storage/' . $this->path);
     }
-
-
 }

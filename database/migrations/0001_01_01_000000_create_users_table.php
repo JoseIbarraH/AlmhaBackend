@@ -49,7 +49,6 @@ return new class extends Migration {
             $table->string('lang', 5);
             $table->string('title');
             $table->string('description')->nullable();
-            $table->timestamps();
 
             $table->unique(['role_id', 'lang']);
         });
@@ -72,7 +71,6 @@ return new class extends Migration {
             $table->string('lang', 5);
             $table->string('title');
             $table->string('description')->nullable();
-            $table->timestamps();
 
             $table->unique(['permission_id', 'lang']);
         });

@@ -9,6 +9,8 @@ class ServiceSurgeryPhase extends Model
 {
     use HasFactory;
 
+    protected $table = 'service_surgery_phases';
+
     protected $fillable = [
         'service_id',
         'recovery_time',
@@ -22,6 +24,8 @@ class ServiceSurgeryPhase extends Model
         'preoperative_recommendations' => 'array',
         'postoperative_recommendations' => 'array',
     ];
+
+    public $timestamps = false;
 
     protected $touches = ['service'];
 

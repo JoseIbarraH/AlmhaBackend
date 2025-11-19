@@ -10,7 +10,10 @@ class Service extends Model
 {
     use HasFactory, LogsActivity;
 
+    protected $table = 'services';
+
     protected $fillable = [
+        'user_id',
         'image',
         'slug',
         'status'

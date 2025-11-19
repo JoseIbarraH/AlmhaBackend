@@ -214,6 +214,6 @@ class RolesAndPermissionsSeeder extends Seeder
             $role->permissions()->sync($permIds);
         }
 
-        echo "✅ Roles y permisos creados correctamente con títulos y descripciones multilenguaje.\n";
+        echo "Roles y permisos creados correctamente con títulos y descripciones multilenguaje.\n";
     }
 }

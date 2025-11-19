@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('team_members', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name', 150);
             $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->string('image')->nullable();
@@ -24,7 +25,6 @@ return new class extends Migration {
             $table->string('lang', 5);
             $table->string('specialization');
             $table->text('biography');
-            $table->timestamps();
         });
 
         Schema::create('team_member_images', function (Blueprint $table) {
@@ -33,7 +33,6 @@ return new class extends Migration {
             $table->string('lang', 5);
             $table->string('url', 400);
             $table->string('description', 400)->nullable();
-            $table->timestamps();
         });
 
     }

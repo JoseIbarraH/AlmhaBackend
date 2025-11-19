@@ -12,7 +12,6 @@ use Illuminate\Support\Str;
 
 class Helpers
 {
-
     public static function saveWebpFile(UploadedFile $file, string $folder): string
     {
         $manager = new ImageManager(new Driver());
@@ -108,4 +107,6 @@ class Helpers
 
         return $slug;
     }
+
+
 }

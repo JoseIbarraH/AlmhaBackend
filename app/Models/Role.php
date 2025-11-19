@@ -7,6 +7,8 @@ use App\Models\RoleTranslation;
 
 class Role extends Model
 {
+    protected $table = 'roles';
+
     protected $fillable = ['code', 'status'];
 
     public function users()

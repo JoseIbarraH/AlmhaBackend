@@ -17,6 +17,8 @@ class ServiceSampleImage extends Model
         'postoperative_care'
     ];
 
+    public $timestamps = false;
+
     protected $touches = ['service'];
 
     public function service()

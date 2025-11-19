@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class TeamMemberImage extends Model
 {
     use HasFactory;
+
+    protected $table = 'team_member_images';
+
     protected $fillable = [
         'team_member_id',
         'url',
@@ -16,6 +19,8 @@ class TeamMemberImage extends Model
     ];
 
     protected $touches = ['teamMember'];
+
+    public $timestamps = false;
 
     public function teamMember(){
         return $this->belongsTo(TeamMember::class);

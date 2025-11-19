@@ -16,6 +16,8 @@ class ServiceResultGallery extends Model
         'path',
     ];
 
+    public $timestamps = false;
+
     protected $touches = ['service'];
 
     public function service()

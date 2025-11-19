@@ -13,10 +13,10 @@ class PermissionMapperMiddleware
         $user = $request->user();
 
         if (!$user) {
-            Log::warning("🚫 Request sin autenticación", [
+            /* Log::warning("🚫 Request sin autenticación", [
                 'ip' => $request->ip(),
                 'route' => $request->path(),
-            ]);
+            ]); */
 
             return response()->json(['error' => 'No autenticado'], 401);
         }
@@ -25,7 +25,7 @@ class PermissionMapperMiddleware
         $action = $route->getActionMethod(); // update_teamMember
         $controller = class_basename($route->getController()); // TeamMemberController
 
-        Log::info('Info', [$route, $action, $controller]);
+        /* Log::info('Info', [$route, $action, $controller]); */
 
         // Sacar módulo
         $module = str_replace('Controller', '', $controller);
@@ -39,7 +39,7 @@ class PermissionMapperMiddleware
             return $next($request);
         }
 
-        Log::info("🔍 Permission check initiated", [
+        /* Log::info("🔍 Permission check initiated", [
             'user_id' => $user->id,
             'roles' => $user->roles->pluck('name'),
             'module' => $module,
@@ -47,7 +47,7 @@ class PermissionMapperMiddleware
             'permission_required' => $permission,
             'route' => $request->path(),
             'http_method' => $request->method(),
-        ]);
+        ]); */
 
 
         if (!$user->hasPermission($permission)) {
@@ -63,10 +63,10 @@ class PermissionMapperMiddleware
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
-        Log::info("✅ Permission granted", [
+        /* Log::info("✅ Permission granted", [
             'user_id' => $user->id,
             'permission' => $permission
-        ]);
+        ]); */
 
         $activeRole = $user->roles()->where('status', 'active')->exists();
 
