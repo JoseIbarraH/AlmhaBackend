@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Dashboard\Design\BackgroundRequest;
-use App\Http\Requests\Dashboard\Design\CarouselImageVideo\CarouselRequest;
-use App\Http\Requests\Dashboard\Design\CarouselNavbarRequest;
-use App\Http\Requests\Dashboard\Design\CarouselToolRequest;
+use App\Http\Requests\Dashboard\Design\StoreRequest;
+use App\Http\Requests\Dashboard\Design\UpdateRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
@@ -55,7 +53,20 @@ class DesignController extends Controller
                 }
             ])->get();
 
-            $transformedSettings = $settingsCollection->reduce(function ($carry, $design) {
+            $groupMapping = [
+                'background1' => 'backgrounds',
+                'background2' => 'backgrounds',
+                'background3' => 'backgrounds',
+                'carousel' => 'carousel',
+                'carouselNavbar' => 'carouselNavbar',
+                'carouselTool' => 'carouselTool',
+                'imageVideo' => 'imageVideo',
+            ];
+
+            $transformedSettings = $settingsCollection->reduce(function ($carry, $design) use ($groupMapping) {
+                $key = $design->key;
+                $groupName = $groupMapping[$key] ?? $key;
+
                 $itemsArray = $design->designItems->map(function ($item) {
                     $translation = $item->translations->first();
 
@@ -67,10 +78,20 @@ class DesignController extends Controller
                         'title' => $translation?->title ?? '',
                         'subtitle' => $translation?->subtitle ?? '',
                     ];
-                });
+                })->values()->toArray();
 
-                $carry[$design->key . 'Setting'] = $design->value;
-                $carry[$design->key] = $itemsArray;
+                if (!isset($carry[$groupName])) {
+                    $carry[$groupName] = [];
+                }
+
+                // 👈 CAMBIO APLICADO: Creamos un objeto que contiene el ID y el valor booleano
+                $carry[$groupName][$key . 'Setting'] = [
+                    'id' => $design->id, // ID del DesignSetting (ej. ID del background1)
+                    'enabled' => (bool) $design->value, // Valor booleano (enabled/disabled)
+                ];
+
+                // Mantener el array de ítems
+                $carry[$groupName][$key] = $itemsArray;
 
                 return $carry;
             }, []);
@@ -85,20 +106,63 @@ class DesignController extends Controller
                 ['execption' => $e->getMessage()],
                 500
             );
-
         }
     }
 
     ////////////////////////////////////////////////////
-    // Carusel and image Update ////// CarouselRequest
+    // Create ////// CarouselRequest
     ////////////////////////////////////////////////////
 
-    public function update_carousel(CarouselRequest $request, int $id)
+    public function create_item(StoreRequest $request)
     {
-        DB::beginTransaction();
-
         try {
+            DB::beginTransaction();
+            $data = $request->validated();
+            $setting = DesignSetting::find($data['designId']);
+            Log::info("setting: ", [$setting]);
 
+            $pathType = [
+                'type' => '',
+                'path' => '',
+            ];
+
+            if ($request->hasFile('path')) {
+                $pathType = FileProcessor::process(
+                    file: $data['path'],
+                    folder: $setting->folder
+                );
+            }
+
+            $item = DesignItem::create([
+                'design_id' => $data['designId'],
+                'type' => $pathType['type'],
+                'path' => $pathType['path']
+            ]);
+
+            $this->updateCreateTranslations($item, $data);
+            DB::commit();
+            return ApiResponse::success(
+                __('messages.design.success.createItem')
+            );
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error("Error", [$e]);
+            return ApiResponse::error(
+                __('messages.design.error.createItem'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    // Update ////// CarouselRequest
+    ////////////////////////////////////////////////////
+
+    public function update_item(UpdateRequest $request, int $id)
+    {
+        try {
+            DB::beginTransaction();
             $data = $request->validated();
             $item = DesignItem::findOrFail($id);
 
@@ -111,7 +175,7 @@ class DesignController extends Controller
             if ($request->hasFile('path')) {
                 $pathType = FileProcessor::process(
                     file: $data['path'],
-                    folder: "images/design/carousel",
+                    folder: "images/design",
                     oldFilePath: $item->path
                 );
             }
@@ -128,13 +192,13 @@ class DesignController extends Controller
                 ($data['subtitle'] ?? null) !== $item->subtitle
             ) {
 
-                $this->updateTranslations($item, $data);
+                $this->updateCreateTranslations($item, $data);
             }
 
             DB::commit();
 
             return ApiResponse::success(
-                __('messages.design.success.carouselImage')
+                __('messages.design.success.updateItem')
             );
 
         } catch (\Throwable $e) {
@@ -142,99 +206,52 @@ class DesignController extends Controller
             Log::error($e);
 
             return ApiResponse::error(
-                __('messages.design.error.carouselImage'),
+                __('messages.design.error.updateItem'),
                 ['exception' => $e->getMessage()],
                 500
             );
         }
     }
 
-
-
     ////////////////////////////////////////////////////
-    // backgrounds update
+    // Delete ////// CarouselRequest
     ////////////////////////////////////////////////////
 
-    public function update_backgrounds(BackgroundRequest $request)
+    public function delete_item($id)
     {
-        DB::beginTransaction();
         try {
+            DB::beginTransaction();
+            $item = DesignItem::findOrFail($id);
 
+            if (Storage::disk('public')->exists($item->path)) {
+                Storage::disk('public')->delete($item->path);
+            }
+
+            $item->delete();
 
             DB::commit();
             return ApiResponse::success(
-                __('messages.design.success.backgrounds'),
-
+                __('messages.design.success.deleteItem')
             );
-
-
-        } catch (\Throwable $e) {
+        } catch (\Throwable $th) {
             DB::rollBack();
+
             return ApiResponse::error(
-                __('messages.design.error.backgrounds'),
-                ['exception' => $e->getMessage()],
+                __('messages.design.error.deleteItem'),
+                ['exception' => $th->getMessage()],
                 500
             );
         }
     }
 
-    ////////////////////////////////////////////////////
-    // Carusel navbar Update
-    ////////////////////////////////////////////////////
-
-    public function update_carouselNavbar(CarouselNavbarRequest $request)
-    {
-        DB::beginTransaction();
-        try {
-
-
-            DB::commit();
-
-            return ApiResponse::success(
-                __('messages.design.success.carouselNavbar')
-            );
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error($e->getMessage());
-            return ApiResponse::error(
-                __('messages.design.error.carouselNavbar'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    ////////////////////////////////////////////////////
-    // Carusel tools navbar Update
-    ////////////////////////////////////////////////////
-
-    public function update_carouselTool(CarouselToolRequest $request)
-    {
-        DB::beginTransaction();
-        try {
-
-            DB::commit();
-            return ApiResponse::success(
-                __('messages.design.success.carouselTool')
-            );
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error($e->getMessage());
-            return ApiResponse::error(
-                __('messages.design.error.carouselTool'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    private function updateTranslations(DesignItem $item, array $data): void
+    private function updateCreateTranslations(DesignItem $item, array $data): void
     {
         // ES
         $item->translations()->updateOrCreate(
-            ['lang' => 'es'],
+            [
+                'lang' => 'es',
+                'item_id' => $item->id
+            ],
             [
                 "title" => $data['title'],
                 "subtitle" => $data['subtitle'],
@@ -248,7 +265,10 @@ class DesignController extends Controller
         ]);
 
         $item->translations()->updateOrCreate(
-            ['lang' => 'en'],
+            [
+                'lang' => 'en',
+                'item_id' => $item->id
+            ],
             [
                 "title" => $translated[0] ?? null,
                 "subtitle" => $translated[1] ?? null,

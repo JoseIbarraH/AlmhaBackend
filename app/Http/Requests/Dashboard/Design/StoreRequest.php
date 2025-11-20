@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Dashboard\Design\CarouselImageVideo;
+namespace App\Http\Requests\Dashboard\Design;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CarouselRequest extends FormRequest
+class StoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,7 +24,7 @@ class CarouselRequest extends FormRequest
     {
         return [
             'path' => [
-                'nullable',
+                'required',
                 Rule::when(
                     fn() => $this->hasFile('path'),
                     ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:20480']
@@ -36,6 +36,7 @@ class CarouselRequest extends FormRequest
             ],
             'title' => 'nullable|string',
             'subtitle' => 'nullable|string',
+            'designId' => 'required|string'
         ];
     }
 }

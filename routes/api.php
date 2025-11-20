@@ -61,14 +61,13 @@ Route::prefix('team_member')->controller(TeamMemberController::class)->group(fun
 
 Route::prefix('design')->controller(DesignController::class)->group(function () {
 
-    Route::get('/', 'get_design_client');
-    Route::match(['post', 'patch'], '/carousel/{id}', 'update_carousel');
+    Route::get('/client', 'get_design_client');
 
     Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
         Route::get('/', 'get_design');
-        /* Route::match(['post', 'patch'], '/backgrounds', 'update_backgrounds');
-        Route::match(['post', 'patch'], '/carouselNavbar', 'update_carouselNavbar');
-        Route::match(['post', 'patch'], '/carouselTool', 'update_carouselTool'); */
+        Route::post('/', 'create_item');
+        Route::match(['post', 'put', 'patch'], '/{id}', 'create_item');
+        Route::delete('/{id}', 'delete_item');
     });
 });
 

@@ -10,7 +10,8 @@ class DesignSetting extends Model
 
     protected $fillable = [
         'key',
-        'value'
+        'value',
+        'folder'
     ];
 
     public $timestamps = false;

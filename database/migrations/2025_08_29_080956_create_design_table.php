@@ -15,16 +15,17 @@ return new class extends Migration
             $table->id();
             $table->string('key');
             $table->boolean('value')->default(false);
+            $table->string('folder')->default('images/design/default');
         });
 
         DB::table('design_settings')->insert([
-            ['key' => 'imageVideo', 'value' => false],
-            ['key' => 'carousel', 'value' => true],
-            ['key' => 'carouselNavbar', 'value' => true],
-            ['key' => 'carouselTool', 'value' => true],
-            ['key' => 'background1', 'value' => true],
-            ['key' => 'background2', 'value' => true],
-            ['key' => 'background3', 'value' => true],
+            ['key' => 'imageVideo', 'value' => false, 'folder' => 'images/design/imageVideo'],
+            ['key' => 'carousel', 'value' => true, 'folder' => 'images/design/carousel'],
+            ['key' => 'carouselNavbar', 'value' => true, 'folder' => 'images/design/carouselNavbar'],
+            ['key' => 'carouselTool', 'value' => true, 'folder' => 'images/design/carouselTool'],
+            ['key' => 'background1', 'value' => true, 'folder' => 'images/design/background/background1'],
+            ['key' => 'background2', 'value' => true, 'folder' => 'images/design/background/background2'],
+            ['key' => 'background3', 'value' => true, 'folder' => 'images/design/background/background3'],
         ]);
 
         Schema::create('design_items', function (Blueprint $table) {
@@ -33,6 +34,10 @@ return new class extends Migration
             $table->string('type');
             $table->string('path');
         });
+
+        DB::table('design_items')->insert([
+            ['design_id' => '1', 'type' => 'image', 'path' => 'images/design/default/default.webp']
+        ]);
 
         Schema::create('design_item_translations', function (Blueprint $table) {
             $table->id();

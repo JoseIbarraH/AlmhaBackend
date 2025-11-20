@@ -58,17 +58,13 @@ return [
     ],
     'design' => [
         'success' => [
-            'carouselImage' => 'Carousel e Imagen actualizados correctamente',
-            'backgrounds' => 'Fondos actualizados correctamente',
-            'carouselNavbar' => 'Carousel del navbar actualizado correctamente',
-            'carouselTool' => 'Carousel de herramientas actualizado correctamente',
+            'createItem' => 'Item creado correctamente',
+            'updateItem' => 'Iteam actualizado correctamente',
             'getDesign' => 'Diseños obtenidos correctamente'
         ],
         'error' => [
-            'carouselImage' => 'Error al actualizar el carrusel o la imagen',
-            'backgrounds' => 'Error al actualizar los fondos',
-            'carouselNavbar' => 'Error al actualizar el carousel del navbar',
-            'carouselTool' => 'Error al actualizar el carousel de herramientas',
+            'createItem' => 'Error al crear item',
+            'updateItem' => 'Error al actualizar item',
             'getDesign' => 'Error al obtener los diseños'
         ]
     ],
