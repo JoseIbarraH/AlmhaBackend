@@ -115,6 +115,7 @@ class DesignController extends Controller
 
     public function create_item(StoreRequest $request)
     {
+        Log::info($request);
         try {
             DB::beginTransaction();
             $data = $request->validated();
@@ -156,7 +157,7 @@ class DesignController extends Controller
     }
 
     ////////////////////////////////////////////////////
-    // Update ////// CarouselRequest
+    // Update //////
     ////////////////////////////////////////////////////
 
     public function update_item(UpdateRequest $request, int $id)
@@ -164,36 +165,31 @@ class DesignController extends Controller
         try {
             DB::beginTransaction();
             $data = $request->validated();
+            Log::info($request);
             $item = DesignItem::findOrFail($id);
+            $setting = DesignSetting::find($data['designId']);
 
             $pathType = [
                 'type' => $item->type,
                 'path' => $item->path,
             ];
 
-            // ⬆ Si se subió una nueva imagen, procesarla
+            if (($data['title'] ?? null) !== $item->title || ($data['subtitle'] ?? null) !== $item->subtitle) {
+                $this->updateCreateTranslations($item, $data);
+            }
+
             if ($request->hasFile('path')) {
                 $pathType = FileProcessor::process(
                     file: $data['path'],
-                    folder: "images/design",
+                    folder: $setting->folder,
                     oldFilePath: $item->path
                 );
             }
 
-            // ⬆ Actualizar item siempre
             $item->update([
                 'type' => $pathType['type'],
                 'path' => $pathType['path']
             ]);
-
-            // Si cambia título o subtítulo → actualizar traducciones
-            if (
-                ($data['title'] ?? null) !== $item->title ||
-                ($data['subtitle'] ?? null) !== $item->subtitle
-            ) {
-
-                $this->updateCreateTranslations($item, $data);
-            }
 
             DB::commit();
 
@@ -214,7 +210,7 @@ class DesignController extends Controller
     }
 
     ////////////////////////////////////////////////////
-    // Delete ////// CarouselRequest
+    // Delete //////
     ////////////////////////////////////////////////////
 
     public function delete_item($id)
@@ -240,6 +236,39 @@ class DesignController extends Controller
                 __('messages.design.error.deleteItem'),
                 ['exception' => $th->getMessage()],
                 500
+            );
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    // Update item selection carousel/image //////
+    ////////////////////////////////////////////////////
+
+    public function updateState(Request $request)
+    {
+        Log::info($request);
+        try {
+            $data = $request->validate([
+                'carouselEnabled' => 'required|boolean',
+                'imageVideoEnabled' => 'required|boolean'
+            ]);
+
+            DesignSetting::where('key', 'carousel')->update([
+                'value' => $data['carouselEnabled']
+            ]);
+
+            DesignSetting::where('key', 'imageVideo')->update([
+                'value' => $data['imageVideoEnabled']
+            ]);
+
+            return ApiResponse::success(
+                __('messages.design.success.updateState')
+            );
+        } catch (\Throwable $th) {
+            Log::error($th);
+            return ApiResponse::error(
+                __('messages.design.error.updateState'),
+                ['exception' => $th->getMessage()],
             );
         }
     }
@@ -275,5 +304,4 @@ class DesignController extends Controller
             ]
         );
     }
-
 }

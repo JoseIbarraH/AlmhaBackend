@@ -375,14 +375,6 @@ class BlogController extends Controller
 
     public function upload_image(Request $request, $id)
     {
-        // Validar que el usuario esté autenticado
-        if (!auth()->check()) {
-            return ApiResponse::error(
-                message: __('messages.blog.error.uploadImage'),
-                code: 401
-            );
-        }
-
         // Validar el archivo
         $request->validate([
             'upload' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048'

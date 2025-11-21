@@ -35,6 +35,7 @@ class UpdateRequest extends FormRequest
             ],
             'title' => 'nullable|string',
             'subtitle' => 'nullable|string',
+            'designId' => 'required|integer'
         ];
     }
 }

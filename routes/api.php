@@ -66,8 +66,12 @@ Route::prefix('design')->controller(DesignController::class)->group(function () 
     Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
         Route::get('/', 'get_design');
         Route::post('/', 'create_item');
-        Route::match(['post', 'put', 'patch'], '/{id}', 'create_item');
+        Route::match(['post', 'put', 'patch'], '/{id}', 'update_item');
         Route::delete('/{id}', 'delete_item');
+
+        Route::prefix('settings')->group(function () {
+            Route::post('/state', 'updateState'); // Ahora es: /api/design/settings/state
+        });
     });
 });
 

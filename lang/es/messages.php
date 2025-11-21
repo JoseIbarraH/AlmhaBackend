@@ -60,12 +60,14 @@ return [
         'success' => [
             'createItem' => 'Item creado correctamente',
             'updateItem' => 'Iteam actualizado correctamente',
-            'getDesign' => 'Diseños obtenidos correctamente'
+            'getDesign' => 'Diseños obtenidos correctamente',
+            'updateState' => 'Seleccion entre carrusel e imagen realizada correctamente'
         ],
         'error' => [
             'createItem' => 'Error al crear item',
             'updateItem' => 'Error al actualizar item',
-            'getDesign' => 'Error al obtener los diseños'
+            'getDesign' => 'Error al obtener los diseños',
+            'updateState' => 'Error al seleccionar entre carrusel e imagen.'
         ]
     ],
     'profile' => [
