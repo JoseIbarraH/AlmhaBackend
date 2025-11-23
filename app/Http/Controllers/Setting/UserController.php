@@ -108,9 +108,13 @@ class UserController extends Controller
     public function create_user(Request $request)
     {
         try {
+            $request->merge([
+                'email' => strtolower($request->email)
+            ]);
+
             $request->validate([
                 'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'status' => 'required|in:active,inactive',
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
                 'roles' => ['nullable', 'array'],
@@ -118,7 +122,6 @@ class UserController extends Controller
             ]);
 
             DB::beginTransaction();
-
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -156,10 +159,13 @@ class UserController extends Controller
     public function update_user(Request $request, $id)
     {
         try {
+            $request->merge([
+                'email' => strtolower($request->email),
+            ]);
+
             $request->validate([
                 'name' => ['required', 'string', 'max:255'],
-                'email' => [
-                    'required', 'string', 'lowercase', 'email', 'max:255',
+                'email' => ['required', 'string', 'email', 'max:255',
                     Rule::unique('users', 'email')->ignore($id)
                 ],
                 'status' => 'required|in:active,inactive',
@@ -171,7 +177,6 @@ class UserController extends Controller
             DB::beginTransaction();
 
             $user = User::findOrFail($id);
-
             $data = [
                 'name' => $request->name,
                 'email' => $request->email,
