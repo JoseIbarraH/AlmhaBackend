@@ -28,17 +28,23 @@ class BlogController extends Controller
                 $join->on('blogs.id', '=', 't.blog_id')
                     ->where('t.lang', $locale);
             })
+                ->join('blog_categories', 'blog_categories.id', '=', 'blogs.category_id')
+                ->join('blog_category_translations as ct', function ($join) use ($locale) {
+                    $join->on('blog_categories.id', '=', 'ct.category_id')
+                        ->where('ct.lang', $locale);
+                })
                 ->select(
                     'blogs.id',
                     't.title',
                     'blogs.slug',
                     'blogs.status',
                     'blogs.image',
-                    'blogs.category',
+                    'ct.title as category',
                     'blogs.created_at',
                     'blogs.updated_at'
                 )
                 ->orderBy('blogs.created_at', 'desc');
+
 
             // 🔹 Filtro de búsqueda
             if ($request->filled('search')) {
@@ -56,7 +62,7 @@ class BlogController extends Controller
                     'title' => $blog->title,
                     'slug' => $blog->slug,
                     'status' => $blog->status,
-                    'category' => $blog->category,
+                    'category' => $blog->category_title,
                     'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
                 ];
@@ -99,7 +105,10 @@ class BlogController extends Controller
     public function get_blog($id, Request $request)
     {
         try {
-            $blog = Blog::with(['blogTranslations' => fn($q) => $q->where('lang', 'es')])
+            $blog = Blog::with([
+                'blogTranslations' => fn($q) => $q->where('lang', 'es'),
+                'category.translationRelation'
+            ])
                 ->where('id', $id) // o slug
                 ->orWhere('slug', $id)
                 ->firstOrFail();
@@ -110,7 +119,7 @@ class BlogController extends Controller
                 'image' => $blog->image ? url('storage', $blog->image) : null,
                 'title' => $blog->blogTranslation->title,
                 'content' => $blog->blogTranslation->content,
-                'category' => $blog->category,
+                'category' => $blog->category->translationRelation->title,
                 'status' => $blog->status
             ];
 

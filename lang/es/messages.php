@@ -89,7 +89,7 @@ return [
             'updateRoles' => 'Rol actualizado correctamente',
             'updateStatus' => 'Estado del Rol actualizado correctamente',
             'deleteRole' => 'Rol eliminado correctamente',
-
+            'listPermissions' => 'Lista de permisos obtenida correctamente'
         ],
         'error' => [
             'listRoles' => 'Error al obtener la lista de roles',
@@ -98,16 +98,24 @@ return [
             'updateStatus' => 'Error al actualizar el estado del rol',
             'deleteRole' => 'Error al eliminar el rol',
             'deleteAdminRole' => 'No puedes eliminar el rol Super Admin',
+            'deleteUserRole' => 'No puedes eliminar el rol User',
             'updateAdminRole' => 'No puedes eliminar el rol Super Admin',
-            'updateStatusAdminRole' => 'No puedes deshabilitar el rol Super Admin'
+            'updateStatusAdminRole' => 'No puedes deshabilitar el rol Super Admin',
+            'listPermissions' => 'Error al obtener la list de permisos'
         ]
     ],
     'user' => [
         'success' => [
-            'updateStatus' => 'Estado actualizado correctamente'
+            'createUser' => 'Usuario creado correctamente',
+            'updateStatus' => 'Estado actualizado correctamente',
+            'deleteUser' => 'Usuario eliminado correctamente',
+            'updateUser' => 'Usuario actualizado correctamente'
         ],
         'error' => [
-            'updateStatus' => 'Error al actualizar el estado'
+            'createUser' => 'Error al crear el usuario',
+            'updateStatus' => 'Error al actualizar el estado',
+            'deleteUser' => 'Error al eliminar el usuario',
+            'updateUser' => 'Error al actualizar el usuario'
         ]
     ],
     'permission' => [

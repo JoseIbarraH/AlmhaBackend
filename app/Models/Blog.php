@@ -16,11 +16,17 @@ class Blog extends Model
         'user_id',
         'slug',
         'image',
-        'category',
+        'category_id',
         'writer',
         'view',
         'status',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(BlogCategory::class, 'category_id');
+    }
+
 
     public function blogTranslations()
     {
@@ -30,7 +36,7 @@ class Blog extends Model
     public function blogTranslation()
     {
         return $this->hasOne(BlogTranslation::class, 'blog_id')
-                    ->where('lang', app()->getLocale());
+            ->where('lang', app()->getLocale());
     }
 
     protected static function booted()

@@ -93,7 +93,11 @@ Route::middleware('auth:sanctum')->prefix('setting')->group(function () {
 
     Route::prefix('user')->controller(UserController::class)->group(function () {
         Route::get('/', 'list_user');
+        Route::post('/',  'create_user');
+        Route::match(['post', 'put', 'patch'], '/{id}', 'update_user');
         Route::post('/update_status/{id}', 'update_status');
+        Route::get('/roles', 'list_role');
+        Route::delete('/{id}', 'delete_user');
     });
 });
 

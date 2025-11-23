@@ -12,6 +12,12 @@ class BlogCategory extends Model
         'code',
     ];
 
+    public function blogs()
+    {
+        return $this->hasMany(Blog::class, 'category_id');
+    }
+
+
     /**
      * Relación: Una categoría tiene muchas traducciones
      */
@@ -28,6 +34,13 @@ class BlogCategory extends Model
         $lang = $lang ?? app()->getLocale();
         return $this->translations()->where('lang', $lang)->first();
     }
+
+    public function translationRelation()
+    {
+        return $this->hasOne(BlogCategoryTranslation::class)
+            ->where('lang', app()->getLocale());
+    }
+
 
     /**
      * Accesor para ->name (devuelve el nombre traducido automáticamente)

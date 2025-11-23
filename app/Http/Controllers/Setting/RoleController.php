@@ -17,10 +17,8 @@ class RoleController extends Controller
     public function create_role(Request $request)
     {
         \Log::info("llego: ", [$request->all()]);
-        DB::beginTransaction();
 
         try {
-            // 1. VALIDACIÓN
             $request->validate([
                 'code' => 'required|string|unique:roles,code',
                 'title' => 'nullable|string|unique:role_translations,title',
@@ -30,18 +28,15 @@ class RoleController extends Controller
                 'permits.*' => 'string|exists:permissions,code',
             ]);
 
-            \Log::info("llego y valido: ", [$request->all()]);
+            DB::beginTransaction();
 
-            // 2. SI NO HAY CODE SE GENERA DEL TITLE
             $code = $request->code ?? Str::slug($request->title, '_');
 
-            // 3. CREAR ROLE
             $role = Role::create([
                 'code' => $code,
                 'status' => $request->status,
             ]);
 
-            // 4. TRANSLATIONS
             RoleTranslation::create([
                 'role_id' => $role->id,
                 'lang' => 'es',
@@ -56,7 +51,6 @@ class RoleController extends Controller
                 'description' => Helpers::translateBatch([$request->description])[0] ?? ''
             ]);
 
-            // 5. SYNC PERMISOS (por código → se convierten a IDs)
             if ($request->filled('permits')) {
                 $permissionIds = Permission::whereIn('code', $request->permits)->pluck('id')->toArray();
                 $role->permissions()->sync($permissionIds);
@@ -96,7 +90,6 @@ class RoleController extends Controller
                 );
             }
 
-            // buscar traducción ES
             $translationEs = RoleTranslation::where('role_id', $role->id)
                 ->where('lang', 'es')
                 ->first();
@@ -109,13 +102,11 @@ class RoleController extends Controller
                 'permits.*' => 'string|exists:permissions,code',
             ]);
 
-            // actualizar solo role
             $role->update([
                 'code' => $request->code,
                 'status' => $request->status ?? $role->status,
             ]);
 
-            // actualizar traducción ES
             $translationEs->update([
                 'title' => $request->title,
                 'description' => $request->description,
@@ -249,6 +240,13 @@ class RoleController extends Controller
                     403
                 );
             }
+            if ($role->code === 'user') {
+                return ApiResponse::error(
+                    __('messages.role.error.deleteUserRole'),
+                    [],
+                    403
+                );
+            }
 
             $role->permissions()->detach();
             $role->users()->detach();
@@ -303,13 +301,13 @@ class RoleController extends Controller
                 });
 
             return ApiResponse::success(
-                __('messages.permission.success.listRoles'),
+                __('messages.permission.error.listPermissions'),
                 ['permissions' => $permissions]
             );
 
         } catch (\Throwable $e) {
             return ApiResponse::error(
-                __('messages.permission.error.listRoles'),
+                __('messages.permission.error.listPermissions'),
                 ['exception' => $e->getMessage()],
                 500
             );
