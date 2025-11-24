@@ -25,7 +25,8 @@ return [
             'createBlog' => 'Blog inicial creado correctamente',
             'updateBlog' => 'Blog actualizado correctamente',
             'deleteBlog' => 'Blog eliminado correctamente',
-            'updateStatus' => 'Estado actualizado correctamente'
+            'updateStatus' => 'Estado actualizado correctamente',
+            'getCategories' => 'Categorias obtenidas correctamente'
         ],
         'error' => [
             'listBlogs' => 'Error al obtener los blogs',
@@ -36,6 +37,7 @@ return [
             'updateStatus' => 'Error al actualizar el estado',
             'uploadImage' => 'Error al subir la imagen',
             'deleteImage' => 'Imagen no encontrada',
+            'getCategories' => 'Error al obtener las categorias'
         ]
     ],
     'teamMember' => [

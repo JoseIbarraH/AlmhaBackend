@@ -37,7 +37,7 @@ class BlogCategory extends Model
 
     public function translationRelation()
     {
-        return $this->hasOne(BlogCategoryTranslation::class)
+        return $this->hasOne(BlogCategoryTranslation::class, 'category_id')
             ->where('lang', app()->getLocale());
     }
 

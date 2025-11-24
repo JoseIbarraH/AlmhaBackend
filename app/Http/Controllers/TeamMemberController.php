@@ -191,6 +191,7 @@ class TeamMemberController extends Controller
             $team = TeamMember::create([
                 'name' => $data['name'],
                 'status' => $data['status'],
+                'user_id' => auth()->id(),
                 'image' => ''
             ]);
 
@@ -278,7 +279,6 @@ class TeamMemberController extends Controller
                 $this->team_image(data: $data, team: $team);
             }
 
-            /* dd("pausa aproposito"); */
             DB::commit();
 
             return ApiResponse::success(

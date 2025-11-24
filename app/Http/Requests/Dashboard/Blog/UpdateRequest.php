@@ -26,7 +26,7 @@ class UpdateRequest extends FormRequest
             'title' => 'required|string',
             'content' => 'required|string',
             'status' => 'required|in:active,inactive',
-            'category' => 'required|in:general,facial,bodily,non-surgical',
+            'category' => 'required',
             'image' => [
                 'nullable',
                 Rule::when(

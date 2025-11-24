@@ -63,7 +63,7 @@ class Helpers
                 continue;
             }
 
-            $response = Http::timeout(60)->asJson()->post($url, [
+            $response = Http::timeout(120)->asJson()->post($url, [
                 'q' => $text,
                 'source' => $source,
                 'target' => $target,

@@ -33,6 +33,7 @@ Route::prefix('blog')->controller(BlogController::class)->group(function () {
     // Rutas protegidas
     Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
         Route::get('/', 'list_blog');
+        Route::get('/categories', 'get_categories');
         Route::get('/{id}', 'get_blog');
         Route::post('/', 'create_blog');
         Route::match(['post', 'put', 'patch'], '/{id}', 'update_blog');

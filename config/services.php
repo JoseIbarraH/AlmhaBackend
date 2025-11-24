@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'google_translate' => [
+        'credentials_file' => storage_path('app/private/' . env('GOOGLE_CLOUD_TRANSLATE_CREDENTIALS_FILE', 'google-key.json')),
+    ],
+
 ];

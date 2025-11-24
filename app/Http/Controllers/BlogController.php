@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Dashboard\Blog\UpdateRequest;
+use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Http\Responses\ApiResponse;
@@ -10,11 +11,19 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
 use App\Models\BlogTranslation;
 use Illuminate\Http\Request;
+use App\Models\BlogCategory;
 use App\Helpers\Helpers;
 use App\Models\Blog;
 
 class BlogController extends Controller
 {
+
+    /* protected GoogleTranslateService $translator;
+
+    public function __construct(GoogleTranslateService $translator)
+    {
+        $this->translator = $translator;
+    } */
     /**
      * Display a listing of the resource.
      */
@@ -102,25 +111,35 @@ class BlogController extends Controller
     /**
      * Display the specified resource.
      */
-    public function get_blog($id, Request $request)
+    public function get_blog($id, GoogleTranslateService $translator)
     {
         try {
-            $blog = Blog::with([
-                'blogTranslations' => fn($q) => $q->where('lang', 'es'),
-                'category.translationRelation'
-            ])
-                ->where('id', $id) // o slug
+            $lang = 'es';
+            $langen = 'en';
+
+            $prueba = $translator->translate(
+                "Traduccion de prueba para ver si sirve la api o que",
+                $langen,
+                $lang
+            );
+
+            Log::info("Traduccion owo: ", [$prueba]);
+
+            $blog = Blog::with(['translation' => fn($q) => $q->where('lang', $lang)])
+                ->where('id', $id)
                 ->orWhere('slug', $id)
                 ->firstOrFail();
+
+            $translation = $blog->translation ?? null;
 
             $data = [
                 'id' => $blog->id,
                 'slug' => $blog->slug,
                 'image' => $blog->image ? url('storage', $blog->image) : null,
-                'title' => $blog->blogTranslation->title,
-                'content' => $blog->blogTranslation->content,
-                'category' => $blog->category->translationRelation->title,
-                'status' => $blog->status
+                'title' => $translation->title ?? null,
+                'content' => $translation->content ?? null,
+                'category' => $blog->category_id,
+                'status' => $blog->status,
             ];
 
             return ApiResponse::success(
@@ -128,7 +147,7 @@ class BlogController extends Controller
                 $data
             );
         } catch (\Throwable $e) {
-            Log::error('Error en get_blogs: ' . $e->getMessage());
+            Log::error('Error en get_blog: ' . $e->getMessage());
 
             return ApiResponse::error(
                 __('messages.blog.error.getBlog'),
@@ -138,6 +157,9 @@ class BlogController extends Controller
         }
     }
 
+    /**
+     * Display the specified resource in client with lang.
+     */
     public function get_blog_client($id, Request $request)
     {
         try {
@@ -189,8 +211,8 @@ class BlogController extends Controller
                 'user_id' => auth()->id(),
                 'slug' => Helpers::generateUniqueSlug(Blog::class, $data['title'], 'slug'), // o lo generas luego con el título
                 'image' => null,
-                'category' => 'general',
-                'writer' => auth()->user()->name ?? 'Administrador',
+                'category_id' => 1,
+                'writer' => auth()->user()->name,
                 'status' => 'inactive',
                 'view' => 0,
             ]);
@@ -236,33 +258,27 @@ class BlogController extends Controller
         try {
             $blog = Blog::findOrFail($id);
             $data = $request->validated();
-            $locale = $request->query('locale', app()->getLocale()); // 'es' por defecto
+            $locale = $request->query('locale', app()->getLocale());
             $updates = [];
 
-            // --- ACTUALIZAR TÍTULO Y SLUG ---
-            $translationEs = $blog->blogTranslations()->firstOrNew(['lang' => 'es']);
+            $translationEs = $blog->translations()->firstOrNew(['lang' => 'es']);
             if (($data['title'] ?? null) !== ($translationEs->title ?? null)) {
                 $slug = Helpers::generateUniqueSlug(Blog::class, $data['title'], 'slug');
                 $blog->update(['slug' => $slug]);
 
-                // Español
                 $translationEs->title = $data['title'];
                 $translationEs->save();
 
-                // Inglés (traducción automática)
-                $translationEn = $blog->blogTranslations()->firstOrNew(['lang' => 'en']);
+                $translationEn = $blog->translations()->firstOrNew(['lang' => 'en']);
                 $translationEn->title = Helpers::translateBatch([$data['title']], 'es', 'en', 'html')[0]
                     ?? $translationEs->title;
                 $translationEn->save();
             }
 
-            // --- ACTUALIZAR CATEGORÍA ---
             if (($data['category'] ?? null) !== $blog->category) {
-                $blog->update(['category' => $data['category']]);
+                $blog->update(['category_id' => $data['category']]);
             }
 
-
-            // --- ACTUALIZAR IMAGEN ---
             if (!empty($data['image'])) {
                 if ($data['image'] instanceof UploadedFile) {
                     if (!empty($blog->image) && Storage::disk('public')->exists($blog->image)) {
@@ -278,14 +294,12 @@ class BlogController extends Controller
                 $blog->update($updates);
             }
 
-            // --- ACTUALIZAR CONTENIDO ---
             if (isset($data['content']) && is_string($data['content'])) {
                 if ($data['content'] !== ($translationEs->content ?? null)) {
                     $translationEs->content = $data['content'];
                     $translationEs->save();
 
-                    // Traducción automática al inglés
-                    $translationEn = $blog->blogTranslations()->firstOrNew(['lang' => 'en']);
+                    $translationEn = $blog->translations()->firstOrNew(['lang' => 'en']);
                     $tr = Helpers::translateBatch([$data['content']], 'es', 'en')[0] ?? $translationEs->content;
                     Log::info("Tenemos traduccion? ", [$tr]);
                     $translationEn->content = $tr;
@@ -293,16 +307,14 @@ class BlogController extends Controller
                 }
             }
 
-            // --- OBTENER SOLO EL IDIOMA SOLICITADO ---
             $blog->load([
-                'blogTranslations' => function ($q) use ($locale) {
+                'translations' => function ($q) use ($locale) {
                     $q->where('lang', $locale);
                 }
             ]);
 
-            $translation = $blog->blogTranslations->first();
+            $translation = $blog->translations->first();
 
-            // --- FORMATEAR RESPUESTA ---
             $dataResponse = [
                 'id' => $blog->id,
                 'slug' => $blog->slug,
@@ -315,7 +327,6 @@ class BlogController extends Controller
             ];
 
             DB::commit();
-
             return ApiResponse::success(
                 __('messages.blog.success.updateBlog'),
                 $dataResponse,
@@ -357,6 +368,9 @@ class BlogController extends Controller
         }
     }
 
+    /**
+     * Update status.
+     */
     public function update_status(Request $request, $id)
     {
         DB::beginTransaction();
@@ -382,6 +396,9 @@ class BlogController extends Controller
         }
     }
 
+    /**
+     * Upload image in ckeditor component.
+     */
     public function upload_image(Request $request, $id)
     {
         // Validar el archivo
@@ -411,6 +428,9 @@ class BlogController extends Controller
         }
     }
 
+    /**
+     * Delete image in ckeditor component.
+     */
     public function delete_image(Request $request, $id)
     {
 
@@ -451,5 +471,44 @@ class BlogController extends Controller
             );
         }
     }
+
+    /**
+     * Get all categories
+     */
+    public function get_categories(Request $request)
+    {
+        try {
+            $locale = $request->query('locale', app()->getLocale());
+
+            $categories = BlogCategory::join('blog_category_translations as t', function ($join) use ($locale) {
+                $join->on('blog_categories.id', '=', 't.category_id')->where('t.lang', $locale);
+            })
+                ->select(
+                    'blog_categories.id',
+                    'blog_categories.code',
+                    't.title'
+                )
+                ->get()
+                ->map(function ($categories) {
+                    return [
+                        'id' => $categories->id,
+                        'code' => $categories->code,
+                        'title' => $categories->title
+                    ];
+                });
+
+            return ApiResponse::success(
+                __('messages.blog.success.getCategories'),
+                ['categories' => $categories]
+            );
+        } catch (\Throwable $e) {
+            return ApiResponse::error(
+                __('messages.blog.error.getCategories'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
 }
 

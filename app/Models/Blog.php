@@ -28,15 +28,14 @@ class Blog extends Model
     }
 
 
-    public function blogTranslations()
+    public function Translations()
     {
         return $this->hasMany(BlogTranslation::class, 'blog_id');
     }
 
-    public function blogTranslation()
+    public function translation()
     {
-        return $this->hasOne(BlogTranslation::class, 'blog_id')
-            ->where('lang', app()->getLocale());
+        return $this->hasOne(BlogTranslation::class, 'blog_id');
     }
 
     protected static function booted()
