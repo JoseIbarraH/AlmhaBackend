@@ -433,7 +433,6 @@ class BlogController extends Controller
      */
     public function delete_image(Request $request, $id)
     {
-
         if (!auth()->check()) {
             return response()->json([
                 'error' => ['message' => 'No autorizado']

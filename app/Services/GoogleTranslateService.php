@@ -30,8 +30,8 @@ class GoogleTranslateService
 
             $this->client = new TranslationServiceClient([
                 'credentials' => $keyFile,
-                'transport' => 'rest',
-                'disable_ssl_verification' => true,
+                /* 'transport' => 'rest',
+                'disable_ssl_verification' => true, */
             ]);
 
             Log::info("Google Translate Client inicializado correctamente");
