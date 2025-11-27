@@ -6,8 +6,14 @@ use App\Http\Controllers\Auth\RefreshTokenController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use Illuminate\Http\Request;
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+/* Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
+}); */
+
+Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+    return $request->user()->load([
+        'roles.permissions'
+    ]);
 });
 
 Route::middleware(['web'])->group(function () {

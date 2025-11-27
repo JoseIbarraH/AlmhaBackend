@@ -25,22 +25,22 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete_roles',
             'update_roles_status',
 
-            'view_permissions',
-            'assign_permissions',
-
             'view_services',
+            'show_services',
             'create_services',
             'update_services',
             'delete_services',
             'update_services_status',
 
             'view_blogs',
+            'show_blogs',
             'create_blogs',
             'update_blogs',
             'delete_blogs',
             'update_blogs_status',
 
             'view_teams',
+            'show_teams',
             'create_teams',
             'update_teams',
             'delete_teams',
@@ -52,10 +52,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_design',
             'update_design',
 
-            'view_profile',
             'update_profile',
+            'delete_profile',
 
-            'view_dashboard_limited',
+            'view_dashboard',
         ];
 
         $translations = [
@@ -72,22 +72,22 @@ class RolesAndPermissionsSeeder extends Seeder
                 'delete_roles' => ['title' => 'Eliminar roles', 'description' => 'Eliminar roles del sistema'],
                 'update_roles_status' => ['title' => 'Actualizar estado de rol', 'description' => 'Activar o desactivar roles'],
 
-                'view_permissions' => ['title' => 'Ver permisos', 'description' => 'Ver la lista de permisos disponibles'],
-                'assign_permissions' => ['title' => 'Asignar permisos', 'description' => 'Asignar permisos a roles'],
-
                 'view_services' => ['title' => 'Ver servicios', 'description' => 'Ver servicios creados en el sistema'],
+                'show_services' => ['title' => 'Ver servicio especifico', 'description' => 'Ver servicios específico'],
                 'create_services' => ['title' => 'Registrar servicios', 'description' => 'Registrar nuevos servicios'],
                 'update_services' => ['title' => 'Editar servicios', 'description' => 'Editar información de los servicios'],
                 'delete_services' => ['title' => 'Eliminar servicios', 'description' => 'Eliminar servicios del sistema'],
                 'update_services_status' => ['title' => 'Actualizar estado de servicios', 'description' => 'Activar o desactivar servicios'],
 
                 'view_blogs' => ['title' => 'Ver blogs', 'description' => 'Ver publicaciones del blog'],
+                'show_blogs' => ['title' => 'Ver blog especifico', 'description' => 'Ver blog específico'],
                 'create_blogs' => ['title' => 'Registrar blogs', 'description' => 'Crear nuevas publicaciones en el blog'],
                 'update_blogs' => ['title' => 'Editar blogs', 'description' => 'Editar publicaciones del blog'],
                 'delete_blogs' => ['title' => 'Eliminar blogs', 'description' => 'Eliminar publicaciones del blog'],
                 'update_blogs_status' => ['title' => 'Actualizar estado de blogs', 'description' => 'Publicar o despublicar entradas del blog'],
 
                 'view_teams' => ['title' => 'Ver equipo', 'description' => 'Ver miembros del equipo'],
+                'show_teams' => ['title' => 'Ver miebro específico', 'description' => 'Ver miembro del equipo específico'],
                 'create_teams' => ['title' => 'Registrar equipo', 'description' => 'Agregar nuevos miembros al equipo'],
                 'update_teams' => ['title' => 'Editar equipo', 'description' => 'Editar información de miembros del equipo'],
                 'delete_teams' => ['title' => 'Eliminar equipo', 'description' => 'Eliminar miembros del equipo'],
@@ -99,10 +99,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view_design' => ['title' => 'Ver diseño', 'description' => 'Acceder a la configuración de diseño del sitio'],
                 'update_design' => ['title' => 'Editar diseño', 'description' => 'Editar configuración de diseño del sitio'],
 
-                'view_profile' => ['title' => 'Ver perfil', 'description' => 'Ver información del perfil personal'],
                 'update_profile' => ['title' => 'Actualizar perfil', 'description' => 'Actualizar información del perfil personal'],
+                'delete_profile' => ['title' => 'Eliminar perfil', 'description' => 'Eliminar perfil.'],
 
-                'view_dashboard_limited' => ['title' => 'Ver dashboard limitado', 'description' => 'Acceso limitado al panel de control'],
+                'view_dashboard' => ['title' => 'Ver dashboard', 'description' => 'Acceso limitado al panel de control'],
             ],
             'en' => [
                 'view_users' => ['title' => 'View users', 'description' => 'View the list of registered users'],
@@ -117,22 +117,22 @@ class RolesAndPermissionsSeeder extends Seeder
                 'delete_roles' => ['title' => 'Delete roles', 'description' => 'Delete roles from the system'],
                 'update_roles_status' => ['title' => 'Update role status', 'description' => 'Activate or deactivate roles'],
 
-                'view_permissions' => ['title' => 'View permissions', 'description' => 'View the list of available permissions'],
-                'assign_permissions' => ['title' => 'Assign permissions', 'description' => 'Assign permissions to roles'],
-
                 'view_services' => ['title' => 'View services', 'description' => 'View created services'],
+                'show_services' => ['title' => 'Show specific service', 'description' => 'Show specific service'],
                 'create_services' => ['title' => 'Register services', 'description' => 'Register new services'],
                 'update_services' => ['title' => 'Edit services', 'description' => 'Edit service information'],
                 'delete_services' => ['title' => 'Delete services', 'description' => 'Delete services from the system'],
                 'update_services_status' => ['title' => 'Update services status', 'description' => 'Activate or deactivate services'],
 
                 'view_blogs' => ['title' => 'View blogs', 'description' => 'View blog posts'],
+                'show_blogs' => ['title' => 'show specific blogs', 'description' => 'Show specific blog'],
                 'create_blogs' => ['title' => 'Register blogs', 'description' => 'Create new blog posts'],
                 'update_blogs' => ['title' => 'Edit blogs', 'description' => 'Edit blog posts'],
                 'delete_blogs' => ['title' => 'Delete blogs', 'description' => 'Delete blog posts'],
                 'update_blogs_status' => ['title' => 'Update blogs status', 'description' => 'Publish or unpublish blog entries'],
 
                 'view_teams' => ['title' => 'View team', 'description' => 'View team members'],
+                'show_teams' => ['title' => 'Show specific member', 'description' => 'Show specific member'],
                 'create_teams' => ['title' => 'Register team', 'description' => 'Add new team members'],
                 'update_teams' => ['title' => 'Edit team', 'description' => 'Edit team member information'],
                 'delete_teams' => ['title' => 'Delete team', 'description' => 'Remove team members'],
@@ -144,10 +144,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view_design' => ['title' => 'View design', 'description' => 'Access site design configuration'],
                 'update_design' => ['title' => 'Edit design', 'description' => 'Edit site design configuration'],
 
-                'view_profile' => ['title' => 'View profile', 'description' => 'View personal profile information'],
                 'update_profile' => ['title' => 'Update profile', 'description' => 'Update personal profile information'],
+                'delete_profile' => ['title' => 'Delete profile', 'description' => 'Delete profile'],
 
-                'view_dashboard_limited' => ['title' => 'View limited dashboard', 'description' => 'Limited access to the control panel'],
+                'view_dashboard' => ['title' => 'View dashboard', 'description' => 'Limited access to the control panel'],
             ],
         ];
 
@@ -171,7 +171,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'user' => [
                 'es' => ['title' => 'Usuario', 'description' => 'Acceso a su perfil personal'],
                 'en' => ['title' => 'User', 'description' => 'Access to personal profile'],
-                'permissions' => ['view_profile', 'update_profile', 'view_dashboard_limited']
+                'permissions' => ['update_profile', 'view_dashboard_limited']
             ],
             'design' => [
                 'es' => ['title' => 'Diseñador', 'description' => 'Acceso al diseño'],
@@ -181,18 +181,22 @@ class RolesAndPermissionsSeeder extends Seeder
             'team' => [
                 'es' => ['title' => 'Equipo', 'description' => 'Acceso al módulo de equipo'],
                 'en' => ['title' => 'Team', 'description' => 'Access to the team module'],
-                'permissions' => ['view_teams', 'create_teams', 'update_teams', 'delete_teams', 'update_teams_status']
+                'permissions' => ['view_teams', 'show_teams', 'create_teams', 'update_teams', 'delete_teams', 'update_teams_status']
             ],
             'blog' => [
                 'es' => ['title' => 'Blog', 'description' => 'Acceso al módulo de blog'],
                 'en' => ['title' => 'Blog', 'description' => 'Access to the blog module'],
-                'permissions' => ['view_blogs', 'create_blogs', 'update_blogs', 'delete_blogs', 'update_blogs_status']
+                'permissions' => ['view_blogs', 'show_blos', 'create_blogs', 'update_blogs', 'delete_blogs', 'update_blogs_status']
             ],
             'service' => [
                 'es' => ['title' => 'Servicios', 'description' => 'Acceso al módulo de servicios'],
                 'en' => ['title' => 'Services', 'description' => 'Access to the services module'],
-                'permissions' => ['view_services', 'create_services', 'update_services', 'delete_services', 'update_services_status']
+                'permissions' => ['view_services', 'show_services', 'create_services', 'update_services', 'delete_services', 'update_services_status']
             ],
+            'role' => [
+                'es' => ['title' => 'Roles', 'description' => 'Acceso al módulo de roles'],
+                'en' => ['title' => 'Roles', 'description' => 'Access to the roles module'],
+            ]
         ];
 
         foreach ($roles as $code => $data) {

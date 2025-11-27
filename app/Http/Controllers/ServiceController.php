@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Dashboard\Service\UpdateRequest;
 use App\Http\Requests\Dashboard\Service\StoreRequest;
+use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,12 @@ use App\Models\Service;
 
 class ServiceController extends Controller
 {
+    public $languages;
+
+    public function __construct()
+    {
+        $this->languages = config('languages.supported');
+    }
     // Listar servicios
     public function list_service(Request $request)
     {

@@ -244,7 +244,7 @@ class DesignController extends Controller
     // Update item selection carousel/image //////
     ////////////////////////////////////////////////////
 
-    public function updateState(Request $request)
+    public function update_state(Request $request)
     {
         Log::info($request);
         try {

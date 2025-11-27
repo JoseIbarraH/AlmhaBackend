@@ -52,7 +52,7 @@ class GoogleTranslateService
      * @param string|null $sourceLanguage Código del idioma origen (opcional)
      * @return string Texto traducido
      */
-    public function translate(string $text, string $targetLanguage, ?string $sourceLanguage = null): string
+    public function translate(string $text, string $targetLanguage, ?string $sourceLanguage = 'es'): string
     {
         if (empty($text)) {
             return '';

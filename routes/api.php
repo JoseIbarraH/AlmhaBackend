@@ -71,7 +71,7 @@ Route::prefix('design')->controller(DesignController::class)->group(function () 
         Route::delete('/{id}', 'delete_item');
 
         Route::prefix('settings')->group(function () {
-            Route::post('/state', 'updateState'); // Ahora es: /api/design/settings/state
+            Route::post('/state', 'update_state'); // Ahora es: /api/design/settings/state
         });
     });
 });

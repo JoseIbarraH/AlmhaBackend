@@ -220,8 +220,7 @@ class UserController extends Controller
             );
         }
     }
-
-
+    
     public function delete_user($id)
     {
         try {

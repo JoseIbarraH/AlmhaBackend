@@ -36,7 +36,10 @@ return new class extends Migration
         });
 
         DB::table('design_items')->insert([
-            ['design_id' => '1', 'type' => 'image', 'path' => 'images/design/default/default.webp']
+            ['design_id' => '1', 'type' => 'image', 'path' => 'images/design/default/default.webp'],
+            ['design_id' => '5', 'type' => 'image', 'path' => 'images/design/default/default.webp'],
+            ['design_id' => '6', 'type' => 'image', 'path' => 'images/design/default/default.webp'],
+            ['design_id' => '7', 'type' => 'image', 'path' => 'images/design/default/default.webp'],
         ]);
 
         Schema::create('design_item_translations', function (Blueprint $table) {

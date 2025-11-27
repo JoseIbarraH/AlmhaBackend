@@ -18,12 +18,12 @@ use App\Models\Blog;
 class BlogController extends Controller
 {
 
-    /* protected GoogleTranslateService $translator;
+    public $languages;
 
-    public function __construct(GoogleTranslateService $translator)
+    public function __construct()
     {
-        $this->translator = $translator;
-    } */
+        $this->languages = config('languages.supported');
+    }
     /**
      * Display a listing of the resource.
      */
@@ -111,19 +111,10 @@ class BlogController extends Controller
     /**
      * Display the specified resource.
      */
-    public function get_blog($id, GoogleTranslateService $translator)
+    public function get_blog($id)
     {
         try {
             $lang = 'es';
-            $langen = 'en';
-
-            $prueba = $translator->translate(
-                "Traduccion de prueba para ver si sirve la api o que",
-                $langen,
-                $lang
-            );
-
-            Log::info("Traduccion owo: ", [$prueba]);
 
             $blog = Blog::with(['translation' => fn($q) => $q->where('lang', $lang)])
                 ->where('id', $id)
@@ -198,7 +189,7 @@ class BlogController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function create_blog(Request $request)
+    public function create_blog(Request $request, GoogleTranslateService $translator)
     {
         DB::beginTransaction();
         try {
@@ -217,19 +208,16 @@ class BlogController extends Controller
                 'view' => 0,
             ]);
 
-            BlogTranslation::create([
-                'blog_id' => $blog->id,
-                'lang' => 'es',
-                'title' => $data['title'],
-                'content' => '',
-            ]);
-
-            BlogTranslation::create([
-                'blog_id' => $blog->id,
-                'lang' => 'en',
-                'title' => Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? '',
-                'content' => '',
-            ]);
+            foreach ($this->languages as $lang) {
+                BlogTranslation::create([
+                    'blog_id' => $blog->id,
+                    'lang' => $lang,
+                    'title' => $lang === 'es'
+                        ? $data['title']
+                        : $translator->translate($data['title'], $lang),
+                    'content' => '',
+                ]);
+            }
 
             DB::commit();
 
@@ -251,78 +239,76 @@ class BlogController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update_blog(UpdateRequest $request, string $id)
+    public function update_blog(UpdateRequest $request, string $id, GoogleTranslateService $translator)
     {
-        Log::info('Datos: ', $request->all());
         DB::beginTransaction();
         try {
             $blog = Blog::findOrFail($id);
             $data = $request->validated();
             $locale = $request->query('locale', app()->getLocale());
-            $updates = [];
 
             $translationEs = $blog->translations()->firstOrNew(['lang' => 'es']);
-            if (($data['title'] ?? null) !== ($translationEs->title ?? null)) {
+            $oldTitle = $translationEs?->title;
+            $oldContent = $translationEs?->content;
+
+            $updates = [];
+
+            if (($data['title'] ?? null) && $data['title'] !== $oldTitle) {
                 $slug = Helpers::generateUniqueSlug(Blog::class, $data['title'], 'slug');
-                $blog->update(['slug' => $slug]);
-
-                $translationEs->title = $data['title'];
-                $translationEs->save();
-
-                $translationEn = $blog->translations()->firstOrNew(['lang' => 'en']);
-                $translationEn->title = Helpers::translateBatch([$data['title']], 'es', 'en', 'html')[0]
-                    ?? $translationEs->title;
-                $translationEn->save();
+                $updates['slug'] = $slug;
             }
 
-            if (($data['category'] ?? null) !== $blog->category) {
-                $blog->update(['category_id' => $data['category']]);
+            if (($data['category'] ?? null) !== $blog->category_id) {
+                $updates['category_id'] = $data['category'];
             }
 
-            if (!empty($data['image'])) {
-                if ($data['image'] instanceof UploadedFile) {
-                    if (!empty($blog->image) && Storage::disk('public')->exists($blog->image)) {
-                        Storage::disk('public')->delete($blog->image);
-                    }
-
-                    $path = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");
-                    $updates['image'] = $path;
+            if (!empty($data['image']) && $data['image'] instanceof UploadedFile) {
+                if (!empty($blog->image) && Storage::disk('public')->exists($blog->image)) {
+                    Storage::disk('public')->delete($blog->image);
                 }
+
+                $path = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");
+                $updates['image'] = $path;
             }
 
             if (!empty($updates)) {
                 $blog->update($updates);
             }
 
-            if (isset($data['content']) && is_string($data['content'])) {
-                if ($data['content'] !== ($translationEs->content ?? null)) {
-                    $translationEs->content = $data['content'];
-                    $translationEs->save();
+            foreach ($this->languages as $lang) {
 
-                    $translationEn = $blog->translations()->firstOrNew(['lang' => 'en']);
-                    $tr = Helpers::translateBatch([$data['content']], 'es', 'en')[0] ?? $translationEs->content;
-                    Log::info("Tenemos traduccion? ", [$tr]);
-                    $translationEn->content = $tr;
-                    $translationEn->save();
+                $translation = $blog->translations()->firstOrNew(['lang' => $lang]);
+
+                if (isset($data['title']) && $data['title'] !== $oldTitle) {
+                    $translation->title = $lang === 'es'
+                        ? $data['title']
+                        : $translator->translate($data['title'], $lang);
+                    Log::info('Tradujo title', [$translation->title]);
+                }
+
+                if (isset($data['content']) && $data['content'] !== $oldContent) {
+                    $translation->content = $lang === 'es'
+                        ? $data['content']
+                        : $translator->translate($data['content'], $lang);
+                    Log::info('Tradujo content', [$translation->content]);
+                }
+
+                if ($translation->isDirty()) {
+                    $translation->save();
                 }
             }
 
-            $blog->load([
-                'translations' => function ($q) use ($locale) {
-                    $q->where('lang', $locale);
-                }
-            ]);
-
-            $translation = $blog->translations->first();
+            $blog->load(['translations' => fn($q) => $q->where('lang', $locale)]);
+            $t = $blog->translations->first();
 
             $dataResponse = [
                 'id' => $blog->id,
                 'slug' => $blog->slug,
-                'category' => $blog->category,
+                'category' => $blog->category_id,
                 'status' => $blog->status,
                 'image' => $blog->image ? url("storage/{$blog->image}") : null,
-                'title' => $translation?->title,
-                'content' => $translation?->content,
+                'title' => $t?->title,
+                'content' => $t?->content,
                 'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
             ];
 
