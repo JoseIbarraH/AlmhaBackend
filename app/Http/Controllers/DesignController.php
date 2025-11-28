@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Dashboard\Design\StoreRequest;
 use App\Http\Requests\Dashboard\Design\UpdateRequest;
+use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,12 @@ use App\Helpers\Helpers;
 
 class DesignController extends Controller
 {
+    public $languages;
+
+    public function __construct()
+    {
+        $this->languages = config('languages.supported');
+    }
 
     public function get_design_client(Request $request)
     {
@@ -113,7 +120,7 @@ class DesignController extends Controller
     // Create ////// CarouselRequest
     ////////////////////////////////////////////////////
 
-    public function create_item(StoreRequest $request)
+    public function create_item(StoreRequest $request, GoogleTranslateService $translator)
     {
         Log::info($request);
         try {
@@ -140,7 +147,7 @@ class DesignController extends Controller
                 'path' => $pathType['path']
             ]);
 
-            $this->updateCreateTranslations($item, $data);
+            $this->updateCreateTranslations($item, $data, $translator);
             DB::commit();
             return ApiResponse::success(
                 __('messages.design.success.createItem')
@@ -160,7 +167,7 @@ class DesignController extends Controller
     // Update //////
     ////////////////////////////////////////////////////
 
-    public function update_item(UpdateRequest $request, int $id)
+    public function update_item(UpdateRequest $request, int $id, GoogleTranslateService $translator)
     {
         try {
             DB::beginTransaction();
@@ -175,7 +182,7 @@ class DesignController extends Controller
             ];
 
             if (($data['title'] ?? null) !== $item->title || ($data['subtitle'] ?? null) !== $item->subtitle) {
-                $this->updateCreateTranslations($item, $data);
+                $this->updateCreateTranslations($item, $data, $translator);
             }
 
             if ($request->hasFile('path')) {
@@ -273,35 +280,48 @@ class DesignController extends Controller
         }
     }
 
-    private function updateCreateTranslations(DesignItem $item, array $data): void
+    private function updateCreateTranslations(DesignItem $item, array $data, GoogleTranslateService $translator): void
     {
-        // ES
-        $item->translations()->updateOrCreate(
-            [
-                'lang' => 'es',
-                'item_id' => $item->id
-            ],
-            [
-                "title" => $data['title'],
-                "subtitle" => $data['subtitle'],
-            ]
-        );
+        foreach ($this->languages as $lang) {
+            if ($lang === 'es') {
+                // Español: sin traducción
+                $item->translations()->updateOrCreate(
+                    ['lang' => $lang, 'item_id' => $item->id],
+                    [
+                        'title' => $data['title'],
+                        'subtitle' => $data['subtitle'],
+                    ]
+                );
+                continue;
+            }
 
-        // EN
-        $translated = Helpers::translateBatch([
-            $data['title'],
-            $data['subtitle']
-        ]);
+            try {
+                $textsToTranslate = [
+                    $data['title'],
+                    $data['subtitle']
+                ];
 
-        $item->translations()->updateOrCreate(
-            [
-                'lang' => 'en',
-                'item_id' => $item->id
-            ],
-            [
-                "title" => $translated[0] ?? null,
-                "subtitle" => $translated[1] ?? null,
-            ]
-        );
+                $translated = $translator->translate($textsToTranslate, $lang);
+                Log::info($translated);
+                $item->translations()->updateOrCreate(
+                    ['lang' => $lang, 'item_id' => $item->id],
+                    [
+                        'title' => $translated[0] ?? $data['title'],
+                        'subtitle' => $translated[1] ?? $data['subtitle'],
+                    ]
+                );
+
+            } catch (\Exception $e) {
+                \Log::error("Translation error for item {$item->id} to {$lang}: " . $e->getMessage());
+
+                $item->translations()->updateOrCreate(
+                    ['lang' => $lang, 'item_id' => $item->id],
+                    [
+                        'title' => $data['title'],
+                        'subtitle' => $data['subtitle'],
+                    ]
+                );
+            }
+        }
     }
 }

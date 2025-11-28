@@ -45,44 +45,6 @@ class Helpers
         return $path;
     }
 
-    public static function translateBatch(array $texts, string $source = 'es', string $target = 'en', string $format = 'html'): array
-    {
-        if (empty($texts)) {
-            return [];
-        }
-
-        // Asegura que la URL tenga /translate al final
-        $baseUrl = rtrim(env('LIBRETRANSLATE_URL'), '/');
-        $url = $baseUrl . '/translate';
-
-        $translations = [];
-
-        foreach ($texts as $text) {
-            if (empty($text)) {
-                $translations[] = '';
-                continue;
-            }
-
-            $response = Http::timeout(120)->asJson()->post($url, [
-                'q' => $text,
-                'source' => $source,
-                'target' => $target,
-                'format' => $format,
-            ]);
-
-            if ($response->failed()) {
-                throw new \Exception("LibreTranslate error: " . $response->body());
-            }
-
-            $data = $response->json();
-            $translations[] = $data['translatedText'] ?? '';
-        }
-
-        return $translations;
-    }
-
-
-
     public static function removeAppUrl(string $url): string
     {
         $appUrl = config('app.url');

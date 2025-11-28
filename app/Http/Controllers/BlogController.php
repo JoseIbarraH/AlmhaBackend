@@ -283,14 +283,12 @@ class BlogController extends Controller
                     $translation->title = $lang === 'es'
                         ? $data['title']
                         : $translator->translate($data['title'], $lang);
-                    Log::info('Tradujo title', [$translation->title]);
                 }
 
                 if (isset($data['content']) && $data['content'] !== $oldContent) {
                     $translation->content = $lang === 'es'
                         ? $data['content']
                         : $translator->translate($data['content'], $lang);
-                    Log::info('Tradujo content', [$translation->content]);
                 }
 
                 if ($translation->isDirty()) {

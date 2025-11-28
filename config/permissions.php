@@ -35,18 +35,18 @@ return [
         'update_state' => 'update_design'
     ],
     'role' => [
-        'list_role' => 'view_roles',
-        'create_role' => 'create_roles',
-        'update_role' => 'update_roles',
-        'delete_role' => 'delete_roles',
-        'update_status' => 'update_roles_status'
+        'list_role' => 'manage_users',
+        'create_role' => 'manage_users',
+        'update_role' => 'manage_users',
+        'delete_role' => 'manage_users',
+        'update_status' => 'manage_users'
     ],
     'user' => [
-        'list_user' => 'view_users',
-        'update_status' => 'update_users_status',
-        'create_user' => 'create_users',
-        'update_user' => 'update_users',
-        'delete_user' => 'delete_users'
+        'list_user' => 'manage_users',
+        'update_status' => 'manage_users',
+        'create_user' => 'manage_users',
+        'update_user' => 'manage_users',
+        'delete_user' => 'manage_users'
     ]
 
 ];

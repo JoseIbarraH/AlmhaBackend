@@ -133,7 +133,7 @@ class UserController extends Controller
                 $roles = Role::whereIn('code', $request->roles)->pluck('id');
                 $user->roles()->sync($roles);
             } else {
-                $defaultRole = Role::where('code', 'user')->first();
+                $defaultRole = Role::where('code', 'default')->first();
                 if ($defaultRole) {
                     $user->roles()->attach($defaultRole->id);
                 }
@@ -220,7 +220,7 @@ class UserController extends Controller
             );
         }
     }
-    
+
     public function delete_user($id)
     {
         try {

@@ -13,17 +13,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'view_users',
-            'create_users',
-            'update_users',
-            'delete_users',
-            'update_users_status',
-
-            'view_roles',
-            'create_roles',
-            'update_roles',
-            'delete_roles',
-            'update_roles_status',
+            'manage_users',
 
             'view_services',
             'show_services',
@@ -60,17 +50,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $translations = [
             'es' => [
-                'view_users' => ['title' => 'Ver usuarios', 'description' => 'Ver la lista de usuarios registrados'],
-                'create_users' => ['title' => 'Crear usuarios', 'description' => 'Crear nuevos usuarios en el sistema'],
-                'update_users' => ['title' => 'Editar usuarios', 'description' => 'Editar información de usuarios existentes'],
-                'delete_users' => ['title' => 'Eliminar usuarios', 'description' => 'Eliminar usuarios del sistema'],
-                'update_users_status' => ['title' => 'Actualizar estado de usuarios', 'description' => 'Activar o desactivar usuarios del sistema'],
-
-                'view_roles' => ['title' => 'Ver roles', 'description' => 'Ver los roles existentes'],
-                'create_roles' => ['title' => 'Crear roles', 'description' => 'Crear nuevos roles de usuario'],
-                'update_roles' => ['title' => 'Editar roles', 'description' => 'Editar roles existentes'],
-                'delete_roles' => ['title' => 'Eliminar roles', 'description' => 'Eliminar roles del sistema'],
-                'update_roles_status' => ['title' => 'Actualizar estado de rol', 'description' => 'Activar o desactivar roles'],
+                'manage_users' => ['title' => 'Administrador de usuarios', 'description' => 'Administrador de usuarios'],
 
                 'view_services' => ['title' => 'Ver servicios', 'description' => 'Ver servicios creados en el sistema'],
                 'show_services' => ['title' => 'Ver servicio especifico', 'description' => 'Ver servicios específico'],
@@ -105,17 +85,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view_dashboard' => ['title' => 'Ver dashboard', 'description' => 'Acceso limitado al panel de control'],
             ],
             'en' => [
-                'view_users' => ['title' => 'View users', 'description' => 'View the list of registered users'],
-                'create_users' => ['title' => 'Create users', 'description' => 'Create new users in the system'],
-                'update_users' => ['title' => 'Edit users', 'description' => 'Edit existing user information'],
-                'delete_users' => ['title' => 'Delete users', 'description' => 'Delete users from the system'],
-                'update_users_status' => ['title' => 'Update users status', 'description' => 'Activate or deactivate users in the system'],
-
-                'view_roles' => ['title' => 'View roles', 'description' => 'View existing roles'],
-                'create_roles' => ['title' => 'Create roles', 'description' => 'Create new user roles'],
-                'update_roles' => ['title' => 'Edit roles', 'description' => 'Edit existing roles'],
-                'delete_roles' => ['title' => 'Delete roles', 'description' => 'Delete roles from the system'],
-                'update_roles_status' => ['title' => 'Update role status', 'description' => 'Activate or deactivate roles'],
+                'manage_users' => ['title' => 'User administrator', 'description' => 'User administrator'],
 
                 'view_services' => ['title' => 'View services', 'description' => 'View created services'],
                 'show_services' => ['title' => 'Show specific service', 'description' => 'Show specific service'],
@@ -168,10 +138,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'en' => ['title' => 'Super Administrator', 'description' => 'Full system access'],
                 'permissions' => $permissions
             ],
-            'user' => [
+            'user_administrator' => [
                 'es' => ['title' => 'Usuario', 'description' => 'Acceso a su perfil personal'],
                 'en' => ['title' => 'User', 'description' => 'Access to personal profile'],
-                'permissions' => ['update_profile', 'view_dashboard_limited']
+                'permissions' => ['manage_users']
             ],
             'design' => [
                 'es' => ['title' => 'Diseñador', 'description' => 'Acceso al diseño'],
@@ -193,10 +163,17 @@ class RolesAndPermissionsSeeder extends Seeder
                 'en' => ['title' => 'Services', 'description' => 'Access to the services module'],
                 'permissions' => ['view_services', 'show_services', 'create_services', 'update_services', 'delete_services', 'update_services_status']
             ],
-            'role' => [
-                'es' => ['title' => 'Roles', 'description' => 'Acceso al módulo de roles'],
-                'en' => ['title' => 'Roles', 'description' => 'Access to the roles module'],
-            ]
+            'record' => [
+                'es' => ['title' => 'Registro', 'description' => 'Acceso al módulo de registros'],
+                'en' => ['title' => 'Record', 'description' => 'Access to the records module'],
+                'permissions' => ['view_reports', 'delete_reports']
+            ],
+            'default' => [
+                'es' => ['title' => 'Default', 'description' => 'Rol default'],
+                'en' => ['title' => 'Default', 'description' => 'Default role'],
+                'permissions' => ['view_dashboard']
+            ],
+
         ];
 
         foreach ($roles as $code => $data) {

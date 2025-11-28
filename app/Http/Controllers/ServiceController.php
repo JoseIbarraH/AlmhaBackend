@@ -328,15 +328,12 @@ class ServiceController extends Controller
     /**
      * Crear un servicio StoreRequest
      */
-    public function create_service(StoreRequest $request)
+    public function create_service(StoreRequest $request, GoogleTranslateService $translator)
     {
-        Log::info("Llego: ", [$request->all()]);
+        /* Log::info("Datos: ", [$request->all()]); */
         DB::beginTransaction();
         try {
             $data = $request->all();
-            Log::info("Validados: ", [$data]);
-
-            // Crear servicio
             $service = Service::create([
                 'status' => $data['status'] ?? 'inactive',
                 'image' => '',
@@ -344,45 +341,35 @@ class ServiceController extends Controller
             ]);
 
             $service->image = Helpers::saveWebpFile($data['image'], "images/service/{$service->id}/service_image");
-            // Mover imagen a carpeta definitiva
-            $service->update([
-                'image' => $service->image
-            ]);
+            $service->update(['image' => $service->image]);
 
-            // Crear traducciones (ES y EN)
-            $this->createTranslations($service, $data);
+            $this->createTranslations($service, $data, $translator);
 
-            // Generar y guardar slug
             $service->update([
                 'slug' => Helpers::generateUniqueSlug(
                     modelClass: Service::class,
-                    title: $service->serviceTranslation->where('lang', 'es')->first()->title,
+                    title: $service->serviceTranslation()->where('lang', 'es')->first()->title,
                     slugColumn: 'slug'
                 )
             ]);
 
-            // Crear fases de cirugía (si existen)
             if (!empty($data['surgery_phases'])) {
-                $this->createSurgeryPhases($service, $data['surgery_phases']);
+                $this->createSurgeryPhases($service, $data['surgery_phases'], $translator);
             }
 
-            // Crear FAQs (si existen)
             if (!empty($data['frequently_asked_questions'])) {
-                $this->createFAQs($service, $data['frequently_asked_questions']);
+                $this->createFAQs($service, $data['frequently_asked_questions'], $translator);
             }
 
-            // Guardar imágenes de muestra
             if ($request->hasFile('sample_images')) {
                 $this->saveSampleImages($service, $data['sample_images']);
             }
 
-            // Guardar galería de resultados
             if ($request->hasFile('results_gallery')) {
                 $this->saveResultsGallery($service, $request->file('results_gallery'));
             }
 
             DB::commit();
-
             return ApiResponse::success(
                 __('messages.service.success.createService'),
                 $service->load([
@@ -397,6 +384,8 @@ class ServiceController extends Controller
             DB::rollBack();
             Log::error('Error en create_service', [
                 'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
 
@@ -408,73 +397,152 @@ class ServiceController extends Controller
         }
     }
 
-    private function createTranslations(Service $service, array $data): void
+    private function createTranslations(Service $service, array $data, GoogleTranslateService $translator): void
     {
-        $translations = [
-            'es' => [
-                'title' => $data['title'],
-                'description' => $data['description'],
-            ],
-            'en' => [
-                'title' => Helpers::translateBatch([$data['title']], 'es', 'en')[0] ?? $data['title'],
-                'description' => Helpers::translateBatch([$data['description']], 'es', 'en')[0] ?? $data['description'],
-            ]
-        ];
+        foreach ($this->languages as $lang) {
+            if ($lang === 'es') {
+                $service->serviceTranslation()->create([
+                    'lang' => $lang,
+                    'title' => $data['title'],
+                    'description' => $data['description'] ?? '',
+                ]);
+                continue;
+            }
 
-        foreach ($translations as $lang => $trans) {
-            $service->serviceTranslation()->create([
-                'lang' => $lang,
-                'title' => $trans['title'],
-                'description' => $trans['description'],
-            ]);
+            try {
+                // Traducir title y description en UNA sola llamada
+                $translated = $translator->translate([
+                    $data['title'],
+                    $data['description'] ?? ''
+                ], $lang);
+
+                $service->serviceTranslation()->create([
+                    'lang' => $lang,
+                    'title' => $translated[0] ?? $data['title'],
+                    'description' => $translated[1] ?? ($data['description'] ?? ''),
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error("Translation error for service {$service->id} to {$lang}: " . $e->getMessage());
+
+                // Fallback: usar texto original
+                $service->serviceTranslation()->create([
+                    'lang' => $lang,
+                    'title' => $data['title'],
+                    'description' => $data['description'] ?? '',
+                ]);
+            }
         }
     }
 
-    private function createSurgeryPhases(Service $service, array $phases): void
+    private function createSurgeryPhases(Service $service, array $phases, GoogleTranslateService $translator): void
     {
-        foreach ($phases as $phase) {
-            // Crear versión ES
-            $service->surgeryPhases()->create($phase + ['lang' => 'es']);
+        $service->surgeryPhases()->create([
+            'lang' => 'es',
+            'recovery_time' => $phases['recovery_time'] ?? [],
+            'preoperative_recommendations' => $phases['preoperative_recommendations'] ?? [],
+            'postoperative_recommendations' => $phases['postoperative_recommendations'] ?? [],
+        ]);
 
-            // Traducir y crear versión EN
-            $fieldsToTranslate = ['title', 'description', 'recovery_time', 'preoperative_recommendations', 'postoperative_recommendations'];
+        foreach ($this->languages as $lang) {
+            if ($lang === 'es') {
+                continue;
+            }
 
-            $translated = collect($fieldsToTranslate)
-                ->filter(fn($field) => !empty($phase[$field]))
-                ->mapWithKeys(function ($field) use ($phase) {
-                    $value = is_array($phase[$field]) ? implode(', ', $phase[$field]) : $phase[$field];
-                    $translatedValue = Helpers::translateBatch([$value], 'es', 'en')[0] ?? $value;
+            try {
+                $translatedData = ['lang' => $lang];
 
-                    return [$field => is_array($phase[$field]) ? explode(', ', $translatedValue) : $translatedValue];
-                })
-                ->toArray();
+                $textsToTranslate = [];
+                $fieldMap = [];
 
-            $service->surgeryPhases()->create($translated + ['lang' => 'en']);
+                foreach ($phases as $key => $values) {
+                    if (empty($values) || !is_array($values)) {
+                        $translatedData[$key] = [];
+                        continue;
+                    }
+
+                    $fieldMap[$key] = [
+                        'start' => count($textsToTranslate),
+                        'count' => count($values)
+                    ];
+                    $textsToTranslate = array_merge($textsToTranslate, $values);
+                }
+
+                if (!empty($textsToTranslate)) {
+                    $translated = $translator->translate($textsToTranslate, $lang);
+
+                    foreach ($fieldMap as $key => $map) {
+                        $translatedData[$key] = array_slice(
+                            $translated,
+                            $map['start'],
+                            $map['count']
+                        );
+                    }
+                }
+
+                $service->surgeryPhases()->create($translatedData);
+
+            } catch (\Exception $e) {
+                \Log::error("Translation error for surgery phases service {$service->id} to {$lang}: " . $e->getMessage());
+
+                $service->surgeryPhases()->create([
+                    'lang' => $lang,
+                    'recovery_time' => $phases['recovery_time'] ?? [],
+                    'preoperative_recommendations' => $phases['preoperative_recommendations'] ?? [],
+                    'postoperative_recommendations' => $phases['postoperative_recommendations'] ?? [],
+                ]);
+            }
         }
     }
 
-    private function createFAQs(Service $service, array $faqs): void
+    private function createFAQs(Service $service, array $faqs, GoogleTranslateService $translator): void
     {
-        foreach ($faqs as $faq) {
-            $question = $faq['question'] ?? '';
-            $answer = $faq['answer'] ?? '';
-            $order = $faq['order'] ?? 0;
+        if (empty($faqs)) {
+            return;
+        }
 
-            // Versión ES
-            $service->frequentlyAskedQuestions()->create([
-                'question' => $question,
-                'answer' => $answer,
-                'order' => $order,
-                'lang' => 'es',
-            ]);
+        foreach ($this->languages as $lang) {
+            if ($lang === 'es') {
+                foreach ($faqs as $faq) {
+                    $service->frequentlyAskedQuestions()->create([
+                        'question' => $faq['question'] ?? '',
+                        'answer' => $faq['answer'] ?? '',
+                        'lang' => $lang,
+                    ]);
+                }
+                continue;
+            }
 
-            // Versión EN (traducida)
-            $service->frequentlyAskedQuestions()->create([
-                'question' => Helpers::translateBatch([$question], 'es', 'en')[0] ?? $question,
-                'answer' => Helpers::translateBatch([$answer], 'es', 'en')[0] ?? $answer,
-                'order' => $order,
-                'lang' => 'en',
-            ]);
+            try {
+                $textsToTranslate = [];
+                foreach ($faqs as $faq) {
+                    $textsToTranslate[] = $faq['question'] ?? '';
+                    $textsToTranslate[] = $faq['answer'] ?? '';
+                }
+
+                $translated = $translator->translate($textsToTranslate, $lang);
+
+                $index = 0;
+                foreach ($faqs as $faq) {
+                    $service->frequentlyAskedQuestions()->create([
+                        'question' => $translated[$index] ?? ($faq['question'] ?? ''),
+                        'answer' => $translated[$index + 1] ?? ($faq['answer'] ?? ''),
+                        'lang' => $lang,
+                    ]);
+                    $index += 2;
+                }
+
+            } catch (\Exception $e) {
+                \Log::error("Translation error for FAQs service {$service->id} to {$lang}: " . $e->getMessage());
+
+                foreach ($faqs as $faq) {
+                    $service->frequentlyAskedQuestions()->create([
+                        'question' => $faq['question'] ?? '',
+                        'answer' => $faq['answer'] ?? '',
+                        'lang' => $lang,
+                    ]);
+                }
+            }
         }
     }
 
@@ -509,20 +577,18 @@ class ServiceController extends Controller
     }
 
     // Actualizar un servicio
-    public function update_service(UpdateRequest $request, $id)
+    public function update_service(UpdateRequest $request, $id, GoogleTranslateService $translator)
     {
         DB::beginTransaction();
         try {
             $service = Service::findOrFail($id);
             $data = $request->validated();
 
-            Log::info("Paso validacion: ", [$data, $id]);
-
             $this->updateServiceStatus($service, $data);
             $this->updateServiceImage($service, $data);
-            $this->updateTranslations($service, $data);
-            $this->updateSurgeryPhases($service, $data);
-            $this->updateFaqs($service, $data);
+            $this->updateTranslations($service->id, $data, $translator);
+            $this->updateSurgeryPhases($service, $data, $translator);
+            $this->updateFaqs($service, $data, $translator);
             $this->updateSampleImages($service, $data);
             $this->updateResultsGallery($service, $data);
 
@@ -541,7 +607,13 @@ class ServiceController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error en update_service: ' . $e->getMessage());
+            Log::error('Error en update_service', [
+                'service_id' => $id,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return ApiResponse::error(
                 __('messages.service.error.updateService'),
@@ -553,18 +625,22 @@ class ServiceController extends Controller
 
     private function updateServiceStatus(Service $service, array $data): void
     {
+        $updates = [];
+
         if (isset($data['status']) && $data['status'] !== $service->status) {
-            $service->update(['status' => $data['status']]);
+            $updates['status'] = $data['status'];
         }
 
-        if (isset($data['title']) && ($data['title'] !== $service->title)) {
-            $service->update([
-                'slug' => Helpers::generateUniqueSlug(
-                    modelClass: Service::class,
-                    title: $data['title'],
-                    slugColumn: 'slug'
-                )
-            ]);
+        if (isset($data['title']) && $data['title'] !== $service->serviceTranslation()->where('lang', 'es')->first()?->title) {
+            $updates['slug'] = Helpers::generateUniqueSlug(
+                modelClass: Service::class,
+                title: $data['title'],
+                slugColumn: 'slug'
+            );
+        }
+
+        if (!empty($updates)) {
+            $service->update($updates);
         }
     }
 
@@ -582,103 +658,253 @@ class ServiceController extends Controller
         $service->update(['image' => $path]);
     }
 
-    private function updateTranslations(Service $service, array $data): void
+    private function updateTranslations(int $id, array $data, GoogleTranslateService $translator): void
     {
-        $translations = [
-            'es' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'es']),
-            'en' => ServiceTranslation::firstOrCreate(['service_id' => $service->id, 'lang' => 'en']),
-        ];
+        $translationEs = ServiceTranslation::firstOrCreate(['service_id' => $id, 'lang' => 'es']);
 
-        $fields = ['title', 'description'];
-        $changed = collect($fields)->filter(fn($f) => isset($data[$f]) && $data[$f] !== $translations['es']->$f);
+        $titleChanged = isset($data['title']) && $data['title'] !== $translationEs->title;
+        $descChanged = isset($data['description']) && $data['description'] !== $translationEs->description;
 
-        if ($changed->isEmpty()) {
+        if (!$titleChanged && !$descChanged) {
             return;
         }
 
-        $translations['es']->update([
-            'title' => $data['title'],
-            'description' => $data['description'] ?? '',
+        // Actualizar español
+        $translationEs->update([
+            'title' => $data['title'] ?? $translationEs->title,
+            'description' => $data['description'] ?? $translationEs->description,
         ]);
 
-        $toTranslate = $changed->mapWithKeys(fn($field) => [$field => $data[$field] ?? ''])->toArray();
-        $translated = Helpers::translateBatch(array_values($toTranslate), 'es', 'en');
+        // Preparar textos para traducir
+        $textsToTranslate = [];
+        $changedFields = [];
 
-        $translations['en']->update([
-            'title' => $changed->contains('title') ? $translated[0] : $translations['en']->title,
-            'description' => $changed->contains('description') ? $translated[1] ?? '' : $translations['en']->description,
-        ]);
+        if ($titleChanged) {
+            $textsToTranslate[] = $data['title'];
+            $changedFields[] = 'title';
+        }
+
+        if ($descChanged) {
+            $textsToTranslate[] = $data['description'];
+            $changedFields[] = 'description';
+        }
+
+        // Traducir a otros idiomas
+        foreach ($this->languages as $lang) {
+            if ($lang === 'es') {
+                continue;
+            }
+
+            try {
+                // UNA sola llamada API con todos los textos
+                $translated = $translator->translate($textsToTranslate, $lang);
+
+                $translation = ServiceTranslation::firstOrCreate([
+                    'service_id' => $id,
+                    'lang' => $lang
+                ]);
+
+                $updatedFields = [];
+                foreach ($changedFields as $index => $field) {
+                    $updatedFields[$field] = $translated[$index] ?? $translation->$field;
+                }
+
+                $translation->update($updatedFields);
+
+            } catch (\Exception $e) {
+                \Log::error("Translation error for service {$id} to {$lang}: " . $e->getMessage());
+            }
+        }
     }
 
-    private function updateSurgeryPhases(Service $service, array $data): void
+    private function updateSurgeryPhases(Service $service, array $data, GoogleTranslateService $translator): void
     {
         if (empty($data['surgery_phases'])) {
             return;
         }
 
+        // Eliminar fases existentes
         $service->surgeryPhases()->delete();
 
-        $phase = $data['surgery_phases'];
-        $service->surgeryPhases()->create($phase + ['lang' => 'es']);
+        $phases = $data['surgery_phases'];
 
-        $fieldsToTranslate = ['recovery_time', 'preoperative_recommendations', 'postoperative_recommendations'];
-        $toTranslate = collect($fieldsToTranslate)
-            ->filter(fn($field) => !empty($phase[$field]))
-            ->map(fn($field) => is_array($phase[$field]) ? implode(', ', $phase[$field]) : $phase[$field])
-            ->values()
-            ->toArray();
+        // Crear español
+        $service->surgeryPhases()->create([
+            'lang' => 'es',
+            'recovery_time' => $phases['recovery_time'] ?? [],
+            'preoperative_recommendations' => $phases['preoperative_recommendations'] ?? [],
+            'postoperative_recommendations' => $phases['postoperative_recommendations'] ?? [],
+        ]);
 
-        if (empty($toTranslate)) {
-            return;
-        }
+        // Traducir a otros idiomas
+        foreach ($this->languages as $lang) {
+            if ($lang === 'es') {
+                continue;
+            }
 
-        $translated = Helpers::translateBatch($toTranslate, 'es', 'en');
-        $translatedData = [];
-        $index = 0;
+            try {
+                $textsToTranslate = [];
+                $fieldMap = [];
 
-        foreach ($fieldsToTranslate as $field) {
-            if (!empty($phase[$field])) {
-                $value = $translated[$index++] ?? $phase[$field];
-                $translatedData[$field] = is_array($phase[$field]) ? explode(', ', $value) : $value;
+                foreach ($phases as $key => $values) {
+                    if (empty($values) || !is_array($values)) {
+                        $fieldMap[$key] = [];
+                        continue;
+                    }
+
+                    $fieldMap[$key] = [
+                        'start' => count($textsToTranslate),
+                        'count' => count($values)
+                    ];
+
+                    $textsToTranslate = array_merge($textsToTranslate, $values);
+                }
+
+                if (!empty($textsToTranslate)) {
+                    $translated = $translator->translate($textsToTranslate, $lang);
+
+                    $translatedData = ['lang' => $lang];
+                    foreach ($fieldMap as $key => $map) {
+                        if (empty($map)) {
+                            $translatedData[$key] = [];
+                        } else {
+                            $translatedData[$key] = array_slice($translated, $map['start'], $map['count']);
+                        }
+                    }
+
+                    $service->surgeryPhases()->create($translatedData);
+                }
+
+            } catch (\Exception $e) {
+                \Log::error("Translation error for surgery phases service {$service->id} to {$lang}: " . $e->getMessage());
+
+                // Fallback: usar valores originales
+                $service->surgeryPhases()->create([
+                    'lang' => $lang,
+                    'recovery_time' => $phases['recovery_time'] ?? [],
+                    'preoperative_recommendations' => $phases['preoperative_recommendations'] ?? [],
+                    'postoperative_recommendations' => $phases['postoperative_recommendations'] ?? [],
+                ]);
             }
         }
-
-        $service->surgeryPhases()->create($translatedData + ['lang' => 'en']);
     }
 
-    private function updateFaqs(Service $service, array $data): void
+    private function updateFaqs(Service $service, array $data, GoogleTranslateService $translator): void
     {
         if (empty($data['frequently_asked_questions'])) {
             return;
         }
 
-        $existingIds = $service->frequentlyAskedQuestions()->pluck('id')->toArray();
-        $incomingIds = [];
+        $processedIds = [];
+        $faqsToTranslate = [];
 
-        foreach ($data['frequently_asked_questions'] as $faqData) {
+        // === PASO 1: Procesar FAQs en español ===
+        foreach ($data['frequently_asked_questions'] as $index => $faqData) {
             $faqId = $faqData['id'] ?? null;
 
-            $faqEs = $faqId ? ServiceFaq::find($faqId) : new ServiceFaq(['service_id' => $service->id, 'lang' => 'es']);
+            // Buscar FAQ existente en español por ID
+            $faqEs = null;
+            if ($faqId) {
+                $faqEs = ServiceFaq::where('id', $faqId)
+                    ->where('service_id', $service->id)
+                    ->where('lang', 'es')
+                    ->first();
+            }
+
+            // Si no existe, crear nueva
+            if (!$faqEs) {
+                $faqEs = new ServiceFaq([
+                    'service_id' => $service->id,
+                    'lang' => 'es'
+                ]);
+            }
+
+            // Actualizar datos
             $faqEs->fill([
                 'question' => $faqData['question'] ?? '',
                 'answer' => $faqData['answer'] ?? '',
             ])->save();
 
-            $incomingIds[] = $faqEs->id;
+            $processedIds[] = $faqEs->id;
 
-            $faqEn = ServiceFaq::firstOrNew(['service_id' => $service->id, 'lang' => 'en', 'id' => $faqId]);
-            $translations = Helpers::translateBatch([$faqEs->question, $faqEs->answer], 'es', 'en');
-
-            $faqEn->fill([
-                'question' => $translations[0] ?? '',
-                'answer' => $translations[1] ?? '',
-            ])->save();
+            // Guardar para traducir después
+            $faqsToTranslate[$index] = [
+                'spanish_id' => $faqEs->id,
+                'question' => $faqEs->question,
+                'answer' => $faqEs->answer,
+            ];
         }
 
-        $toDelete = array_diff($existingIds, $incomingIds);
-        if (!empty($toDelete)) {
-            ServiceFaq::whereIn('id', $toDelete)->delete();
+        // === PASO 2: Traducir a todos los demás idiomas ===
+        foreach ($this->languages as $lang) {
+            if ($lang === 'es') {
+                continue;
+            }
+
+            try {
+                // Preparar todos los textos para traducir en batch
+                $textsToTranslate = [];
+                foreach ($faqsToTranslate as $faq) {
+                    $textsToTranslate[] = $faq['question'];
+                    $textsToTranslate[] = $faq['answer'];
+                }
+
+                // UNA sola llamada API con todas las FAQs
+                $translated = $translator->translate($textsToTranslate, $lang);
+
+                // Obtener FAQs existentes en este idioma (por orden de creación)
+                $existingFaqsInLang = ServiceFaq::where('service_id', $service->id)
+                    ->where('lang', $lang)
+                    ->orderBy('id')
+                    ->get();
+
+                // Procesar cada FAQ traducida
+                $translatedIndex = 0;
+                foreach ($faqsToTranslate as $index => $faq) {
+                    // Intentar obtener la FAQ en esta posición
+                    $existingFaq = $existingFaqsInLang->get($index);
+
+                    if ($existingFaq) {
+                        // Actualizar FAQ existente
+                        $existingFaq->update([
+                            'question' => $translated[$translatedIndex] ?? $faq['question'],
+                            'answer' => $translated[$translatedIndex + 1] ?? $faq['answer'],
+                        ]);
+                        $processedIds[] = $existingFaq->id;
+                    } else {
+                        // Crear nueva FAQ
+                        $newFaq = ServiceFaq::create([
+                            'service_id' => $service->id,
+                            'lang' => $lang,
+                            'question' => $translated[$translatedIndex] ?? $faq['question'],
+                            'answer' => $translated[$translatedIndex + 1] ?? $faq['answer'],
+                        ]);
+                        $processedIds[] = $newFaq->id;
+                    }
+
+                    $translatedIndex += 2;
+                }
+
+            } catch (\Exception $e) {
+                \Log::error("Translation error for FAQs service {$service->id} to {$lang}: " . $e->getMessage());
+
+                // Fallback: crear con texto original si falla traducción
+                foreach ($faqsToTranslate as $faq) {
+                    $fallbackFaq = ServiceFaq::create([
+                        'service_id' => $service->id,
+                        'lang' => $lang,
+                        'question' => $faq['question'],
+                        'answer' => $faq['answer'],
+                    ]);
+                    $processedIds[] = $fallbackFaq->id;
+                }
+            }
         }
+
+        // === PASO 3: Eliminar FAQs obsoletas ===
+        $service->frequentlyAskedQuestions()
+            ->whereNotIn('id', $processedIds)
+            ->delete();
     }
 
     private function updateSampleImages(Service $service, array $data): void
@@ -693,6 +919,7 @@ class ServiceController extends Controller
 
         foreach ($fields as $field) {
             if (isset($data['sample_images'][$field]) && !is_string($data['sample_images'][$field])) {
+                // Eliminar imagen anterior si existe
                 if ($sample?->$field && Storage::disk('public')->exists($sample->$field)) {
                     Storage::disk('public')->delete($sample->$field);
                 }
@@ -706,7 +933,12 @@ class ServiceController extends Controller
             }
         }
 
-        $service->sampleImages()->updateOrCreate(['service_id' => $service->id], $updates);
+        if (!empty($updates)) {
+            $service->sampleImages()->updateOrCreate(
+                ['service_id' => $service->id],
+                $updates
+            );
+        }
     }
 
     private function updateResultsGallery(Service $service, array $data): void
@@ -715,25 +947,33 @@ class ServiceController extends Controller
             return;
         }
 
-        $existingImages = $service->resultGallery()->pluck('path')->toArray();
+        $existingImages = $service->resultGallery()->pluck('path', 'id')->toArray();
         $newImages = [];
 
         foreach ($data['results_gallery'] as $item) {
             if (is_string($item)) {
-                $newImages[] = Helpers::removeAppUrl($item);
-            } elseif ($item instanceof \Illuminate\Http\UploadedFile) {
-                $path = Helpers::saveWebpFile($item, "images/service/{$service->id}/results_gallery");
+                // Es una imagen existente (URL)
+                $path = Helpers::removeAppUrl($item);
                 $newImages[] = $path;
-                $service->resultGallery()->create(['path' => $path]);
+            } elseif ($item instanceof \Illuminate\Http\UploadedFile) {
+                // Es una nueva imagen
+                $path = Helpers::saveWebpFile($item, "images/service/{$service->id}/results_gallery");
+
+                if ($path) {
+                    $service->resultGallery()->create(['path' => $path]);
+                    $newImages[] = $path;
+                }
             }
         }
 
-        $toDelete = array_diff($existingImages, $newImages);
-        foreach ($toDelete as $path) {
-            if (Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
+        // Eliminar imágenes que ya no están
+        foreach ($existingImages as $id => $path) {
+            if (!in_array($path, $newImages)) {
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+                $service->resultGallery()->where('id', $id)->delete();
             }
-            $service->resultGallery()->where('path', $path)->delete();
         }
     }
 

@@ -101,7 +101,7 @@ return [
             'deleteRole' => 'Error al eliminar el rol',
             'deleteAdminRole' => 'No puedes eliminar el rol Super Admin',
             'deleteUserRole' => 'No puedes eliminar el rol User',
-            'updateAdminRole' => 'No puedes eliminar el rol Super Admin',
+            'updateAdminRole' => 'No puedes modificar el rol Super Admin',
             'updateStatusAdminRole' => 'No puedes deshabilitar el rol Super Admin',
             'listPermissions' => 'Error al obtener la list de permisos'
         ]

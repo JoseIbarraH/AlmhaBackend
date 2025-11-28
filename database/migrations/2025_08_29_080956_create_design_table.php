@@ -35,13 +35,6 @@ return new class extends Migration
             $table->string('path');
         });
 
-        DB::table('design_items')->insert([
-            ['design_id' => '1', 'type' => 'image', 'path' => 'images/design/default/default.webp'],
-            ['design_id' => '5', 'type' => 'image', 'path' => 'images/design/default/default.webp'],
-            ['design_id' => '6', 'type' => 'image', 'path' => 'images/design/default/default.webp'],
-            ['design_id' => '7', 'type' => 'image', 'path' => 'images/design/default/default.webp'],
-        ]);
-
         Schema::create('design_item_translations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('item_id')->constrained('design_items')->onDelete('cascade');
