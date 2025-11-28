@@ -45,14 +45,14 @@ return [
             'list_teamMember' => 'Lista de miembros del equipo obtenida correctamente',
             'getTeamMember' => 'Miembro del equipo obtenido correctamente',
             'create_teamMember' => 'Miembro del equipo creado correctamente',
-            'update_teamMember' => 'Miembro del equipo actualizado correctamente',
+            'updateTeamMember' => 'Miembro del equipo actualizado correctamente',
             'delete_teamMember' => 'Miembro del equipo eliminado correctamente',
             'updateStatus' => 'Estado del miembro del equipo actualizado correctamente',
         ],
         'error' => [
             'list_teamMember' => 'Error al obtener la lista de miembros del equipo',
             'create_teamMember' => 'Error al crear miembro del equipo',
-            'update_teamMember' => 'Error al actualizar al miembro del equipo',
+            'updateTeamMember' => 'Error al actualizar al miembro del equipo',
             'delete_teamMember' => 'Error al eliminiar miembro del equipo',
             'updateStatus' => 'Error al actualizar el estado del miembro del equipo',
             'getTeamMember' => 'Error al obtener miembro del equipo'

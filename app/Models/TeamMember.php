@@ -19,12 +19,12 @@ class TeamMember extends Model
         'image'
     ];
 
-    public function teamMemberTranslations()
+    public function translations()
     {
         return $this->hasMany(teamMemberTranslation::class);
     }
 
-    public function teamMemberImages()
+    public function images()
     {
         return $this->hasMany(TeamMemberImage::class);
     }

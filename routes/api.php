@@ -27,12 +27,11 @@ Route::prefix('service')->controller(ServiceController::class)->group(function (
 
 Route::prefix('blog')->controller(BlogController::class)->group(function () {
     // Rutas públicas
-    Route::get('/client', 'list_blog_client');
+    Route::get('/', 'list_blog');
     Route::get('/client/{id}', 'get_blog_client');
 
     // Rutas protegidas
     Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
-        Route::get('/', 'list_blog');
         Route::get('/categories', 'get_categories');
         Route::get('/{id}', 'get_blog');
         Route::post('/', 'create_blog');
