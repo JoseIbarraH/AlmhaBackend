@@ -29,7 +29,7 @@ class TeamMemberFactory extends Factory
     public function withTranslations(): static
     {
         return $this->afterCreating(function (TeamMember $member) {
-            $member->teamMemberTranslations()->createMany([
+            $member->translations()->createMany([
                 [
                     'specialization' => $this->faker->jobTitle(),
                     'biography' => $this->faker->paragraph(3),
@@ -47,7 +47,7 @@ class TeamMemberFactory extends Factory
     public function withImages(): static
     {
         return $this->afterCreating(function (TeamMember $member) {
-            $member->teamMemberImages()->createMany([
+            $member->images()->createMany([
                 [
                     'url' => 'images/default.png',
                     'description' => $this->faker->sentence(),

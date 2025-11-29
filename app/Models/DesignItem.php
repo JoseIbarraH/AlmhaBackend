@@ -12,7 +12,7 @@ class DesignItem extends Model
         'type',
         'path',
     ];
-    
+
     protected $table = 'design_items';
 
     protected $appends = ['full_path'];

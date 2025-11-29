@@ -13,6 +13,7 @@
         "laravel/octane": "^2.12",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
+        "owen-it/laravel-auditing": "^14.0",
         "spatie/laravel-medialibrary": "^11.15"
     },
     "require-dev": {

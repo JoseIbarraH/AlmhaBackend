@@ -1,14 +1,16 @@
 <?php
 
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use OwenIt\Auditing\Contracts\Auditable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\LogsActivity;
 
-class TeamMember extends Model
+class TeamMember extends Model implements Auditable
 {
-    use HasFactory, LogsActivity;
+    use HasFactory;
+    use \OwenIt\Auditing\Auditable;
 
     protected $table = 'team_members';
 
@@ -21,7 +23,7 @@ class TeamMember extends Model
 
     public function translations()
     {
-        return $this->hasMany(teamMemberTranslation::class);
+        return $this->hasMany(TeamMemberTranslation::class);
     }
 
     public function images()
@@ -29,17 +31,13 @@ class TeamMember extends Model
         return $this->hasMany(TeamMemberImage::class);
     }
 
-    public static function getImagesById($id)
-    {
-        return self::findOrFail($id)->teamMemberImages;
-    }
-
     protected static function boot()
     {
         parent::boot();
 
+        // SOLO SE MANTIENE EL BORRADO DE CARPETA (esto sí es propio del modelo)
         static::deleting(function ($teamMember) {
-            $folderPath = "images/team_members/{$teamMember->id}";
+            $folderPath = "images/team/{$teamMember->id}";
             if (Storage::disk('public')->exists($folderPath)) {
                 Storage::disk('public')->deleteDirectory($folderPath);
             }

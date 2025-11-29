@@ -5,10 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-use App\Traits\LogsActivity;
 class Service extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory;
 
     protected $table = 'services';
 
@@ -19,6 +18,9 @@ class Service extends Model
         'status'
     ];
 
+    /**
+     * Relaciones
+     */
     public function serviceTranslation()
     {
         return $this->hasMany(ServiceTranslation::class);
@@ -46,8 +48,10 @@ class Service extends Model
 
     protected static function booted()
     {
-        static::deleting(function ($service) {
-            $path = "images/service/{$service->id}";
+        parent::boot();
+
+        static::deleting(function ($model) {
+            $path = "images/service/{$model->id}";
             if (Storage::disk('public')->exists($path)) {
                 Storage::disk('public')->deleteDirectory($path);
             }

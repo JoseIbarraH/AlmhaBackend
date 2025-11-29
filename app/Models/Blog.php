@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-use App\Traits\LogsActivity;
+
 
 class Blog extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory;
 
     protected $table = 'blogs';
     protected $fillable = [
@@ -22,13 +22,15 @@ class Blog extends Model
         'status',
     ];
 
+    /**
+     * Relaciones
+     */
     public function category()
     {
         return $this->belongsTo(BlogCategory::class, 'category_id');
     }
 
-
-    public function Translations()
+    public function translations()
     {
         return $this->hasMany(BlogTranslation::class, 'blog_id');
     }
@@ -40,8 +42,10 @@ class Blog extends Model
 
     protected static function booted()
     {
-        static::deleting(function ($blog) {
-            $path = "images/blog/{$blog->id}";
+        parent::boot();
+
+        static::deleting(function ($model) {
+            $path = "images/blog/{$model->id}";
             if (Storage::disk('public')->exists($path)) {
                 Storage::disk('public')->deleteDirectory($path);
             }

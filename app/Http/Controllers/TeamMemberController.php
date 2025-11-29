@@ -478,6 +478,7 @@ class TeamMemberController extends Controller
                 }
 
                 $translation->update($updatedFields);
+                $team->auditEvent('updated')->setOldValues($translation)->setNewValues($updatedFields)->save();
 
             } catch (\Exception $e) {
                 \Log::error("Translation error for team member {$team->id} to {$lang}: " . $e->getMessage());
@@ -544,7 +545,9 @@ class TeamMemberController extends Controller
                         TeamMemberImage::where('team_member_id', $team->id)
                             ->where('url', $oldUrl)
                             ->update(['url' => $newUrl]);
-                    } elseif (is_string($result['url'])) {
+                    }
+
+                    if (is_string($result['url'])) {
                         // URL como string (sin cambios en la imagen)
                         $urlDecoded = urldecode(Helpers::removeAppUrl($result['url']));
                         if ($urlDecoded !== $oldUrl) {
