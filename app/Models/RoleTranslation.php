@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
-class RoleTranslation extends Model
+use OwenIt\Auditing\Contracts\Auditable;
+class RoleTranslation extends Model implements Auditable
 {
+    use \OwenIt\Auditing\Auditable;
+
     protected $table = 'role_translations';
 
     protected $fillable = [

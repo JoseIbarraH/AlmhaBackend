@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
-class BlogCategoryTranslation extends Model
+use OwenIt\Auditing\Contracts\Auditable;
+class BlogCategoryTranslation extends Model implements Auditable
 {
+    use \OwenIt\Auditing\Auditable;
     protected $table = 'blog_category_translations';
 
     protected $fillable = [

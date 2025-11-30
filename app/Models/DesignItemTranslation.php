@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
-class DesignItemTranslation extends Model
+use OwenIt\Auditing\Contracts\Auditable;
+class DesignItemTranslation extends Model implements Auditable
 {
+
+    use \OwenIt\Auditing\Auditable;
     protected $table = 'design_item_translations';
 
     protected $fillable = [

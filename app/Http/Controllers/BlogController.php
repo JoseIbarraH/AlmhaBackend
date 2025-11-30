@@ -54,17 +54,13 @@ class BlogController extends Controller
                 )
                 ->orderBy('blogs.created_at', 'desc');
 
-
-            // 🔹 Filtro de búsqueda
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where('t.title', 'like', "%{$search}%");
             }
 
-            // 🔹 Paginación
             $paginate = $query->paginate($perPage)->appends($request->only('search'));
 
-            // 🔹 Convertir la ruta de la imagen a URL completa
             $paginate->getCollection()->transform(function ($blog) {
                 return [
                     'id' => $blog->id,
@@ -77,7 +73,6 @@ class BlogController extends Controller
                 ];
             });
 
-            // 🔹 Datos adicionales
             $total = Blog::count();
             $totalActivated = Blog::where('status', 'active')->count();
             $totalDeactivated = Blog::where('status', 'inactive')->count();
@@ -305,15 +300,12 @@ class BlogController extends Controller
             $data = $request->validated();
             $locale = $request->query('locale', 'es');
 
-            // Actualizar datos básicos del blog
             $this->updateBlogData($blog, $data);
 
-            // Actualizar traducciones
             $this->updateTranslations($blog, $data, $translator);
 
             DB::commit();
 
-            // Cargar relaciones para la respuesta
             $blog->load(['translations' => fn($q) => $q->where('lang', $locale), 'category']);
 
             return ApiResponse::success(
@@ -345,18 +337,14 @@ class BlogController extends Controller
     private function updateBlogData(Blog $blog, array $data): void
     {
         $updates = [];
-
-        // Actualizar categoría
-        if (isset($data['category_id']) && $data['category_id'] !== $blog->category_id) {
-            $updates['category_id'] = $data['category_id'];
+        if (isset($data['category']) && $data['category'] !== $blog->category_id) {
+            $updates['category_id'] = $data['category'];
         }
 
-        // Actualizar status
         if (isset($data['status']) && $data['status'] !== $blog->status) {
             $updates['status'] = $data['status'];
         }
 
-        // Actualizar slug si cambió el título
         if (isset($data['title'])) {
             $translationEs = $blog->translations()->where('lang', 'es')->first();
             if ($translationEs && $data['title'] !== $translationEs->title) {
@@ -364,9 +352,7 @@ class BlogController extends Controller
             }
         }
 
-        // Actualizar imagen
         if (!empty($data['image']) && $data['image'] instanceof UploadedFile) {
-            // Eliminar imagen anterior
             if (!empty($blog->image) && Storage::disk('public')->exists($blog->image)) {
                 Storage::disk('public')->delete($blog->image);
             }
@@ -374,7 +360,6 @@ class BlogController extends Controller
             $updates['image'] = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");
         }
 
-        // Aplicar cambios
         if (!empty($updates)) {
             $blog->update($updates);
         }

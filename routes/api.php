@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Setting\AuditController;
 use App\Http\Controllers\Setting\ProfileController;
 use App\Http\Controllers\Setting\RoleController;
 use App\Http\Controllers\Setting\UserController;
@@ -75,7 +76,7 @@ Route::prefix('design')->controller(DesignController::class)->group(function () 
     });
 });
 
-Route::middleware('auth:sanctum')->prefix('setting')->group(function () {
+Route::middleware(['auth:sanctum', 'permission.map'])->prefix('setting')->group(function () {
     Route::prefix('profile')->controller(ProfileController::class)->group(function () {
         Route::post('/info', 'update_account');
         Route::post('/password', 'change_password');
@@ -93,11 +94,15 @@ Route::middleware('auth:sanctum')->prefix('setting')->group(function () {
 
     Route::prefix('user')->controller(UserController::class)->group(function () {
         Route::get('/', 'list_user');
-        Route::post('/',  'create_user');
+        Route::post('/', 'create_user');
         Route::match(['post', 'put', 'patch'], '/{id}', 'update_user');
         Route::post('/update_status/{id}', 'update_status');
         Route::get('/roles', 'list_role');
         Route::delete('/{id}', 'delete_user');
+    });
+
+    Route::prefix('audit')->controller(AuditController::class)->group(function () {
+        Route::get('/', 'list_audit');
     });
 });
 

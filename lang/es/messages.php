@@ -127,5 +127,13 @@ return [
         'error' => [
             'listPermissions' => 'Error al obtener la lista de permisos'
         ]
+    ],
+    'audit' => [
+        'success' => [
+            'listAudit' => 'Registro listado correctamente'
+        ],
+        'error' => [
+            'listAudit' => 'Error al listar registros'
+        ]
     ]
 ];
