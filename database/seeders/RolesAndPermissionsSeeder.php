@@ -37,13 +37,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'update_teams_status',
 
             'view_reports',
-            'delete_reports',
+            /* 'delete_reports', */
 
             'view_design',
             'update_design',
 
             'update_profile',
             'delete_profile',
+
+            'view_trash',
+            'delete_trash',
+            'recovery_trash',
 
             'view_dashboard',
         ];
@@ -74,13 +78,17 @@ class RolesAndPermissionsSeeder extends Seeder
                 'update_teams_status' => ['title' => 'Actualizar estado del equipo', 'description' => 'Activar o desactivar miembros del equipo'],
 
                 'view_reports' => ['title' => 'Ver reportes', 'description' => 'Ver reportes del sistema'],
-                'delete_reports' => ['title' => 'Eliminar reportes', 'description' => 'Eliminar reportes del sistema'],
+                /* 'delete_reports' => ['title' => 'Eliminar reportes', 'description' => 'Eliminar reportes del sistema'], */
 
                 'view_design' => ['title' => 'Ver diseño', 'description' => 'Acceder a la configuración de diseño del sitio'],
                 'update_design' => ['title' => 'Editar diseño', 'description' => 'Editar configuración de diseño del sitio'],
 
                 'update_profile' => ['title' => 'Actualizar perfil', 'description' => 'Actualizar información del perfil personal'],
                 'delete_profile' => ['title' => 'Eliminar perfil', 'description' => 'Eliminar perfil.'],
+
+                'view_trash' => ['title' => 'Ver papelera', 'description' => 'Permite ver los elementos eliminados en la papelera'],
+                'delete_trash' => ['title' => 'Eliminar de la papelera', 'description' => 'Permite eliminar permanentemente los elementos de la papelera'],
+                'recovery_trash' => ['title' => 'Restaurar desde la papelera', 'description' => 'Permite restaurar los elementos eliminados de la papelera'],
 
                 'view_dashboard' => ['title' => 'Ver dashboard', 'description' => 'Acceso limitado al panel de control'],
             ],
@@ -109,13 +117,17 @@ class RolesAndPermissionsSeeder extends Seeder
                 'update_teams_status' => ['title' => 'Update team status', 'description' => 'Activate or deactivate team members'],
 
                 'view_reports' => ['title' => 'View reports', 'description' => 'View system reports'],
-                'delete_reports' => ['title' => 'Delete reports', 'description' => 'Delete system reports'],
+                /* 'delete_reports' => ['title' => 'Delete reports', 'description' => 'Delete system reports'], */
 
                 'view_design' => ['title' => 'View design', 'description' => 'Access site design configuration'],
                 'update_design' => ['title' => 'Edit design', 'description' => 'Edit site design configuration'],
 
                 'update_profile' => ['title' => 'Update profile', 'description' => 'Update personal profile information'],
                 'delete_profile' => ['title' => 'Delete profile', 'description' => 'Delete profile'],
+
+                'view_trash' => ['title' => 'View Trash', 'description' => 'Allows viewing deleted items in the trash'],
+                'delete_trash' => ['title' => 'Delete from Trash', 'description' => 'Allows permanently deleting items from the trash'],
+                'restore_trash' => ['title' => 'Restore from Trash', 'description' => 'Allows restoring deleted items from the trash'],
 
                 'view_dashboard' => ['title' => 'View dashboard', 'description' => 'Limited access to the control panel'],
             ],

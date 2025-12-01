@@ -47,6 +47,13 @@ return [
         'create_user' => 'manage_users',
         'update_user' => 'manage_users',
         'delete_user' => 'manage_users'
+    ],
+    'trash' => [
+        'list_trash' => 'view_trash',
+        'stats_trash' => 'view_trash',
+        'empty_trash' => 'delete_trash',
+        'force_delete' => 'delete_trash',
+        'restore_trash' => 'restore_trash'
     ]
 
 ];

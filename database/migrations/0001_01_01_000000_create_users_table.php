@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->string('password');
             $table->rememberToken();
+            $table->softDeletes();
             $table->timestamps();
         });
 
@@ -40,6 +41,7 @@ return new class extends Migration {
             $table->id();
             $table->string('code')->unique();
             $table->enum('status', ['active', 'inactive'])->default('inactive');
+            $table->softDeletes();
             $table->timestamps();
         });
 
@@ -49,7 +51,6 @@ return new class extends Migration {
             $table->string('lang', 5);
             $table->string('title');
             $table->string('description')->nullable();
-
             $table->unique(['role_id', 'lang']);
         });
 

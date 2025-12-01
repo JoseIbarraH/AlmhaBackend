@@ -3,6 +3,7 @@
 use App\Http\Controllers\Setting\AuditController;
 use App\Http\Controllers\Setting\ProfileController;
 use App\Http\Controllers\Setting\RoleController;
+use App\Http\Controllers\Setting\TrashController;
 use App\Http\Controllers\Setting\UserController;
 use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\ServiceController;
@@ -104,6 +105,15 @@ Route::prefix('setting')->group(function () {
     Route::prefix('audit')->controller(AuditController::class)->group(function () {
         Route::get('/', 'list_audit');
     });
+
+    Route::prefix('trash')->controller(TrashController::class)->group(function () {
+        Route::get('/', 'list_trash');
+        Route::get('/stats', 'stats_trash');
+        Route::delete('/{modelType}/empty', 'empty_trash');
+        Route::post('/{modelType}/{modelId}/restore', 'restore_trash');
+        Route::delete('/{modelType}/{modelId}/force', 'force_delete');
+    });
 });
+
 
 require __DIR__ . '/auth.php';

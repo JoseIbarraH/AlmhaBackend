@@ -57,6 +57,7 @@ return new class extends Migration {
             $table->integer('view')->default(0);
             $table->enum('status', ['inactive', 'active'])->default('inactive');
             $table->timestamps();
+            $table->softDeletes();
             $table->foreign('category_id')->references('id')->on('blog_categories')->onDelete('set default');
         });
 

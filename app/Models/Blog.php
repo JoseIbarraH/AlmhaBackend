@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Blog extends Model implements Auditable
 {
+    use SoftDeletes;
     use HasFactory;
     use \OwenIt\Auditing\Auditable;
 
