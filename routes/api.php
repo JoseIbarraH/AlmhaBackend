@@ -76,7 +76,7 @@ Route::prefix('design')->controller(DesignController::class)->group(function () 
     });
 });
 
-Route::middleware(['auth:sanctum', 'permission.map'])->prefix('setting')->group(function () {
+Route::prefix('setting')->group(function () {
     Route::prefix('profile')->controller(ProfileController::class)->group(function () {
         Route::post('/info', 'update_account');
         Route::post('/password', 'change_password');

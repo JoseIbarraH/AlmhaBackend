@@ -22,13 +22,14 @@ class UserController extends Controller
         try {
             $locale = $request->query('locale', app()->getLocale());
             $perPage = 5;
+            $authId = auth()->id();
 
             $query = User::select('id', 'name', 'email', 'status', 'created_at', 'updated_at')
                 ->with([
                     'roles.translations' => function ($q) use ($locale) {
                         $q->where('lang', $locale);
                     }
-                ]);
+                ])->where('id', '!=', $authId);
 
             if ($request->filled('search')) {
                 $search = $request->search;

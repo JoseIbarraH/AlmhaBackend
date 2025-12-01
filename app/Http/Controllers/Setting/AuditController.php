@@ -15,19 +15,23 @@ class AuditController extends Controller
             $perPage = 10;
 
             $audit = Audit::select(
-                'user_type',
-                'user_id',
-                'event',
-                'auditable_type',
-                'auditable_id',
-                'old_values',
-                'new_values',
-                'url',
-                'ip_address',
-                'tags',
-                'created_at',
-                'updated_at'
-            )->orderBy('created_at', 'desc');
+                'audits.user_type',
+                'audits.user_id',
+                'users.name as user_name',
+                'audits.event',
+                'audits.auditable_type',
+                'audits.auditable_id',
+                'audits.old_values',
+                'audits.new_values',
+                'audits.url',
+                'audits.ip_address',
+                'audits.tags',
+                'audits.user_agent',
+                'audits.created_at',
+                'audits.updated_at'
+            )
+                ->leftJoin('users', 'audits.user_id', '=', 'users.id')
+                ->orderBy('audits.created_at', 'desc');
 
             /*
             |--------------------------------------------------------------------------
@@ -44,6 +48,7 @@ class AuditController extends Controller
                         ->orWhere('url', 'like', "%{$search}%")
                         ->orWhere('ip_address', 'like', "%{$search}%")
                         ->orWhere('auditable_id', 'like', "%{$search}%")
+                        ->orWhere('users.name', 'like', "%{$search}%")
                         ->orWhereJsonContains('old_values', $search)
                         ->orWhereJsonContains('new_values', $search);
                 });
@@ -51,18 +56,16 @@ class AuditController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | 📅 FILTRO DE FECHAS (fecha exacta o rango)
+            | 📅 FILTRO DE FECHAS
             |--------------------------------------------------------------------------
             */
 
-            // 1) Fecha exacta → created_at = YYYY-MM-DD
             if ($request->filled('date')) {
-                $audit->whereDate('created_at', $request->date);
+                $audit->whereDate('audits.created_at', $request->date);
             }
 
-            // 2) Rango de fechas → created_at BETWEEN start_date AND end_date
             if ($request->filled('start_date') && $request->filled('end_date')) {
-                $audit->whereBetween('created_at', [
+                $audit->whereBetween('audits.created_at', [
                     $request->start_date . ' 00:00:00',
                     $request->end_date . ' 23:59:59'
                 ]);
@@ -79,7 +82,7 @@ class AuditController extends Controller
             }
 
             if ($request->filled('event')) {
-                $audit->where('event', $request->event); // created, updated, deleted
+                $audit->where('event', $request->event);
             }
 
             if ($request->filled('user_type')) {
@@ -98,6 +101,7 @@ class AuditController extends Controller
                 return [
                     'user_type' => $item->user_type,
                     'user_id' => $item->user_id,
+                    'user_name' => $item->user_name, // 👈 Aquí se incluye el nombre
                     'event' => $item->event,
                     'auditable_type' => $item->auditable_type,
                     'auditable_id' => $item->auditable_id,
@@ -105,6 +109,7 @@ class AuditController extends Controller
                     'new_values' => $item->new_values,
                     'url' => $item->url,
                     'ip_address' => $item->ip_address,
+                    'user_agent' => $item->user_agent,
                     'tags' => $item->tags,
                     'created_at' => $item->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $item->updated_at->format('Y-m-d H:i:s'),
@@ -127,5 +132,6 @@ class AuditController extends Controller
             );
         }
     }
+
 
 }
