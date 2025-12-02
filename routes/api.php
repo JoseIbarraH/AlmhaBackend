@@ -29,11 +29,11 @@ Route::prefix('service')->controller(ServiceController::class)->group(function (
 
 Route::prefix('blog')->controller(BlogController::class)->group(function () {
     // Rutas públicas
-    Route::get('/', 'list_blog');
     Route::get('/client/{id}', 'get_blog_client');
 
     // Rutas protegidas
     Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
+        Route::get('/', 'list_blog');
         Route::get('/categories', 'get_categories');
         Route::get('/{id}', 'get_blog');
         Route::post('/', 'create_blog');
@@ -78,13 +78,13 @@ Route::prefix('design')->controller(DesignController::class)->group(function () 
 });
 
 Route::prefix('setting')->group(function () {
-    Route::prefix('profile')->controller(ProfileController::class)->group(function () {
+    Route::middleware(['auth:sanctum', 'permission.map'])->prefix('profile')->controller(ProfileController::class)->group(function () {
         Route::post('/info', 'update_account');
         Route::post('/password', 'change_password');
         Route::delete('/delete', 'destroy_account');
     });
 
-    Route::prefix('role')->controller(RoleController::class)->group(function () {
+    Route::middleware(['auth:sanctum', 'permission.map'])->prefix('role')->controller(RoleController::class)->group(function () {
         Route::get('/', 'list_role');
         Route::get('/permits', 'list_permission');
         Route::post('/', 'create_role');
@@ -93,7 +93,7 @@ Route::prefix('setting')->group(function () {
         Route::delete('/{id}', 'delete_role');
     });
 
-    Route::prefix('user')->controller(UserController::class)->group(function () {
+    Route::middleware(['auth:sanctum', 'permission.map'])->prefix('user')->controller(UserController::class)->group(function () {
         Route::get('/', 'list_user');
         Route::post('/', 'create_user');
         Route::match(['post', 'put', 'patch'], '/{id}', 'update_user');
@@ -102,7 +102,7 @@ Route::prefix('setting')->group(function () {
         Route::delete('/{id}', 'delete_user');
     });
 
-    Route::prefix('audit')->controller(AuditController::class)->group(function () {
+    Route::middleware(['auth:sanctum', 'permission.map'])->prefix('audit')->controller(AuditController::class)->group(function () {
         Route::get('/', 'list_audit');
     });
 

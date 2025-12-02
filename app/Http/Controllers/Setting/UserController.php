@@ -141,13 +141,14 @@ class UserController extends Controller
             }
 
             event(new Registered($user));
-
+            \Log::info('Se creo');
             DB::commit();
             return ApiResponse::success(
                 __('messages.user.success.createUser'),
                 $user
             );
         } catch (\Throwable $e) {
+            \Log::error('Error de user: ', [$e]);
             DB::rollBack();
             return ApiResponse::error(
                 __('messages.user.error.createUser'),

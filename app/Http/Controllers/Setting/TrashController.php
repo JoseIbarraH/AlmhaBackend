@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Setting;
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Collection;
@@ -47,16 +48,42 @@ class TrashController extends Controller
     /**
      * Obtener todos los elementos eliminados
      */
-    public function list_trash(): JsonResponse
+    public function list_trash(Request $request): JsonResponse
     {
+        $perPage = 10;
+        // 1. Obtener todos los eliminados como colección
         $trashedItems = collect(self::TRASHABLE_MODELS)
             ->flatMap(fn($config, $modelType) => $this->getTrashedItems($modelType, $config))
             ->sortByDesc('deleted_at')
             ->values();
 
+        // 2. Filtrado manual para colecciones
+        if ($request->filled('search')) {
+            $search = strtolower($request->search);
+
+            $trashedItems = $trashedItems->filter(function ($item) use ($search) {
+                return str_contains(strtolower($item['model_type']), $search)
+                    || str_contains(strtolower($item['name']), $search);
+            })->values();
+        }
+
+        // 3. Paginar una colección manualmente
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $currentItems = $trashedItems->slice(($currentPage - 1) * $perPage, $perPage);
+        $paginate = new LengthAwarePaginator(
+            $currentItems->values(),
+            $trashedItems->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
         return ApiResponse::success(
-            'Elementos eliminados obtenidos correctamente',
-            $trashedItems
+            __('messages.trash.success.listTrash'),
+            [
+                'pagination' => $paginate,
+                'filters' => $request->only('search')
+            ]
         );
     }
 
@@ -69,7 +96,6 @@ class TrashController extends Controller
 
         $query = $modelClass::onlyTrashed();
 
-        // Eager loading para modelos con traducciones
         if ($config['translation']) {
             $relationName = $this->getTranslationRelation($modelType);
             $query->with([$relationName => fn($q) => $q->where('lang', 'es')]);
@@ -80,7 +106,8 @@ class TrashController extends Controller
                 'model_type' => $modelType,
                 'model_id' => $item->id,
                 'name' => $this->getItemName($item, $config),
-                'deleted_at' => $item->deleted_at->format('Y-m-d H:i:s')
+                'deleted_at' => $item->deleted_at->format('Y-m-d H:i:s'),
+                'model' => $item->toArray()
             ];
         });
     }
@@ -131,7 +158,7 @@ class TrashController extends Controller
             $item->restore();
 
             return ApiResponse::success(
-                'Elemento restaurado correctamente',
+                __('messages.trash.success.restoreTrash'),
                 [
                     'model_type' => $modelType,
                     'model_id' => $modelId,
@@ -147,7 +174,7 @@ class TrashController extends Controller
             ]);
 
             return ApiResponse::error(
-                'Error al restaurar el elemento',
+                __('messages.trash.error.restoreTrash'),
                 config('app.debug') ? $e->getMessage() : null,
                 500
             );
@@ -161,7 +188,7 @@ class TrashController extends Controller
     {
         try {
             if (!isset(self::TRASHABLE_MODELS[$modelType])) {
-                return ApiResponse::error('Tipo de modelo no válido', null, 400);
+                return ApiResponse::error(__('messages.trash.error.empty_trash.invalidModel'), null, 400);
             }
 
             $modelClass = self::TRASHABLE_MODELS[$modelType]['class'];
@@ -170,18 +197,13 @@ class TrashController extends Controller
             $modelClass::onlyTrashed()->forceDelete();
 
             return ApiResponse::success(
-                "Se eliminaron permanentemente {$count} elementos de {$modelType}",
+                __('messages.trash.error.emptyTrash', ['count' => $count, 'modelType' => $modelType]),
                 ['count' => $count, 'model_type' => $modelType]
             );
 
         } catch (\Throwable $e) {
-            \Log::error('Error al vaciar papelera', [
-                'model_type' => $modelType,
-                'error' => $e->getMessage()
-            ]);
-
             return ApiResponse::error(
-                'Error al vaciar la papelera',
+                __('messages.trash.error.emptyTrash.emptyTrash'),
                 config('app.debug') ? $e->getMessage() : null,
                 500
             );
@@ -206,7 +228,8 @@ class TrashController extends Controller
             ];
         })->values();
 
-        return ApiResponse::success('Estadísticas de papelera', [
+        return ApiResponse::success(__('messages.trash.success.statsTrash'),
+        [
             'by_model' => $stats,
             'total' => $stats->sum('count')
         ]);
@@ -219,7 +242,7 @@ class TrashController extends Controller
     {
         try {
             if (!isset(self::TRASHABLE_MODELS[$modelType])) {
-                return ApiResponse::error('Tipo de modelo no válido', null, 400);
+                return ApiResponse::error(__('messages.trash.error.forceDelete.invalidModel'), null, 400);
             }
 
             $modelClass = self::TRASHABLE_MODELS[$modelType]['class'];
@@ -230,7 +253,7 @@ class TrashController extends Controller
             $item->forceDelete();
 
             return ApiResponse::success(
-                'Elemento eliminado permanentemente',
+                __('messages.trash.error.forceDelete.forceDelete'),
                 [
                     'model_type' => $modelType,
                     'model_id' => $modelId,
@@ -239,14 +262,8 @@ class TrashController extends Controller
             );
 
         } catch (\Throwable $e) {
-            \Log::error('Error al eliminar permanentemente', [
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-                'error' => $e->getMessage()
-            ]);
-
             return ApiResponse::error(
-                'Error al eliminar el elemento',
+                __('messages.trash.error.forceDelete.forceDelete'),
                 config('app.debug') ? $e->getMessage() : null,
                 500
             );

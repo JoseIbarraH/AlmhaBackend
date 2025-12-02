@@ -135,5 +135,25 @@ return [
         'error' => [
             'listAudit' => 'Error al listar registros'
         ]
+    ],
+    'trash' => [
+        'success' => [
+            'listTrash' => 'Papelera listada correctamente',
+            'restoreTrash' => 'Elemento restaurado correctamente',
+            'emptyTrash' => 'Se eliminaron permanentemente :count elementos de :modelType',
+            'statsTrash' => 'Estadísticas de papelera',
+            'forceDelete' => 'Se elimino correctamente'
+        ],
+        'error' => [
+            'restoreTrash' => 'Error al intentar restaurar un elemento',
+            'emptyTrash' => [
+                'invalidModel' => 'Tipo de modelo no válido',
+                'emptyTrash' => 'Error al vaciar la papelera'
+            ],
+            'forceDelete' => [
+                'invalidModel' => 'Tipo de modelo no válido',
+                'forceDelete' => 'Elemento eliminado permanentemente'
+            ]
+        ]
     ]
 ];

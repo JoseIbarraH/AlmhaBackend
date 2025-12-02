@@ -11,7 +11,6 @@ class PermissionMapperMiddleware
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
-
         if (!$user) {
             return response()->json(['error' => 'No autenticado'], 401);
         }

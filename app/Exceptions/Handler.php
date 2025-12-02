@@ -61,33 +61,45 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $e)
     {
-        // Eliminamos el manejo de AuthenticationException de aquí,
-        // ya que ahora se maneja de forma más robusta en el método unauthenticated().
+        // Asegurar que toda petición API o que espera JSON responda JSON
+        if ($request->is('api/*') || $request->expectsJson()) {
 
-        if ($e instanceof ValidationException) {
-            return ApiResponse::success(
-                'Errores de validación',
-                $e->errors(), // ← trae todos los errores de los campos
-                422
+            // 404 - Ruta no encontrada (Laravel normal manda vista)
+            if ($e instanceof NotFoundHttpException) {
+                return ApiResponse::error('Recurso no encontrado', 404);
+            }
+
+            // 405 - Método no permitido
+            if ($e instanceof MethodNotAllowedHttpException) {
+                return ApiResponse::error('Método HTTP no permitido', 405);
+            }
+
+            // 422 - Validación
+            if ($e instanceof ValidationException) {
+                return ApiResponse::error('Errores de validación', $e->errors(), 422);
+            }
+
+            // 403 - No autorizado
+            if ($e instanceof AuthorizationException) {
+                return ApiResponse::error('No autorizado', 403);
+            }
+
+            // 401 - No autenticado
+            if ($e instanceof AuthenticationException) {
+                return ApiResponse::error('No autenticado', 401);
+            }
+
+            // Error desconocido
+            return ApiResponse::error(
+                $e->getMessage(),
+                500
             );
         }
 
-        if ($e instanceof NotFoundHttpException) {
-            return ApiResponse::success('Recurso no encontrado', null, 404);
-        }
-
-        if ($e instanceof AuthorizationException) {
-             return ApiResponse::success('No autorizado', null, 403);
-        }
-
-
-        // Manejo de errores generales si no se capturó antes
-        return ApiResponse::success(
-            'Error interno del servidor',
-            ['exception' => $e->getMessage()],
-            500
-        );
+        // Si NO es API, usa el comportamiento normal de Laravel
+        return parent::render($request, $e);
     }
+
 
     /**
      * Registra las devoluciones de llamada de manejo de excepciones para la aplicación.
