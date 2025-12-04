@@ -121,7 +121,7 @@ class BlogController extends Controller
             $data = [
                 'id' => $blog->id,
                 'slug' => $blog->slug,
-                'image' => $blog->image ? url('storage', $blog->image) : null,
+                'image' => $blog->image ? asset('storage/' . $blog->image) : null,
                 'title' => $translation->title ?? null,
                 'content' => $translation->content ?? null,
                 'category' => $blog->category_id,
