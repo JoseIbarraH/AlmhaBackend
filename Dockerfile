@@ -45,7 +45,8 @@ RUN composer dump-autoload --optimize
 # Limpia y genera caches
 RUN php artisan config:clear \
  && php artisan route:clear \
- && php artisan view:clear
+ && php artisan view:clear \
+ && php artisan storage:link
 
 # Asigna permisos correctos
 RUN chown -R www-data:www-data /var/www \
