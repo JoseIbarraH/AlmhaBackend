@@ -1,11 +1,14 @@
 # Imagen base con PHP 8.3 CLI
 FROM php:8.3-cli AS base
 
-# Instala dependencias del sistema y extensiones PHP necesarias
+# Instala dependencias del sistema, Nginx y extensiones PHP necesarias
 RUN apt-get update && apt-get install -y \
     git unzip curl libpng-dev libonig-dev libxml2-dev \
     libzip-dev libpq-dev libcurl4-openssl-dev libssl-dev \
     zlib1g-dev libicu-dev g++ libevent-dev procps \
+    libfreetype6-dev libjpeg62-turbo-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd \
     && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip exif pcntl bcmath sockets intl
 
 # Instala Swoole desde GitHub
@@ -42,23 +45,45 @@ RUN composer dump-autoload --optimize
 
 # Limpia y genera caches
 RUN php artisan config:clear \
- && php artisan route:clear \
- && php artisan view:clear
+    && php artisan route:clear \
+    && php artisan view:clear
 
 # Asigna permisos correctos
 RUN chown -R www-data:www-data /var/www \
- && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-# Expone el puerto 9000 (usado por Octane/Swoole)
-EXPOSE 9000
+# Copia configuración de Nginx
+COPY nginx.conf /etc/nginx/sites-available/default
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
-# Script de inicio
-RUN echo '#!/bin/bash\n\
-php artisan config:cache\n\
-php artisan route:cache\n\
-php artisan view:cache\n\
-exec php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000\n\
-' > /start.sh && chmod +x /start.sh
+# Configuración de Supervisor para ejecutar Nginx y Octane juntos
+RUN echo '[supervisord]\n\
+    nodaemon=true\n\
+    user=root\n\
+    \n\
+    [program:nginx]\n\
+    command=/usr/sbin/nginx -g "daemon off;"\n\
+    autostart=true\n\
+    autorestart=true\n\
+    stdout_logfile=/dev/stdout\n\
+    stdout_logfile_maxbytes=0\n\
+    stderr_logfile=/dev/stderr\n\
+    stderr_logfile_maxbytes=0\n\
+    \n\
+    [program:octane]\n\
+    command=php /var/www/artisan octane:start --server=swoole --host=127.0.0.1 --port=9000\n\
+    directory=/var/www\n\
+    autostart=true\n\
+    autorestart=true\n\
+    stdout_logfile=/dev/stdout\n\
+    stdout_logfile_maxbytes=0\n\
+    stderr_logfile=/dev/stderr\n\
+    stderr_logfile_maxbytes=0\n\
+    ' > /etc/supervisor/conf.d/supervisord.conf
 
-# Comando de inicio por defecto
-CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000"]
+# Expone el puerto 80 (Nginx)
+EXPOSE 80
+
+# Comando de inicio con Supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
