@@ -44,24 +44,23 @@ RUN composer dump-autoload --optimize
 
 # Limpia y genera caches
 RUN php artisan config:clear \
- && php artisan route:clear \
- && php artisan view:clear \
- && php artisan storage:link
+    && php artisan route:clear \
+    && php artisan view:clear
 
 # Asigna permisos correctos
 RUN chown -R www-data:www-data /var/www \
- && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 # Expone el puerto 9000 (usado por Octane/Swoole)
 EXPOSE 9000
 
 # Script de inicio
 RUN echo '#!/bin/bash\n\
-php artisan config:cache\n\
-php artisan route:cache\n\
-php artisan view:cache\n\
-exec php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000\n\
-' > /start.sh && chmod +x /start.sh
+    php artisan config:cache\n\
+    php artisan route:cache\n\
+    php artisan view:cache\n\
+    exec php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000\n\
+    ' > /start.sh && chmod +x /start.sh
 
 # Comando de inicio por defecto
 CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000"]
