@@ -30,7 +30,7 @@ WORKDIR /var/www
 COPY composer.json composer.lock artisan ./
 
 # Crea las carpetas básicas de Laravel
-RUN mkdir -p bootstrap/cache storage/app storage/framework/cache/data \
+RUN mkdir -p bootstrap/cache storage/app storage/app/public/images storage/framework/cache/data \
     storage/framework/sessions storage/framework/views storage/logs
 
 # Instala dependencias de Composer
