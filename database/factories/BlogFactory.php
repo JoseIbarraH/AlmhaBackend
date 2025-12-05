@@ -12,7 +12,7 @@ class BlogFactory extends Factory
 
     public function definition(): array
     {
-        $title = $this->faker->sentence(4);
+        $title = $this->faker->sentence(6); 
 
         return [
             'user_id' => 1,
