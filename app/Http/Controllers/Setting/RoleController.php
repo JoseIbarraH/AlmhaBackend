@@ -184,7 +184,7 @@ class RoleController extends Controller
             $perPage = 6;
 
             $query = Role::join('role_translations as r', function ($join) use ($locale) {
-                $join->on('Roles.id', '=', 'r.role_id')->where('r.lang', $locale);
+                $join->on('roles.id', '=', 'r.role_id')->where('r.lang', $locale);
             })->select('roles.id', 'roles.code', 'roles.status', 'r.title', 'r.description', 'roles.created_at', 'roles.updated_at')
                 ->orderBy('roles.created_at', 'desc');
 
