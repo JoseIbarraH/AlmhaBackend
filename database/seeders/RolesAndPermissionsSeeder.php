@@ -47,7 +47,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'view_trash',
             'delete_trash',
-            'recovery_trash',
+            'restore_trash',
 
             'view_dashboard',
         ];
@@ -88,7 +88,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
                 'view_trash' => ['title' => 'Ver papelera', 'description' => 'Permite ver los elementos eliminados en la papelera'],
                 'delete_trash' => ['title' => 'Eliminar de la papelera', 'description' => 'Permite eliminar permanentemente los elementos de la papelera'],
-                'recovery_trash' => ['title' => 'Restaurar desde la papelera', 'description' => 'Permite restaurar los elementos eliminados de la papelera'],
+                'restore_trash' => ['title' => 'Restaurar desde la papelera', 'description' => 'Permite restaurar los elementos eliminados de la papelera'],
 
                 'view_dashboard' => ['title' => 'Ver dashboard', 'description' => 'Acceso limitado al panel de control'],
             ],
