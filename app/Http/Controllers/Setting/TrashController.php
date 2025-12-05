@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Setting;
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Collection;
@@ -22,26 +23,31 @@ class TrashController extends Controller
             'class' => Blog::class,
             'name_field' => 'translation.title',
             'translation' => true,
+            'delete_url' => 'images/blog/'
         ],
         'Service' => [
             'class' => Service::class,
             'name_field' => 'serviceTranslation.title',
             'translation' => true,
+            'delete_url' => 'images/service/'
         ],
         'TeamMember' => [
             'class' => TeamMember::class,
             'name_field' => 'name',
             'translation' => false,
+            'delete_url' => 'images/team/'
         ],
         'Role' => [
             'class' => Role::class,
             'name_field' => 'name',
             'translation' => false,
+            'delete_url' => ''
         ],
         'User' => [
             'class' => User::class,
             'name_field' => 'name',
             'translation' => false,
+            'delete_url' => ''
         ],
     ];
 
@@ -228,11 +234,13 @@ class TrashController extends Controller
             ];
         })->values();
 
-        return ApiResponse::success(__('messages.trash.success.statsTrash'),
-        [
-            'by_model' => $stats,
-            'total' => $stats->sum('count')
-        ]);
+        return ApiResponse::success(
+            __('messages.trash.success.statsTrash'),
+            [
+                'by_model' => $stats,
+                'total' => $stats->sum('count')
+            ]
+        );
     }
 
     /**
@@ -246,9 +254,17 @@ class TrashController extends Controller
             }
 
             $modelClass = self::TRASHABLE_MODELS[$modelType]['class'];
+
             $item = $modelClass::onlyTrashed()->findOrFail($modelId);
 
             $name = $this->getItemName($item, self::TRASHABLE_MODELS[$modelType]);
+
+            $urlDelete = self::TRASHABLE_MODELS[$modelType]['delete_url'];
+
+            if (!empty($urlDelete)) {
+                $path = rtrim($urlDelete, '/') . '/' . $modelId;
+                Storage::disk('public')->deleteDirectory($path);
+            }
 
             $item->forceDelete();
 

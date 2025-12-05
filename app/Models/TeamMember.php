@@ -32,17 +32,4 @@ class TeamMember extends Model implements Auditable
     {
         return $this->hasMany(TeamMemberImage::class);
     }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        // SOLO SE MANTIENE EL BORRADO DE CARPETA (esto sí es propio del modelo)
-        static::deleting(function ($teamMember) {
-            $folderPath = "images/team/{$teamMember->id}";
-            if (Storage::disk('public')->exists($folderPath)) {
-                Storage::disk('public')->deleteDirectory($folderPath);
-            }
-        });
-    }
 }

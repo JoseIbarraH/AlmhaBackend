@@ -43,15 +43,4 @@ class Blog extends Model implements Auditable
         return $this->hasOne(BlogTranslation::class, 'blog_id');
     }
 
-    protected static function booted()
-    {
-        parent::boot();
-
-        static::deleting(function ($model) {
-            $path = "images/blog/{$model->id}";
-            if (Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->deleteDirectory($path);
-            }
-        });
-    }
 }

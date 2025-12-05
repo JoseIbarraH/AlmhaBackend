@@ -51,16 +51,4 @@ class Service extends Model implements Auditable
         return $this->hasMany(ServiceResultGallery::class, 'service_id');
     }
 
-    protected static function booted()
-    {
-        parent::boot();
-
-        static::deleting(function ($model) {
-            $path = "images/service/{$model->id}";
-            if (Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->deleteDirectory($path);
-            }
-        });
-    }
-
 }

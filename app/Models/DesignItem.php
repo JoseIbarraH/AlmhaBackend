@@ -42,7 +42,6 @@ class DesignItem extends Model implements Auditable
         if (!$this->path) {
             return null;
         }
-
         return url('/storage/' . $this->path);
     }
 }
