@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\RefreshTokenController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use Illuminate\Http\Request;
@@ -21,11 +20,11 @@ Route::middleware(['web'])->group(function () {
     Route::middleware('auth:sanctum')->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 });
 
-Route::post('/register', [RegisteredUserController::class, 'store']);
+/* Route::post('/register', [RegisteredUserController::class, 'store']); */
 Route::post('/reset-password', [NewPasswordController::class, 'store']);
 Route::post('refresh-token', [RefreshTokenController::class, 'refreshToken']);
 
-Route::middleware(['auth'])->group(function () {
+/* Route::middleware(['auth'])->group(function () {
     Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
 });
-
+ */

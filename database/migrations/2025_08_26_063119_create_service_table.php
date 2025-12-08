@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->string('image')->nullable();
             $table->enum('status', ['active', 'inactive']);
             $table->string('slug')->unique();
+            $table->integer('view')->default(0);
             $table->softDeletes();
             $table->timestamps();
         });
@@ -23,7 +24,8 @@ return new class extends Migration {
         Schema::create('service_translations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_id')->constrained('services')->onDelete('cascade');
-            $table->string('lang', 5)->default('es');;
+            $table->string('lang', 5)->default('es');
+            ;
             $table->text('description');
             $table->string('title');
         });
@@ -65,11 +67,11 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('services');
+        Schema::dropIfExists('service_faq');
         Schema::dropIfExists('service_translations');
         Schema::dropIfExists('service_surgery_phases');
-        Schema::dropIfExists('service_faq');
         Schema::dropIfExists('service_sample_images');
         Schema::dropIfExists('service_result_galleries');
+        Schema::dropIfExists('services');
     }
 };

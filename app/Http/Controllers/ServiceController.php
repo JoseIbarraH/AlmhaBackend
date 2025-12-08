@@ -24,6 +24,109 @@ class ServiceController extends Controller
     {
         $this->languages = config('languages.supported');
     }
+
+    public function get_service_client($id, Request $request)
+    {
+        try {
+            $locale = $request->query('locale', app()->getLocale());
+
+            $service = Service::with([
+                'serviceTranslation' => fn($q) => $q->where('lang', $locale),
+                'frequentlyAskedQuestions' => fn($q) => $q->where('lang', $locale),
+                'surgeryPhases' => fn($q) => $q->where('lang', $locale),
+                'sampleImages',
+                'resultGallery'
+            ])->findOrFail($id);
+
+            // Obtener traducción del idioma solicitado
+            $translation = $service->serviceTranslation->first();
+
+            $data = [
+                'id' => $service->id,
+                'status' => $service->status,
+                'image' => $service->image ? asset('storage/' . $service->image) : null,
+                'created_at' => $service->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
+
+                // Traducción del servicio
+                'title' => $translation->title ?? '',
+                'description' => $translation->description ?? '',
+                'lang' => $locale,
+
+                // Preguntas frecuentes (verificar si existe)
+                'frequently_asked_questions' => $service->frequentlyAskedQuestions
+                    ? $service->frequentlyAskedQuestions->map(function ($faq) {
+                        return [
+                            'id' => $faq->id,
+                            'question' => $faq->question ?? '',
+                            'answer' => $faq->answer ?? '',
+                            'order' => $faq->order ?? 0,
+                        ];
+                    })->toArray()
+                    : [],
+
+                // Fases de cirugía (verificar si existe)
+                'surgery_phases' => $service->surgeryPhases
+                    ? $service->surgeryPhases->map(function ($phase) {
+                        return [
+                            'id' => $phase->id,
+                            'lang' => $phase->lang,
+                            'recovery_time' => is_string($phase->recovery_time)
+                                ? json_decode($phase->recovery_time, true)
+                                : ($phase->recovery_time ?? []),
+                            'preoperative_recommendations' => is_string($phase->preoperative_recommendations)
+                                ? json_decode($phase->preoperative_recommendations, true)
+                                : ($phase->preoperative_recommendations ?? []),
+                            'postoperative_recommendations' => is_string($phase->postoperative_recommendations)
+                                ? json_decode($phase->postoperative_recommendations, true)
+                                : ($phase->postoperative_recommendations ?? []),
+                        ];
+                    })->toArray()
+                    : [],
+
+
+                // Imágenes de muestra (verificar si existe)
+                'sample_images' => $service->sampleImages
+                    ? [
+                        'id' => $service->sampleImages->id,
+                        'technique' => $service->sampleImages->technique ? asset('storage/' . $service->sampleImages->technique) : null,
+                        'recovery' => $service->sampleImages->recovery ? asset('storage/' . $service->sampleImages->recovery) : null,
+                        'postoperative_care' => $service->sampleImages->postoperative_care ? asset('storage/' . $service->sampleImages->postoperative_care) : null,
+                    ]
+                    : [],
+
+                // Galería de resultados (verificar si existe)
+                'result_gallery' => $service->resultGallery
+                    ? $service->resultGallery->map(function ($result) {
+                        return [
+                            'id' => $result->id,
+                            'path' => $result->path ? asset('storage', $result->path) : null,
+                        ];
+                    })->toArray()
+                    : [],
+            ];
+
+            $service->increment('view');
+
+            return ApiResponse::success(
+                __('messages.service.success.getService'),
+                $data,
+            );
+
+        } catch (\Throwable $e) {
+            Log::error('Error en get_service: ' . $e->getMessage(), [
+                'service_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return ApiResponse::error(
+                __('messages.service.error.getService'),
+                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                500
+            );
+        }
+    }
+
     // Listar servicios
     public function list_service(Request $request)
     {
@@ -226,105 +329,7 @@ class ServiceController extends Controller
         }
     }
 
-    public function get_service_client($id, Request $request)
-    {
-        try {
-            $locale = $request->query('locale', app()->getLocale());
 
-            $service = Service::with([
-                'serviceTranslation' => fn($q) => $q->where('lang', $locale),
-                'frequentlyAskedQuestions' => fn($q) => $q->where('lang', $locale),
-                'surgeryPhases' => fn($q) => $q->where('lang', $locale),
-                'sampleImages',
-                'resultGallery'
-            ])->findOrFail($id);
-
-            // Obtener traducción del idioma solicitado
-            $translation = $service->serviceTranslation->first();
-
-            $data = [
-                'id' => $service->id,
-                'status' => $service->status,
-                'image' => $service->image ? asset('storage/' . $service->image) : null,
-                'created_at' => $service->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
-
-                // Traducción del servicio
-                'title' => $translation->title ?? '',
-                'description' => $translation->description ?? '',
-                'lang' => $locale,
-
-                // Preguntas frecuentes (verificar si existe)
-                'frequently_asked_questions' => $service->frequentlyAskedQuestions
-                    ? $service->frequentlyAskedQuestions->map(function ($faq) {
-                        return [
-                            'id' => $faq->id,
-                            'question' => $faq->question ?? '',
-                            'answer' => $faq->answer ?? '',
-                            'order' => $faq->order ?? 0,
-                        ];
-                    })->toArray()
-                    : [],
-
-                // Fases de cirugía (verificar si existe)
-                'surgery_phases' => $service->surgeryPhases
-                    ? $service->surgeryPhases->map(function ($phase) {
-                        return [
-                            'id' => $phase->id,
-                            'lang' => $phase->lang,
-                            'recovery_time' => is_string($phase->recovery_time)
-                                ? json_decode($phase->recovery_time, true)
-                                : ($phase->recovery_time ?? []),
-                            'preoperative_recommendations' => is_string($phase->preoperative_recommendations)
-                                ? json_decode($phase->preoperative_recommendations, true)
-                                : ($phase->preoperative_recommendations ?? []),
-                            'postoperative_recommendations' => is_string($phase->postoperative_recommendations)
-                                ? json_decode($phase->postoperative_recommendations, true)
-                                : ($phase->postoperative_recommendations ?? []),
-                        ];
-                    })->toArray()
-                    : [],
-
-
-                // Imágenes de muestra (verificar si existe)
-                'sample_images' => $service->sampleImages
-                    ? [
-                        'id' => $service->sampleImages->id,
-                        'technique' => $service->sampleImages->technique ? asset('storage/' . $service->sampleImages->technique) : null,
-                        'recovery' => $service->sampleImages->recovery ? asset('storage/' . $service->sampleImages->recovery) : null,
-                        'postoperative_care' => $service->sampleImages->postoperative_care ? asset('storage/' . $service->sampleImages->postoperative_care) : null,
-                    ]
-                    : [],
-
-                // Galería de resultados (verificar si existe)
-                'result_gallery' => $service->resultGallery
-                    ? $service->resultGallery->map(function ($result) {
-                        return [
-                            'id' => $result->id,
-                            'path' => $result->path ? asset('storage', $result->path) : null,
-                        ];
-                    })->toArray()
-                    : [],
-            ];
-
-            return ApiResponse::success(
-                __('messages.service.success.getService'),
-                $data,
-            );
-
-        } catch (\Throwable $e) {
-            Log::error('Error en get_service: ' . $e->getMessage(), [
-                'service_id' => $id,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return ApiResponse::error(
-                __('messages.service.error.getService'),
-                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
-                500
-            );
-        }
-    }
     /**
      * Crear un servicio StoreRequest
      */

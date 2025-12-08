@@ -20,7 +20,8 @@ class Service extends Model implements Auditable
         'user_id',
         'image',
         'slug',
-        'status'
+        'status',
+        'view'
     ];
 
     /**

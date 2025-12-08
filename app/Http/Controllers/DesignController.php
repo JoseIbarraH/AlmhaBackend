@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\UploadedFile;
 use App\Helpers\FileProcessor;
 use App\Models\DesignSetting;
 use Illuminate\Http\Request;
@@ -30,14 +29,56 @@ class DesignController extends Controller
         try {
             $lang = $request->query('lang', app()->getLocale());
 
-            $settings = DesignSetting::with([
+            $settingsCollection = DesignSetting::with([
                 'designItems.translations' => function ($q) use ($lang) {
                     $q->where('lang', $lang);
                 }
             ])->get();
 
+            $groupMapping = [
+                'background1' => 'backgrounds',
+                'background2' => 'backgrounds',
+                'background3' => 'backgrounds',
+                'carousel' => 'carousel',
+                'carouselNavbar' => 'carouselNavbar',
+                'carouselTool' => 'carouselTool',
+                'imageVideo' => 'imageVideo',
+            ];
+
+            $transformedSettings = $settingsCollection->reduce(function ($carry, $design) use ($groupMapping) {
+                $key = $design->key;
+                $groupName = $groupMapping[$key] ?? $key;
+
+                $itemsArray = $design->designItems->map(function ($item) {
+                    $translation = $item->translations->first();
+
+                    return [
+                        'type' => $item->type,
+                        'image' => $item->full_path,
+                        'title' => $translation?->title ?? '',
+                        'subtitle' => $translation?->subtitle ?? '',
+                    ];
+                })->values()->toArray();
+
+                if (!isset($carry[$groupName])) {
+                    $carry[$groupName] = [];
+                }
+
+                // 👈 CAMBIO APLICADO: Creamos un objeto que contiene el ID y el valor booleano
+                $carry[$groupName][$key . 'Setting'] = [
+                    'id' => $design->id, // ID del DesignSetting (ej. ID del background1)
+                    'enabled' => (bool) $design->value, // Valor booleano (enabled/disabled)
+                ];
+
+                // Mantener el array de ítems
+                $carry[$groupName][$key] = $itemsArray;
+
+                return $carry;
+            }, []);
+
+
             return ApiResponse::success(
-                data: $settings
+                data: $transformedSettings
             );
         } catch (\Throwable $e) {
             return ApiResponse::error(
@@ -45,7 +86,6 @@ class DesignController extends Controller
                 ['execption' => $e->getMessage()],
                 500
             );
-
         }
     }
 

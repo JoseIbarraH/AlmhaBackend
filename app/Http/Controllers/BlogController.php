@@ -24,6 +24,119 @@ class BlogController extends Controller
     {
         $this->languages = config('languages.supported');
     }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function list_blog_client(Request $request)
+    {
+        try {
+            $locale = $request->query('locale', app()->getLocale());
+            $perPage = 9;
+
+            $query = Blog::join('blog_translations as t', function ($join) use ($locale) {
+                $join->on('blogs.id', '=', 't.blog_id')
+                    ->where('t.lang', $locale);
+            })
+                ->join('blog_categories', 'blog_categories.id', '=', 'blogs.category_id')
+                ->join('blog_category_translations as ct', function ($join) use ($locale) {
+                    $join->on('blog_categories.id', '=', 'ct.category_id')
+                        ->where('ct.lang', $locale);
+                })
+
+                ->where('blogs.status', 'active')
+                ->where('blogs.is_public', true)
+                ->select(
+                    't.title',
+                    'blogs.slug',
+                    'blogs.image',
+                    'ct.title as category_title',
+                    'blogs.created_at',
+                    'blogs.updated_at'
+                )
+                ->orderBy('blogs.created_at', 'desc');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where('t.title', 'like', "%{$search}%");
+            }
+
+            $paginate = $query->paginate($perPage)->appends($request->only('search'));
+
+            $paginate->getCollection()->transform(function ($blog) {
+                return [
+                    'title' => $blog->title,
+                    'slug' => $blog->slug,
+                    'image' => $blog->image ? asset('storage/' . $blog->image) : null,
+                    'category' => $blog->category_title,
+                    'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            return ApiResponse::success(
+                __('messages.blog.success.listBlogs'),
+                [
+                    'pagination' => $paginate,
+                    'filters' => $request->only('search')
+                ]
+            );
+
+        } catch (\Throwable $e) {
+            Log::error('Error en list_blogs: ' . $e->getMessage());
+
+            return ApiResponse::error(
+                __('messages.blog.error.listBlogs'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * Display the specified resource in client with lang.
+     */
+    public function get_blog_client($id, Request $request)
+    {
+        try {
+            $lang = $request->query('locale', app()->getLocale());
+
+            $blog = Blog::with(['translation' => fn($q) => $q->where('lang', $lang)])
+                ->where('status', 'active')
+                ->where('is_public', true)
+                ->where(function ($query) use ($id) {
+                    $query->where('id', $id)
+                        ->orWhere('slug', $id);
+                })
+                ->firstOrFail();
+
+            $translation = $blog->translation ?? null;
+
+            $data = [
+                'id' => $blog->id,
+                'slug' => $blog->slug,
+                'image' => $blog->image ? asset('storage/' . $blog->image) : null,
+                'title' => $translation->title ?? null,
+                'content' => $translation->content ?? null,
+                'category' => $blog->category_id,
+                'status' => $blog->status,
+            ];
+
+            return ApiResponse::success(
+                __('messages.blog.success.getBlog'),
+                $data
+            );
+        } catch (\Throwable $e) {
+            Log::error('Error en get_blog: ' . $e->getMessage());
+
+            return ApiResponse::error(
+                __('messages.blog.error.getBlog'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -134,44 +247,6 @@ class BlogController extends Controller
             );
         } catch (\Throwable $e) {
             Log::error('Error en get_blog: ' . $e->getMessage());
-
-            return ApiResponse::error(
-                __('messages.blog.error.getBlog'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    /**
-     * Display the specified resource in client with lang.
-     */
-    public function get_blog_client($id, Request $request)
-    {
-        try {
-            $locale = $request->query('locale', app()->getLocale());
-
-            $blog = Blog::with(['translations' => fn($q) => $q->where('lang', $locale)])
-                ->where('id', $id) // o slug
-                ->orWhere('slug', $id)
-                ->firstOrFail();
-
-            $data = [
-                'id' => $blog->id,
-                'slug' => $blog->slug,
-                'image' => $blog->image ? url('storage', $blog->image) : null,
-                'title' => $blog->blogTranslation->title,
-                'content' => $blog->blogTranslation->content,
-                'category' => $blog->category,
-                'status' => $blog->status
-            ];
-
-            return ApiResponse::success(
-                __('messages.blog.success.getBlog'),
-                $data
-            );
-        } catch (\Throwable $e) {
-            Log::error('Error en get_blogs: ' . $e->getMessage());
 
             return ApiResponse::error(
                 __('messages.blog.error.getBlog'),
