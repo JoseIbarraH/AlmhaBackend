@@ -24,6 +24,8 @@ class Service extends Model implements Auditable
         'view'
     ];
 
+    protected $appends = ['full_path'];
+
     /**
      * Relaciones
      */
@@ -52,4 +54,11 @@ class Service extends Model implements Auditable
         return $this->hasMany(ServiceResultGallery::class, 'service_id');
     }
 
+    public function getFullPathAttribute()
+    {
+        if (!$this->path) {
+            return null;
+        }
+        return url('/storage/' . $this->path);
+    }
 }

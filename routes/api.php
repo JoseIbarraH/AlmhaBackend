@@ -6,8 +6,9 @@ use App\Http\Controllers\Setting\RoleController;
 use App\Http\Controllers\Setting\TrashController;
 use App\Http\Controllers\Setting\UserController;
 use App\Http\Controllers\TeamMemberController;
-use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\DesignController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\BlogController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,20 +63,16 @@ Route::prefix('team_member')->controller(TeamMemberController::class)->group(fun
     });
 });
 
-Route::prefix('design')->controller(DesignController::class)->group(function () {
+Route::middleware(['auth:sanctum', 'permission.map'])->prefix('design')->controller(DesignController::class)->group(function () {
+    Route::get('/', 'get_design');
+    Route::post('/', 'create_item');
+    Route::match(['post', 'put', 'patch'], '/{id}', 'update_item');
+    Route::delete('/{id}', 'delete_item');
 
-    Route::get('/client', 'get_design_client');
-
-    Route::middleware(['auth:sanctum', 'permission.map'])->group(function () {
-        Route::get('/', 'get_design');
-        Route::post('/', 'create_item');
-        Route::match(['post', 'put', 'patch'], '/{id}', 'update_item');
-        Route::delete('/{id}', 'delete_item');
-
-        Route::prefix('settings')->group(function () {
-            Route::post('/state', 'update_state'); // Ahora es: /api/design/settings/state
-        });
+    Route::prefix('settings')->group(function () {
+        Route::post('/state', 'update_state');
     });
+
 });
 
 Route::prefix('setting')->group(function () {
@@ -116,5 +113,9 @@ Route::prefix('setting')->group(function () {
     });
 });
 
+Route::prefix('client')->controller(ClientController::class)->group(function () {
+    Route::get('/design', 'get_design_client');
+    Route::get('/service/{slug}', 'get_service_client');
+});
 
 require __DIR__ . '/auth.php';
