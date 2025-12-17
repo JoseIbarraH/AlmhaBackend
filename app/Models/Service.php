@@ -56,9 +56,7 @@ class Service extends Model implements Auditable
 
     public function getFullPathAttribute()
     {
-        if (!$this->path) {
-            return null;
-        }
+        if (!$this->path) return null;
         return url('/storage/' . $this->path);
     }
 }

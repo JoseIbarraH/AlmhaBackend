@@ -3,15 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
-use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Database\Eloquent\Model;
+use Spatie\Sluggable\SlugOptions;
+use Spatie\Sluggable\HasSlug;
 
 class Blog extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasFactory;
+    use SoftDeletes, HasFactory, HasSlug;
     use \OwenIt\Auditing\Auditable;
 
     protected $table = 'blogs';
@@ -33,14 +34,48 @@ class Blog extends Model implements Auditable
         return $this->belongsTo(BlogCategory::class, 'category_id');
     }
 
+    /**
+     * Traduccion a español
+     */
+    public function translation($lang = null)
+    {
+        $locale = $lang ?? app()->getLocale();
+        return $this->hasOne(BlogTranslation::class)->where('lang', $locale);
+    }
+
     public function translations()
     {
         return $this->hasMany(BlogTranslation::class, 'blog_id');
     }
 
-    public function translation()
+    /**
+     * Url de la imagen completa
+     */
+    protected function image(): Attribute
     {
-        return $this->hasOne(BlogTranslation::class, 'blog_id');
+        return Attribute::make(
+            get: fn(?string $value) => match (true) {
+                empty($value) => null,
+                str_starts_with($value, 'http') => $value,
+                default => asset("storage/{$value}"),
+            },
+        );
     }
 
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom(function ($model) {
+                $en = $model->translation('en')->first();
+                return $en ? $en->title : '';
+            })
+            ->saveSlugsTo('slug');
+    }
+
+    public function scopeRelationTitle($query, $value)
+    {
+        return $query->whereHas('translation', function ($q) use ($value) {
+            $q->where('title', 'like', "%{$value}%");
+        });
+    }
 }

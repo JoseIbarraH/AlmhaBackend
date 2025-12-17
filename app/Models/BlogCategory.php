@@ -19,30 +19,14 @@ class BlogCategory extends Model implements Auditable
         return $this->hasMany(Blog::class, 'category_id');
     }
 
-
-    /**
-     * Relación: Una categoría tiene muchas traducciones
-     */
-    public function translations()
-    {
-        return $this->hasMany(BlogCategoryTranslation::class, 'category_id');
-    }
-
     /**
      * Obtener la traducción según el idioma actual
      */
     public function translation($lang = null)
     {
-        $lang = $lang ?? app()->getLocale();
-        return $this->translations()->where('lang', $lang)->first();
+        $locale = $lang ?? app()->getLocale();
+        return $this->hasOne(BlogCategoryTranslation::class, 'category_id')->where('lang', $locale);
     }
-
-    public function translationRelation()
-    {
-        return $this->hasOne(BlogCategoryTranslation::class, 'category_id')
-            ->where('lang', app()->getLocale());
-    }
-
 
     /**
      * Accesor para ->name (devuelve el nombre traducido automáticamente)

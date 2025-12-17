@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Responses\ApiResponse;
-use App\Models\Blog;
-use App\Models\DesignSetting;
-use App\Models\Service;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
+use App\Http\Responses\ApiResponse;
+use App\Models\DesignSetting;
 use Illuminate\Http\Request;
+use App\Models\Service;
+use App\Models\Blog;
 
 class ClientController extends Controller
 {
@@ -92,7 +93,6 @@ class ClientController extends Controller
             );
         }
     }
-
 
     public function get_service_client($slug, Request $request)
     {
@@ -199,6 +199,54 @@ class ClientController extends Controller
             return ApiResponse::error(
                 __('messages.service.error.getService'),
                 config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                500
+            );
+        }
+    }
+
+    public function list_blog_client(Request $request)
+    {
+        try {
+            $perPage = 9;
+
+            $blogs = Blog::with(['translation', 'category.translation'])
+                ->select('id', 'category_id', 'slug', 'status', 'image', 'created_at', 'updated_at')
+                ->orderByDesc('created_at');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $blogs->whereHas('translation', function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%");
+                });
+            }
+
+            $paginate = $blogs->paginate($perPage)->appends($request->only('search'));
+
+            $paginate->getCollection()->transform(function ($blog) {
+                return [
+                    'title' => $blog->translation->title,
+                    'slug' => $blog->slug,
+                    'image' => $blog->image,
+                    'category' => $blog->category->translation->title,
+                    'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            return ApiResponse::success(
+                __('messages.blog.success.listBlogs'),
+                [
+                    'pagination' => $paginate,
+                    'filters' => $request->only('search')
+                ]
+            );
+
+        } catch (\Throwable $e) {
+            Log::error('Error en list_blogs: ' . $e->getMessage());
+
+            return ApiResponse::error(
+                __('messages.blog.error.listBlogs'),
+                ['exception' => $e->getMessage()],
                 500
             );
         }

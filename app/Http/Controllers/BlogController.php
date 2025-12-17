@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Dashboard\Blog\UpdateRequest;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 use Illuminate\Support\Facades\Log;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +19,6 @@ use App\Models\Blog;
 
 class BlogController extends Controller
 {
-
     public $languages;
 
     public function __construct()
@@ -28,47 +29,31 @@ class BlogController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function list_blog_client(Request $request)
+    public function list_blog(Request $request)
     {
         try {
-            $locale = $request->query('locale', app()->getLocale());
             $perPage = 9;
 
-            $query = Blog::join('blog_translations as t', function ($join) use ($locale) {
-                $join->on('blogs.id', '=', 't.blog_id')
-                    ->where('t.lang', $locale);
-            })
-                ->join('blog_categories', 'blog_categories.id', '=', 'blogs.category_id')
-                ->join('blog_category_translations as ct', function ($join) use ($locale) {
-                    $join->on('blog_categories.id', '=', 'ct.category_id')
-                        ->where('ct.lang', $locale);
-                })
+            $blogs = QueryBuilder::for(Blog::class)
+                ->select('id', 'category_id', 'slug', 'status', 'created_at', 'updated_at')
+                ->allowedIncludes(['translation', 'category.translation'])
+                ->allowedFilters([
+                    AllowedFilter::scope('title', 'RelationTitle'),
+                ])
+                ->allowedSorts(['created_at', 'updated_at'])
+                ->defaultSort('-created_at')
+                ->whereHas('translation')
+                ->with(['translation', 'category.translation'])
+                ->paginate($perPage)
+                ->withQueryString();
 
-                ->where('blogs.status', 'active')
-                ->where('blogs.is_public', true)
-                ->select(
-                    't.title',
-                    'blogs.slug',
-                    'blogs.image',
-                    'ct.title as category_title',
-                    'blogs.created_at',
-                    'blogs.updated_at'
-                )
-                ->orderBy('blogs.created_at', 'desc');
-
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where('t.title', 'like', "%{$search}%");
-            }
-
-            $paginate = $query->paginate($perPage)->appends($request->only('search'));
-
-            $paginate->getCollection()->transform(function ($blog) {
+            // Transformar la colección
+            $blogs->getCollection()->transform(function ($blog) {
                 return [
-                    'title' => $blog->title,
+                    'id' => $blog->id,
+                    'title' => $blog->translation?->title,
                     'slug' => $blog->slug,
-                    'image' => $blog->image ? asset('storage/' . $blog->image) : null,
-                    'category' => $blog->category_title,
+                    'category' => $blog->category?->translation?->title,
                     'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
                 ];
@@ -77,7 +62,7 @@ class BlogController extends Controller
             return ApiResponse::success(
                 __('messages.blog.success.listBlogs'),
                 [
-                    'pagination' => $paginate,
+                    'pagination' => $blogs,
                     'filters' => $request->only('search')
                 ]
             );
@@ -87,130 +72,7 @@ class BlogController extends Controller
 
             return ApiResponse::error(
                 __('messages.blog.error.listBlogs'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    /**
-     * Display the specified resource in client with lang.
-     */
-    public function get_blog_client($id, Request $request)
-    {
-        try {
-            $lang = $request->query('locale', app()->getLocale());
-
-            $blog = Blog::with(['translation' => fn($q) => $q->where('lang', $lang)])
-                ->where('status', 'active')
-                ->where('is_public', true)
-                ->where(function ($query) use ($id) {
-                    $query->where('id', $id)
-                        ->orWhere('slug', $id);
-                })
-                ->firstOrFail();
-
-            $translation = $blog->translation ?? null;
-
-            $data = [
-                'id' => $blog->id,
-                'slug' => $blog->slug,
-                'image' => $blog->image ? asset('storage/' . $blog->image) : null,
-                'title' => $translation->title ?? null,
-                'content' => $translation->content ?? null,
-                'category' => $blog->category_id,
-                'status' => $blog->status,
-            ];
-
-            return ApiResponse::success(
-                __('messages.blog.success.getBlog'),
-                $data
-            );
-        } catch (\Throwable $e) {
-            Log::error('Error en get_blog: ' . $e->getMessage());
-
-            return ApiResponse::error(
-                __('messages.blog.error.getBlog'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    /**
-     * Display a listing of the resource.
-     */
-    public function list_blog(Request $request)
-    {
-        try {
-            $locale = $request->query('locale', app()->getLocale());
-            $perPage = 9;
-
-            $query = Blog::join('blog_translations as t', function ($join) use ($locale) {
-                $join->on('blogs.id', '=', 't.blog_id')
-                    ->where('t.lang', $locale);
-            })
-                ->join('blog_categories', 'blog_categories.id', '=', 'blogs.category_id')
-                ->join('blog_category_translations as ct', function ($join) use ($locale) {
-                    $join->on('blog_categories.id', '=', 'ct.category_id')
-                        ->where('ct.lang', $locale);
-                })
-                ->select(
-                    'blogs.id',
-                    't.title',
-                    'blogs.slug',
-                    'blogs.status',
-                    'blogs.image',
-                    'ct.title as category',
-                    'blogs.created_at',
-                    'blogs.updated_at'
-                )
-                ->orderBy('blogs.created_at', 'desc');
-
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where('t.title', 'like', "%{$search}%");
-            }
-
-            $paginate = $query->paginate($perPage)->appends($request->only('search'));
-
-            $paginate->getCollection()->transform(function ($blog) {
-                return [
-                    'id' => $blog->id,
-                    'title' => $blog->title,
-                    'slug' => $blog->slug,
-                    'status' => $blog->status,
-                    'category' => $blog->category_title,
-                    'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
-                    'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
-                ];
-            });
-
-            $total = Blog::count();
-            $totalActivated = Blog::where('status', 'active')->count();
-            $totalDeactivated = Blog::where('status', 'inactive')->count();
-            $last = Blog::where('created_at', '>=', now()->subDays(15))->count();
-
-            return ApiResponse::success(
-                __('messages.blog.success.listBlogs'),
-                [
-                    'pagination' => $paginate,
-                    'filters' => $request->only('search'),
-                    'stats' => [
-                        'total' => $total,
-                        'totalActivated' => $totalActivated,
-                        'totalDeactivated' => $totalDeactivated,
-                        'lastCreated' => $last,
-                    ],
-                ]
-            );
-
-        } catch (\Throwable $e) {
-            Log::error('Error en list_blogs: ' . $e->getMessage());
-
-            return ApiResponse::error(
-                __('messages.blog.error.listBlogs'),
-                ['exception' => $e->getMessage()],
+                ['exception' => config('app.debug') ? $e->getMessage() : null],
                 500
             );
         }
@@ -222,21 +84,17 @@ class BlogController extends Controller
     public function get_blog($id)
     {
         try {
-            $lang = 'es';
-
-            $blog = Blog::with(['translation' => fn($q) => $q->where('lang', $lang)])
+            $blog = Blog::with(['translation'])
                 ->where('id', $id)
                 ->orWhere('slug', $id)
                 ->firstOrFail();
 
-            $translation = $blog->translation ?? null;
-
             $data = [
                 'id' => $blog->id,
                 'slug' => $blog->slug,
-                'image' => $blog->image ? asset('storage/' . $blog->image) : null,
-                'title' => $translation->title ?? null,
-                'content' => $translation->content ?? null,
+                'image' => $blog->image,
+                'title' => $blog->translation->title ?? null,
+                'content' => $blog->translation->content ?? null,
                 'category' => $blog->category_id,
                 'status' => $blog->status,
             ];
@@ -265,31 +123,20 @@ class BlogController extends Controller
         try {
             $data = $request->all();
 
-            // Crear blog
             $blog = Blog::create([
                 'user_id' => auth()->id(),
                 'category_id' => $data['category_id'] ?? 1,
                 'writer' => auth()->user()->name,
                 'status' => $data['status'] ?? 'inactive',
                 'view' => 0,
-                'slug' => '', // Se genera después con el título traducido
+                'slug' => uniqid('temp-'),
                 'image' => '',
             ]);
 
-            // Guardar imagen si existe
-            if (!empty($data['image'])) {
-                $blog->image = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");
-                $blog->save();
-            }
-
-            // Crear traducciones
             $this->createTranslations($blog, $data, $translator);
 
-            // Generar slug basado en el título en español
-            $titleEs = $blog->translations()->where('lang', 'en')->first()->title;
-            $blog->update([
-                'slug' => Helpers::generateUniqueSlug(Blog::class, $titleEs, 'slug')
-            ]);
+            $blog->slug = null;
+            $blog->save();
 
             DB::commit();
 
@@ -302,10 +149,7 @@ class BlogController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Error en create_blog', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'message' => $e->getMessage()
             ]);
 
             return ApiResponse::error(
@@ -321,47 +165,52 @@ class BlogController extends Controller
      */
     private function createTranslations(Blog $blog, array $data, GoogleTranslateService $translator): void
     {
-        foreach ($this->languages as $lang) {
-            if ($lang === 'es') {
-                // Español: valores originales
-                BlogTranslation::create([
-                    'blog_id' => $blog->id,
-                    'lang' => $lang,
-                    'title' => $data['title'] ?? 'Título por defecto',
-                    'content' => $data['content'] ?? '',
-                ]);
+        $sourceLang = app()->getLocale();
+        $textsToTranslate = [
+            $data['title'] ?? 'Default title',
+            $data['content'] ?? 'Write your blog'
+        ];
+
+        foreach ($this->languages as $targetLang) {
+            if ($targetLang === $sourceLang) {
+                $this->createTranslation($blog->id, $targetLang, $textsToTranslate[0], $textsToTranslate[1]);
                 continue;
             }
 
             try {
-                // Preparar textos para traducir
-                $textsToTranslate = [
-                    $data['title'] ?? 'Título por defecto',
-                    $data['content'] ?? ''
-                ];
+                $translated = $translator->translate($textsToTranslate, $targetLang, $sourceLang);
 
-                // UNA sola llamada API por idioma
-                $translated = $translator->translate($textsToTranslate, $lang);
-
-                BlogTranslation::create([
-                    'blog_id' => $blog->id,
-                    'lang' => $lang,
-                    'title' => $translated[0] ?? ($data['title'] ?? 'Título por defecto'),
-                    'content' => $translated[1] ?? ($data['content'] ?? ''),
-                ]);
+                $this->createTranslation(
+                    $blog->id,
+                    $targetLang,
+                    $translated[0] ?? $textsToTranslate[0],
+                    $translated[1] ?? $textsToTranslate[1]
+                );
 
             } catch (\Exception $e) {
-                \Log::error("Translation error for blog {$blog->id} to {$lang}: " . $e->getMessage());
-
-                // Fallback: crear con texto original
-                BlogTranslation::create([
+                Log::warning("Translation failed for blog {$blog->id} to {$targetLang}", [
+                    'error' => $e->getMessage(),
                     'blog_id' => $blog->id,
-                    'lang' => $lang,
-                    'title' => $data['title'] ?? 'Título por defecto',
-                    'content' => $data['content'] ?? '',
+                    'target_lang' => $targetLang
                 ]);
+
+                // Fallback: usar texto original
+                $this->createTranslation($blog->id, $targetLang, $textsToTranslate[0], $textsToTranslate[1]);
             }
         }
+    }
+
+    /**
+     * Crear una traducción de blog
+     */
+    private function createTranslation(int $blogId, string $lang, string $title, string $content): void
+    {
+        BlogTranslation::create([
+            'blog_id' => $blogId,
+            'lang' => $lang,
+            'title' => $title,
+            'content' => $content,
+        ]);
     }
 
     /**
@@ -373,21 +222,17 @@ class BlogController extends Controller
         try {
             $blog = Blog::findOrFail($id);
             $data = $request->validated();
-            $locale = $request->query('locale', 'es');
 
             $this->updateBlogData($blog, $data);
-
             $this->updateTranslations($blog, $data, $translator);
+
+            $blog->touch();
 
             DB::commit();
 
-            $blog->load(['translations' => fn($q) => $q->where('lang', $locale), 'category']);
-
             return ApiResponse::success(
-                __('messages.blog.success.updateBlog'),
-                $this->formatBlogResponse($blog, $locale)
+                __('messages.blog.success.updateBlog')
             );
-
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Error en update_blog', [
@@ -420,13 +265,6 @@ class BlogController extends Controller
             $updates['status'] = $data['status'];
         }
 
-        if (isset($data['title'])) {
-            $translationEs = $blog->translations()->where('lang', 'es')->first();
-            if ($translationEs && $data['title'] !== $translationEs->title) {
-                $updates['slug'] = Helpers::generateUniqueSlug(Blog::class, $data['title'], 'slug');
-            }
-        }
-
         if (!empty($data['image']) && $data['image'] instanceof UploadedFile) {
             if (!empty($blog->image) && Storage::disk('public')->exists($blog->image)) {
                 Storage::disk('public')->delete($blog->image);
@@ -445,95 +283,67 @@ class BlogController extends Controller
      */
     private function updateTranslations(Blog $blog, array $data, GoogleTranslateService $translator): void
     {
-        // Obtener traducción en español
-        $translationEs = $blog->translations()->firstOrCreate(['blog_id' => $blog->id, 'lang' => 'es']);
+        $sourceLang = app()->getLocale();
 
-        $titleChanged = isset($data['title']) && $data['title'] !== $translationEs->title;
-        $contentChanged = isset($data['content']) && $data['content'] !== $translationEs->content;
+        $sourceTranslation = $blog->translations()->firstOrCreate([
+            'blog_id' => $blog->id,
+            'lang' => $sourceLang,
+        ]);
 
-        // Si no hay cambios, salir
-        if (!$titleChanged && !$contentChanged) {
+        $changedFields = [];
+        $textsToTranslate = [];
+
+        if (isset($data['title']) && $data['title'] !== $sourceTranslation->title) {
+            $changedFields[] = 'title';
+            $textsToTranslate[] = $data['title'];
+        }
+
+        if (isset($data['content']) && $data['content'] !== $sourceTranslation->content) {
+            $changedFields[] = 'content';
+            $textsToTranslate[] = $data['content'];
+        }
+
+        if (empty($changedFields)) {
             return;
         }
 
-        // Actualizar español
-        $translationEs->update([
-            'title' => $data['title'] ?? $translationEs->title,
-            'content' => $data['content'] ?? $translationEs->content,
-        ]);
+        $sourceTranslation->update(
+            collect($data)->only($changedFields)->toArray()
+        );
 
-        // Preparar textos para traducir
-        $textsToTranslate = [];
-        $changedFields = [];
-
-        if ($titleChanged) {
-            $textsToTranslate[] = $data['title'];
-            $changedFields[] = 'title';
-        }
-
-        if ($contentChanged) {
-            $textsToTranslate[] = $data['content'];
-            $changedFields[] = 'content';
-        }
-
-        // Traducir a otros idiomas
-        foreach ($this->languages as $lang) {
-            if ($lang === 'es') {
+        foreach ($this->languages as $targetLang) {
+            if ($targetLang === $sourceLang) {
                 continue;
             }
-
             try {
-                // UNA sola llamada API con todos los textos cambiados
-                $translated = $translator->translate($textsToTranslate, $lang);
+                $translatedTexts = $translator->translate(
+                    $textsToTranslate,
+                    $targetLang,
+                    $sourceLang
+                );
 
                 $translation = $blog->translations()->firstOrCreate([
                     'blog_id' => $blog->id,
-                    'lang' => $lang
+                    'lang' => $targetLang,
                 ]);
 
-                // Actualizar solo los campos que cambiaron
-                $updatedFields = [];
+                $updateData = [];
+
                 foreach ($changedFields as $index => $field) {
-                    $updatedFields[$field] = $translated[$index] ?? $translation->$field;
+                    $updateData[$field] = $translatedTexts[$index] ?? $translation->$field;
                 }
 
-                if (!empty($updatedFields)) {
-                    $translation->update($updatedFields);
-                }
+                $translation->update($updateData);
 
-            } catch (\Exception $e) {
-                \Log::error("Translation error for blog {$blog->id} to {$lang}: " . $e->getMessage());
+            } catch (\Throwable $e) {
+                \Log::error(
+                    "Translation error | Blog {$blog->id} | {$sourceLang} → {$targetLang}",
+                    ['error' => $e->getMessage()]
+                );
             }
         }
     }
 
-    /**
-     * Formatear respuesta del blog
-     */
-    private function formatBlogResponse(Blog $blog, string $locale): array
-    {
-        $translation = $blog->translations->first();
-
-        return [
-            'id' => $blog->id,
-            'slug' => $blog->slug,
-            'category_id' => $blog->category_id,
-            'category' => $blog->category ? [
-                'id' => $blog->category->id,
-                'name' => $blog->category->name,
-                'slug' => $blog->category->slug,
-            ] : null,
-            'status' => $blog->status,
-            'writer' => $blog->writer,
-            'view' => $blog->view,
-            'image' => $blog->image ? url("storage/{$blog->image}") : null,
-            'title' => $translation?->title ?? '',
-            'content' => $translation?->content ?? '',
-            'lang' => $locale,
-            'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
-            'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
-        ];
-    }
 
     /**
      * Remove the specified resource from storage.
