@@ -26,6 +26,7 @@ return new class extends Migration
             ['key' => 'background1', 'value' => true, 'folder' => 'images/design/background/background1'],
             ['key' => 'background2', 'value' => true, 'folder' => 'images/design/background/background2'],
             ['key' => 'background3', 'value' => true, 'folder' => 'images/design/background/background3'],
+            ['key' => 'maintenance', 'value' => true, 'folder' => 'images/design/maintenance'],
         ]);
 
         Schema::create('design_items', function (Blueprint $table) {

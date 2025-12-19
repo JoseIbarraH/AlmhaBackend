@@ -100,7 +100,7 @@ class ClientController extends Controller
             $lang = $request->query('locale', app()->getLocale());
 
             $service = Service::with([
-                'serviceTranslation' => fn($q) => $q->where('lang', $lang),
+                'translation' => fn($q) => $q->where('lang', $lang),
                 'frequentlyAskedQuestions' => fn($q) => $q->where('lang', $lang),
                 'surgeryPhases' => fn($q) => $q->where('lang', $lang),
                 'sampleImages',
@@ -109,20 +109,18 @@ class ClientController extends Controller
                 ->where('slug', $slug)
                 ->firstOrFail();
 
-            // Obtener traducción del idioma solicitado
-            $translation = $service->serviceTranslation->first();
 
             $data = [
                 'id' => $service->id,
                 'slug' => $service->slug,
                 'status' => $service->status,
-                'image' => $service->image ? asset('storage/' . $service->image) : null,
+                'image' => $service->image,
                 'created_at' => $service->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
 
                 // Traducción del servicio
-                'title' => $translation->title ?? '',
-                'description' => $translation->description ?? '',
+                'title' => $service->translation->title ?? '',
+                'description' => $service->translation->description ?? '',
                 'lang' => $lang,
 
                 // Preguntas frecuentes
