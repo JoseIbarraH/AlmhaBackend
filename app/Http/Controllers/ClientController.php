@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 use App\Http\Responses\ApiResponse;
+use App\Domains\Blog\Models\Blog;
 use App\Models\DesignSetting;
 use Illuminate\Http\Request;
 use App\Models\Service;
-use App\Models\Blog;
 
 class ClientController extends Controller
 {
@@ -31,11 +31,13 @@ class ClientController extends Controller
             // Ejecutar consultas en paralelo usando lazy collections
             [$settingsCollection, $topServices] = [
                 DesignSetting::with([
-                    'designItems.translations' => fn($q) => $q->where('lang', $lang)
+                    'designItems.translations' => function ($query) use ($lang) {
+                        $query->where('lang', $lang);
+                    }
                 ])->get(),
 
                 Service::with([
-                    'serviceTranslation' => fn($q) => $q->where('lang', $lang),
+                    'translation',
                 ])
                     ->where('status', 'active')
                     ->orderByDesc('view')
@@ -60,9 +62,9 @@ class ClientController extends Controller
                 $carry[$groupName][$design->key] = $design->designItems
                     ->map(fn($item) => [
                         'type' => $item->type,
-                        'image' => $item->full_path,
-                        'title' => $item->translations->first()?->title ?? '',
-                        'subtitle' => $item->translations->first()?->subtitle ?? '',
+                        'image' => $item->path,
+                        'title' => $item->translations->first()->title ?? '',
+                        'subtitle' => $item->translations->first()->subtitle ?? '',
                     ])
                     ->values()
                     ->toArray();
@@ -72,12 +74,10 @@ class ClientController extends Controller
 
             // Agregar top blogs a la respuesta
             $transformedSettings['topServices'] = $topServices->map(function ($service) {
-                $translation = $service->serviceTranslation->first();
-
                 return [
-                    'title' => $translation?->title ?? $service->title ?? '',
+                    'title' => $service->translation->title ?? '',
                     'slug' => $service->slug,
-                    'image' => $service->image ? asset('storage/' . $service->image) : null,
+                    'image' => $service->image,
                     'created_at' => $service->created_at?->toISOString(),
                     'updated_at' => $service->updated_at?->toISOString(),
                 ];

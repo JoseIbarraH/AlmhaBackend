@@ -9,7 +9,8 @@ use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ClientController;
-use App\Http\Controllers\BlogController;
+/* use App\Http\Controllers\BlogController; */
+use App\Domains\Blog\Controllers\BlogController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('service')->controller(ServiceController::class)->group(function () {

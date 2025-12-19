@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Blog;
-use App\Models\BlogTranslation;
+use App\Domains\Blog\Models\Blog;
+use App\Domains\Blog\Models\BlogTranslation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class BlogTranslationFactory extends Factory

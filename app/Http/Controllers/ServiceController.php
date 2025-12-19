@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 use App\Models\ServiceFaq;
 use App\Helpers\Helpers;
 use App\Models\Service;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class ServiceController extends Controller
 {
@@ -29,63 +31,27 @@ class ServiceController extends Controller
     public function list_service(Request $request)
     {
         try {
-            $locale = $request->query('locale', app()->getLocale());
+
             $perPage = 9;
 
-            $query = Service::with([
-                'serviceTranslation' => fn($q) => $q->where('lang', $locale),
-                'surgeryPhases' => fn($q) => $q->where('lang', $locale),
-                'frequentlyAskedQuestions' => fn($q) => $q->where('lang', $locale),
-                'sampleImages',
-                'resultGallery',
-            ]);
+            $services = QueryBuilder::for(Service::class)
+                ->allowedIncludes(['translation', 'surgeryPhases', 'frequentlyAskedQuestions', 'sampleImages', 'resultGallery'])
+                ->allowedFilters([
+                    AllowedFilter::scope('title', 'RelationTitle'),
+                ])
+                ->allowedSorts(['created_at', 'updated_at'])
+                ->defaultSort('-created_at')
+                ->whereHas('translation')
+                ->with(['translation'])
+                ->paginate($perPage)
+                ->withQueryString();
 
-            // Filtro por búsqueda en traducción
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->whereHas('serviceTranslation', function ($q) use ($search, $locale) {
-                    $q->where('lang', $locale)
-                        ->where(function ($q2) use ($search) {
-                            $q2->where('title', 'like', "%{$search}%")
-                                ->orWhere('description', 'like', "%{$search}%");
-                        });
-                });
-            }
-
-            // Paginación
-            /* $services = $query->paginate($perPage); */
-            $paginate = $query->paginate($perPage)->appends($request->only('search'));
-
-            // Transformar la colección paginada
-            $paginate->getCollection()->transform(function ($service) {
-                $translation = $service->serviceTranslation->first();
-
+            $services->getCollection()->transform(function ($service) {
                 return [
                     'id' => $service->id,
                     'status' => $service->status,
                     'slug' => $service->slug,
-                    'image' => $service->image ? url("storage/{$service->image}") : null,
-                    'title' => $translation->title ?? '',
-                    'description' => $translation->description ?? '',
-                    'surgery_phases' => $service->surgeryPhases->map(fn($phase) => [
-                        'id' => $phase->id,
-                        'recovery_time' => $phase->recovery_time,
-                        'preoperative_recommendations' => $phase->preoperative_recommendations,
-                        'postoperative_recommendations' => $phase->postoperative_recommendations,
-                        'lang' => $phase->lang,
-                    ]),
-                    'frequently_asked_questions' => $service->frequentlyAskedQuestions->map(fn($faq) => [
-                        'id' => $faq->id,
-                        'question' => $faq->question,
-                        'answer' => $faq->answer,
-                        'lang' => $faq->lang,
-                    ]),
-                    'sample_images' => $service->sampleImages ? [
-                        'technique' => $service->sampleImages->technique ? url("storage/{$service->sampleImages->technique}") : null,
-                        'recovery' => $service->sampleImages->recovery ? url("storage/{$service->sampleImages->recovery}") : null,
-                        'postoperative_care' => $service->sampleImages->postoperative_care ? url("storage/{$service->sampleImages->postoperative_care}") : null,
-                    ] : null,
-                    'results_gallery' => $service->resultGallery->map(fn($img) => url("storage/{$img->path}")),
+                    'title' => $service->translation->title ?? '',
                     'created_at' => $service->created_at?->format('Y-m-d H:i:s'),
                     'updated_at' => $service->updated_at?->format('Y-m-d H:i:s'),
                 ];
@@ -99,7 +65,7 @@ class ServiceController extends Controller
             return ApiResponse::success(
                 __('messages.service.success.listServices'),
                 [
-                    'pagination' => $paginate,
+                    'pagination' => $services,
                     'filters' => $request->only('search'),
                     'stats' => [
                         'total' => $total,
@@ -124,12 +90,10 @@ class ServiceController extends Controller
     public function get_service($id, Request $request)
     {
         try {
-            $locale = 'es';
-
             $service = Service::with([
-                'serviceTranslation' => fn($q) => $q->where('lang', $locale),
-                'frequentlyAskedQuestions' => fn($q) => $q->where('lang', $locale),
-                'surgeryPhases' => fn($q) => $q->where('lang', $locale),
+                'translation',
+                'frequentlyAskedQuestions',
+                'surgeryPhases',
                 'sampleImages',
                 'resultGallery'
             ])->findOrFail($id);
@@ -137,19 +101,18 @@ class ServiceController extends Controller
             Log::info($service);
 
             // Obtener traducción del idioma solicitado
-            $translation = $service->serviceTranslation->first();
+            $translation = $service->translation;
 
             $data = [
                 'id' => $service->id,
                 'status' => $service->status,
-                'image' => $service->image ? asset('storage/' . $service->image) : null,
+                'image' => $service->image,
                 'created_at' => $service->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $service->updated_at->format('Y-m-d H:i:s'),
 
                 // Traducción del servicio
                 'title' => $translation->title ?? '',
                 'description' => $translation->description ?? '',
-                'lang' => $locale,
 
                 // Preguntas frecuentes (verificar si existe)
                 'frequently_asked_questions' => $service->frequentlyAskedQuestions
@@ -226,7 +189,6 @@ class ServiceController extends Controller
             );
         }
     }
-
 
     /**
      * Crear un servicio StoreRequest
@@ -525,7 +487,7 @@ class ServiceController extends Controller
             );
         }
     }
-    
+
     private function updateServiceStatus(Service $service, array $data): void
     {
         $updates = [];

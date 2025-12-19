@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Domains\Blog\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Illuminate\Database\Eloquent\Model;
+use Database\Factories\BlogFactory;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Sluggable\HasSlug;
 
@@ -77,5 +78,10 @@ class Blog extends Model implements Auditable
         return $query->whereHas('translation', function ($q) use ($value) {
             $q->where('title', 'like', "%{$value}%");
         });
+    }
+
+    protected static function newFactory()
+    {
+        return BlogFactory::new();
     }
 }

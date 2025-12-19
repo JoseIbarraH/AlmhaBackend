@@ -1,21 +1,22 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Domains\Blog\Controllers;
 
-use App\Http\Requests\Dashboard\Blog\UpdateRequest;
+use App\Domains\Blog\Requests\UpdateRequest;
+use App\Domains\Blog\Models\BlogTranslation;
+use App\Domains\Blog\Models\BlogCategory;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
-use App\Models\BlogTranslation;
+use App\Domains\Blog\Models\Blog;
 use Illuminate\Http\Request;
-use App\Models\BlogCategory;
 use App\Helpers\Helpers;
-use App\Models\Blog;
 
 class BlogController extends Controller
 {
@@ -47,7 +48,6 @@ class BlogController extends Controller
                 ->paginate($perPage)
                 ->withQueryString();
 
-            // Transformar la colección
             $blogs->getCollection()->transform(function ($blog) {
                 return [
                     'id' => $blog->id,
@@ -59,11 +59,22 @@ class BlogController extends Controller
                 ];
             });
 
+            $total = Blog::count();
+            $totalActivated = Blog::where('status', 'active')->count();
+            $totalDeactivated = Blog::where('status', 'inactive')->count();
+            $last = Blog::where('created_at', '>=', now()->subDays(15))->count();
+
             return ApiResponse::success(
                 __('messages.blog.success.listBlogs'),
                 [
                     'pagination' => $blogs,
-                    'filters' => $request->only('search')
+                    'filters' => $request->only('search'),
+                    'stats' => [
+                        'total' => $total,
+                        'totalActivated' => $totalActivated,
+                        'totalDeactivated' => $totalDeactivated,
+                        'lastCreated' => $last,
+                    ],
                 ]
             );
 

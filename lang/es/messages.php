@@ -155,5 +155,23 @@ return [
                 'forceDelete' => 'Elemento eliminado permanentemente'
             ]
         ]
-    ]
+    ],
+    'procedure' => [
+        'success' => [
+            'listProcedures' => 'Lista de procedimientos obtenida correctamente',
+            'getProcedure' => 'Procedimiento obtenido correctamente',
+            'createProcedure' => 'Procedimiento creado correctamente',
+            'updateProcedure' => 'Procedimiento actualizado correctamente',
+            'deleteProcedure' => 'Procedimiento eliminado correctamente',
+            'updateStatus' => 'Estado actualizado correctamente'
+        ],
+        'error' => [
+            'listProcedures' => 'Error al obtener los procedimientos',
+            'getProcedure' => 'Error al obtener el procedimiento',
+            'createProcedure' => 'Error al crear el procedimiento',
+            'updateProcedure' => 'Error al actualizar el procedimiento',
+            'deleteProcedure' => 'Error al eliminar el procedimiento',
+            'updateStatus' => 'Error al actualizar el estado'
+        ]
+    ],
 ];

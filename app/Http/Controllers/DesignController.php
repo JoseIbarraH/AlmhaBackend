@@ -27,12 +27,8 @@ class DesignController extends Controller
     public function get_design(Request $request)
     {
         try {
-            $lang = 'es';
-
             $settingsCollection = DesignSetting::with([
-                'designItems.translations' => function ($q) use ($lang) {
-                    $q->where('lang', $lang);
-                }
+                'designItems.translation'
             ])->get();
 
             $groupMapping = [
@@ -47,45 +43,46 @@ class DesignController extends Controller
 
             $transformedSettings = $settingsCollection->reduce(function ($carry, $design) use ($groupMapping) {
                 $key = $design->key;
-                $groupName = $groupMapping[$key] ?? $key;
+                $groupName = $groupMapping[$key] ?? 'others'; // Evita errores si la key no está en el mapa
 
+                // Procesar ítems con seguridad
                 $itemsArray = $design->designItems->map(function ($item) {
-                    $translation = $item->translations->first();
-
                     return [
                         'id' => $item->id,
                         'type' => $item->type,
                         'path' => $item->path,
                         'full_path' => $item->full_path,
-                        'title' => $translation?->title ?? '',
-                        'subtitle' => $translation?->subtitle ?? '',
+                        'title' => $item->translation->title ?? '', // El null-safe a veces da problemas en versiones viejas de PHP, mejor usar ??
+                        'subtitle' => $item->translation->subtitle ?? '',
                     ];
                 })->values()->toArray();
 
+                // Inicializar grupo si no existe
                 if (!isset($carry[$groupName])) {
                     $carry[$groupName] = [];
                 }
 
-                // 👈 CAMBIO APLICADO: Creamos un objeto que contiene el ID y el valor booleano
+                // Estructura de configuración
                 $carry[$groupName][$key . 'Setting'] = [
-                    'id' => $design->id, // ID del DesignSetting (ej. ID del background1)
-                    'enabled' => (bool) $design->value, // Valor booleano (enabled/disabled)
+                    'id' => $design->id,
+                    'enabled' => filter_var($design->value, FILTER_VALIDATE_BOOLEAN), // Más seguro que (bool) para strings "0" o "false"
                 ];
 
-                // Mantener el array de ítems
+                // Inyectar los ítems
                 $carry[$groupName][$key] = $itemsArray;
 
                 return $carry;
             }, []);
 
+            return ApiResponse::success(data: $transformedSettings);
 
-            return ApiResponse::success(
-                data: $transformedSettings
-            );
         } catch (\Throwable $e) {
+            // Log para que tú veas el error real en storage/logs/laravel.log
+            \Log::error("Error en get_design: " . $e->getMessage());
+
             return ApiResponse::error(
                 __('messages.design.error.getDesign') ?? 'Error fetching design',
-                ['execption' => $e->getMessage()],
+                ['exception' => $e->getMessage()], // Corregido el typo 'execption'
                 500
             );
         }

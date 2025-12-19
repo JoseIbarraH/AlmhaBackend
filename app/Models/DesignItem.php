@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Database\Eloquent\Model;
 class DesignItem extends Model implements Auditable
 {
     use \OwenIt\Auditing\Auditable;
@@ -15,8 +16,6 @@ class DesignItem extends Model implements Auditable
 
     protected $table = 'design_items';
 
-    protected $appends = ['full_path'];
-
     protected $touches = ['designSetting'];
 
     public $timestamps = false;
@@ -26,22 +25,25 @@ class DesignItem extends Model implements Auditable
         return $this->belongsTo(DesignSetting::class, 'design_id');
     }
 
-    public function translations()
+    public function translations($lang = null)
     {
         return $this->hasMany(DesignItemTranslation::class, 'item_id');
     }
 
     public function translation($lang = null)
     {
-        $lang = $lang ?? app()->getLocale();
-        return $this->translations()->where('lang', $lang)->first();
+        $locale = $lang ?? app()->getLocale();
+        return $this->hasOne(DesignItemTranslation::class, 'item_id')->where('lang', $locale);
     }
 
-    public function getFullPathAttribute()
+    protected function path(): Attribute
     {
-        if (!$this->path) {
-            return null;
-        }
-        return url('/storage/' . $this->path);
+        return Attribute::make(
+            get: fn(?string $value) => match (true) {
+                empty($value) => null,
+                str_starts_with($value, 'http') => $value,
+                default => asset("storage/{$value}"),
+            },
+        );
     }
 }
