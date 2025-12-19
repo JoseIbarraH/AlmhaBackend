@@ -25,23 +25,29 @@ class FileProcessor
         string $disk = 'public',
         bool $convertToWebp = true
     ): ?array {
-        if ($oldFilePath && Storage::disk($disk)->exists($oldFilePath)) {
-            Storage::disk($disk)->delete($oldFilePath);
+
+        // 1. LIMPIAR LA RUTA ANTES DE BORRAR
+        if ($oldFilePath) {
+            $cleanPath = Helpers::removeAppUrl($oldFilePath);
+
+            if (Storage::disk($disk)->exists($cleanPath)) {
+                Storage::disk($disk)->delete($cleanPath);
+            }
         }
-/*
-        if ($file instanceof UploadedFile) { */
+
+        if ($file instanceof UploadedFile) {
             $type = self::getFileTypeFromMime($file->getMimeType());
 
             $path = match ($type) {
                 'video' => $file->store($folder, $disk),
                 'image' => $convertToWebp
-                    ? Helpers::saveWebpFile($file, $folder)
-                    : $file->store($folder, $disk),
+                ? Helpers::saveWebpFile($file, $folder)
+                : $file->store($folder, $disk),
                 default => $file->store($folder, $disk)
             };
 
             return compact('path', 'type');
-        /* } */
+        }
 
         if (is_string($file)) {
             return [
