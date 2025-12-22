@@ -13,6 +13,8 @@ class ProcedurePostoperativeImage extends Model
         'image'
     ];
 
+    public $timestamps = false;
+
     public function procedure()
     {
         return $this->belongsTo(Procedure::class);

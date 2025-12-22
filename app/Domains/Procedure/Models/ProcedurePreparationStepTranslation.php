@@ -14,6 +14,8 @@ class ProcedurePreparationStepTranslation extends Model
         'description'
     ];
 
+    public $timestamps = false;
+
     public function preparationStep()
     {
         return $this->belongsTo(ProcedurePreparationStep::class, 'procedure_preparation_step_id');

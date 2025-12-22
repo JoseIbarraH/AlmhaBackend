@@ -18,6 +18,8 @@ class Procedure extends Model implements Auditable
     protected $table = "procedures";
     protected $fillable = ['slug', 'image', 'status', 'views'];
 
+    public $timestamps = false;
+
     protected $casts = [
         'views' => 'integer',
     ];

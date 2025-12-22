@@ -9,6 +9,8 @@ class ProcedureTranslation extends Model
     protected $table = "procedure_translations";
     protected $fillable = ['procedure_id', 'lang', 'title', 'subtitle'];
 
+    public $timestamps = false;
+
     public function procedure()
     {
         return $this->belongsTo(Procedure::class);

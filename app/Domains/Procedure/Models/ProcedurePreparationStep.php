@@ -9,6 +9,8 @@ class ProcedurePreparationStep extends Model
     protected $table = "procedure_preparation_steps";
     protected $fillable = ['procedure_id', 'order'];
 
+    public $timestamps = false;
+
     public function procedure()
     {
         return $this->belongsTo(Procedure::class);

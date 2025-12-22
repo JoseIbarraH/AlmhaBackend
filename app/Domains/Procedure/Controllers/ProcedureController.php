@@ -90,7 +90,7 @@ class ProcedureController extends Controller
                 'slug' => uniqid('temp-'),
                 'views' => 0,
                 'image' => '',
-                'status' => 'draft'
+                'status' => 'inactive'
             ]);
 
             $procedure->slug = null;

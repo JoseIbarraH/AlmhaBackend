@@ -12,6 +12,8 @@ class ProcedureFaq extends Model
         'order'
     ];
 
+    public $timestamps = false;
+
     public function procedure()
     {
         return $this->belongsTo(Procedure::class);

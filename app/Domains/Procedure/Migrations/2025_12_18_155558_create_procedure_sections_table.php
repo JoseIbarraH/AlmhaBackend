@@ -13,9 +13,8 @@ return new class extends Migration {
         Schema::create('procedure_sections', function (Blueprint $table) {
             $table->id();
             $table->foreignId('procedure_id')->constrained()->onDelete('cascade');
-            $table->string('type'); // 'what_is', 'surgical_technique', 'recovery_info'
+            $table->enum('type', ['what_is', 'technique', 'recovery']);
             $table->string('image')->nullable();
-            $table->integer('order')->default(0);
 
             $table->index(['procedure_id', 'type']);
         });
@@ -25,7 +24,8 @@ return new class extends Migration {
             $table->foreignId('procedure_section_id')->constrained()->onDelete('cascade');
             $table->string('lang', 5);
             $table->string('title')->nullable();
-            $table->text('content')->nullable();
+            $table->text('content_one')->nullable();
+            $table->text('content_two')->nullable();
 
             $table->unique(['procedure_section_id', 'lang'], 'section_lang_unique');
             $table->index('lang');

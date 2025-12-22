@@ -15,6 +15,8 @@ class ProcedureRecoveryPhaseTranslation extends Model
         'description'
     ];
 
+    public $timestamps = false;
+
     public function recoveryPhase()
     {
         return $this->belongsTo(ProcedureRecoveryPhase::class, 'procedure_recovery_phase_id');

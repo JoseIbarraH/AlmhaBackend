@@ -26,8 +26,7 @@ return new class extends Migration {
                 ->onDelete('cascade');
 
             $table->string('lang', 5);
-            $table->string('title');
-            $table->text('description');
+            $table->text('content');
             $table->integer('order')->default(0);
 
             $table->unique(['procedure_postoperative_instruction_id', 'lang'], 'post_inst_lang_unique');

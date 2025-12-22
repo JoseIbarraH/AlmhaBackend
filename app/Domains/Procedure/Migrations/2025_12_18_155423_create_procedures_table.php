@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('slug')->unique();
             $table->string('image')->nullable();
-            $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
+            $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->unsignedBigInteger('views')->default(0);
             $table->timestamps();
             $table->softDeletes();

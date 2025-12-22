@@ -14,6 +14,8 @@ class ProcedurePostoperativeInstructionTranslation extends Model
         'description'
     ];
 
+    public $timestamps = false;
+
     public function postoperativeInstruction()
     {
         return $this->belongsTo(ProcedurePostoperativeInstruction::class, 'procedure_postoperative_instruction_id');

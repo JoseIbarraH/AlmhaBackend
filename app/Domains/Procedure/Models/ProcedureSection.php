@@ -9,6 +9,8 @@ class ProcedureSection extends Model
     protected $table = "procedure_sections";
     protected $fillable = ['procedure_id', 'type', 'image', 'order'];
 
+    public $timestamps = false;
+
     public function procedure()
     {
         return $this->belongsTo(Procedure::class);

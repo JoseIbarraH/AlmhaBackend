@@ -23,8 +23,8 @@ return new class extends Migration {
             $table->id();
 
             $table->foreignId('procedure_recovery_phase_id')
-            ->constrained('procedure_recovery_phases', 'id', 'pro_rec_phase_id_foreign')
-            ->onDelete('cascade'); 
+                ->constrained('procedure_recovery_phases', 'id', 'pro_rec_phase_id_foreign')
+                ->onDelete('cascade');
 
             $table->string('lang', 5);
             $table->string('period');

@@ -14,4 +14,6 @@ class ProcedureFaqTranslation extends Model
         'answer'
     ];
 
+    public $timestamps = false;
+
 }
