@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProcedureFaq extends Model
 {
-    protected $table = "procedures_faqs";
+    protected $table = "procedure_faqs";
     protected $fillable = [
         'procedure_id',
         'order'

@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class ProcedurePostoperativeInstructionTranslation extends Model
 {
     protected $table = "procedure_postoperative_instruction_translations";
-    protected $filename = [
+    protected $fillable = [
         'procedure_postoperative_instruction_id',
         'lang',
-        'title',
-        'description'
+        'content'
     ];
 
     public $timestamps = false;

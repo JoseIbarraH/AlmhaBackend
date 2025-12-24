@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('procedure_id')->constrained()->onDelete('cascade');
             $table->integer('order')->default(0);
-            $table->timestamps();
 
             $table->index('procedure_id');
         });

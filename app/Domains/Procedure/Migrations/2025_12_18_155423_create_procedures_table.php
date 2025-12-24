@@ -28,7 +28,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('procedure_id')->constrained()->onDelete('cascade');
             $table->string('lang', 5); // es, en, fr, etc.
-            $table->string('title');
+            $table->string('title')->nullable();
             $table->string('subtitle')->nullable();
 
             $table->unique(['procedure_id', 'lang']);

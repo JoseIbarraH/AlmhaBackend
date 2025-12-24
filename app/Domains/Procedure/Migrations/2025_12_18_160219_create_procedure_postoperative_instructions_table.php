@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('procedure_id')->constrained()->onDelete('cascade');
             $table->enum('type', ['do', 'dont']); // Lo que SÍ / Lo que NO
+            $table->integer('order')->default(0);
 
             $table->index(['procedure_id', 'type']);
         });
@@ -27,7 +28,6 @@ return new class extends Migration {
 
             $table->string('lang', 5);
             $table->text('content');
-            $table->integer('order')->default(0);
 
             $table->unique(['procedure_postoperative_instruction_id', 'lang'], 'post_inst_lang_unique');
             $table->index('lang');

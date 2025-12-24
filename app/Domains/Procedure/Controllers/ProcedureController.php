@@ -81,35 +81,5 @@ class ProcedureController extends Controller
 
     }
 
-    public function create_procedure(Request $request)
-    { 
-        DB::beginTransaction();
-        try {
-            $procedure = Procedure::create([
-                'user_id' => auth()->id(),
-                'slug' => uniqid('temp-'),
-                'views' => 0,
-                'image' => '',
-                'status' => 'inactive'
-            ]);
-
-            $procedure->slug = null;
-            $procedure->save();
-
-            DB::commit();
-
-            return ApiResponse::success(
-                message: ('messages.procedure.success.createProcedure'),
-                code: 201
-            );
-
-        } catch (\Throwable $th) {
-            Log::error('Error en crear el procedimiento' . $th->getMessage());
-
-            return ApiResponse::error(
-                message: ('messages.procedure.error.createProcedure'),
-                code: 500
-            );
-        }
-    }
+    
 }

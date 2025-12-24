@@ -6,9 +6,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('procedure')->controller(ProcedureController::class)->group(function () {
     Route::get("/", "list_procedure");
-    Route::post("/", "create_procedure");
 });
+
 Route::prefix('procedure')->controller(ProcedureContentController::class)->group(function () {
+    Route::post("/", "create_procedure");
     Route::patch("/{id}", "update_procedure");
 });
 

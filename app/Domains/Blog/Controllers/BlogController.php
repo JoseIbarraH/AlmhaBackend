@@ -238,6 +238,7 @@ class BlogController extends Controller
             $this->updateTranslations($blog, $data, $translator);
 
             $blog->touch();
+            $blog->save();
 
             DB::commit();
 

@@ -18,7 +18,7 @@ class ProcedurePreparationStep extends Model
 
     public function translations()
     {
-        return $this->hasMany(ProcedurePreparationStepTranslation::class);
+        return $this->hasMany(ProcedurePreparationStepTranslation::class, 'procedure_preparation_id', 'id');
     }
 
     public function translation()

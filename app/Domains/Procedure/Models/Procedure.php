@@ -18,8 +18,6 @@ class Procedure extends Model implements Auditable
     protected $table = "procedures";
     protected $fillable = ['slug', 'image', 'status', 'views'];
 
-    public $timestamps = false;
-
     protected $casts = [
         'views' => 'integer',
     ];
@@ -73,12 +71,6 @@ class Procedure extends Model implements Auditable
         return $this->postoperativeInstructions()->where('type', 'dont');
     }
 
-    // Imagen postoperatoria
-    public function postoperativeImage()
-    {
-        return $this->hasOne(ProcedurePostoperativeImage::class);
-    }
-
     // Preguntas frecuentes
     public function faqs()
     {
@@ -111,7 +103,7 @@ class Procedure extends Model implements Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function ($model) {
-                $en = $model->translation('en')->first();
+                $en = $model->translations('en')->first();
                 return $en ? $en->title : '';
             })
             ->saveSlugsTo('slug');

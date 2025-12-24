@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('procedure_result_galleries', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('procedure_id')->constrained('services')->onDelete('cascade');
+            $table->foreignId('procedure_id')->constrained()->onDelete('cascade');
             $table->string('path');
+
+            $table->index('procedure_id');
         });
     }
 

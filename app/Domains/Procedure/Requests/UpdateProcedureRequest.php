@@ -5,6 +5,7 @@ namespace App\Domains\Procedure\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Log;
 
 class UpdateProcedureRequest extends FormRequest
 {
@@ -23,12 +24,18 @@ class UpdateProcedureRequest extends FormRequest
      */
     public function rules(): array
     {
+
+        $procedureId = $this->route('id');
+        $data = $this->all();
+
+        Log::info('Procedure Id: ', [$data]);
+
         return [
             'status' => 'sometimes|in:draft,published,archived', // Estado del procedimiento
+            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360', // Imagen principal
 
             'title' => 'sometimes|string|max:255', // Titulo del procedimiento
             'subtitle' => 'sometimes|string|max:255', // Subtitulo del procedimiento
-            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360', // Imagen principal
 
             'section' => 'sometimes|array',
             'section.*.type' => 'required_with:section|in:what_is,technique,recovery',
@@ -41,10 +48,10 @@ class UpdateProcedureRequest extends FormRequest
             'preStep' => 'sometimes|array',
 
             'preStep.deleted' => 'sometimes|array',
-            'preStep.deleted.*' => ['integer', Rule::exists('procedure_preparation_steps', 'id')->where('procedure_id', $this->procedure_id)],
+            'preStep.deleted.*' => ['integer', Rule::exists('procedure_preparation_steps', 'id')->where('procedure_id', $procedureId)],
 
             'preStep.updated' => 'sometimes|array',
-            'preStep.updated.*.id' => ['required', 'integer', Rule::exists('procedure_preparation_steps', 'id')->where('procedure_id', $this->procedure_id)],
+            'preStep.updated.*.id' => ['required', 'integer', Rule::exists('procedure_preparation_steps', 'id')->where('procedure_id', $procedureId)],
             'preStep.updated.*.title' => 'nullable|string|max:255',
             'preStep.updated.*.description' => 'nullable|string|max:5000',
             'preStep.updated.*.order' => 'nullable|integer',
@@ -58,11 +65,10 @@ class UpdateProcedureRequest extends FormRequest
             'phase' => 'sometimes|array',
 
             'phase.deleted' => 'sometimes|array',
-            'phase.deleted.*' => ['integer', Rule::exists('procedure_recovery_phases', 'id')->where('procedure_id', $this->procedure_id)],
+            'phase.deleted.*' => ['integer', Rule::exists('procedure_recovery_phases', 'id')->where('procedure_id', $procedureId)],
 
             'phase.updated' => 'sometimes|array',
-            /* 'phase.updated.*.id' => 'required_with:phase.updated|exists:procedure_recovery_phases,id', */
-            'phase.updated.*.id' => ['required_with:phase.updated', Rule::exists('procedure_recovery_phases', 'id')->where('procedure_id', $this->procedure_id)],
+            'phase.updated.*.id' => ['required_with:phase.updated', Rule::exists('procedure_recovery_phases', 'id')->where('procedure_id', $procedureId)],
             'phase.updated.*.period' => 'nullable|string|max:255',
             'phase.updated.*.title' => 'nullable|string|max:255',
             'phase.updated.*.description' => 'nullable|string|max:5000',
@@ -78,10 +84,10 @@ class UpdateProcedureRequest extends FormRequest
             'faq' => 'sometimes|array',
 
             'faq.deleted' => 'sometimes|array',
-            'faq.deleted.*' => ['integer', Rule::exists('procedure_faqs', 'id')->where('procedure_id', $this->procedure_id)],
+            'faq.deleted.*' => ['integer', Rule::exists('procedure_faqs', 'id')->where('procedure_id', $procedureId)],
 
             'faq.updated' => 'sometimes|array',
-            'faq.updated.*.id' => ['required_with:faq.updated', Rule::exists('procedure_faqs', 'id')->where('procedure_id', $this->procedure_id)],
+            'faq.updated.*.id' => ['required_with:faq.updated', Rule::exists('procedure_faqs', 'id')->where('procedure_id', $procedureId)],
             'faq.updated.*.question' => 'nullable|string|max:500',
             'faq.updated.*.answer' => 'nullable|string|max:5000',
             'faq.updated.*.order' => 'nullable|integer|min:0',
@@ -90,8 +96,6 @@ class UpdateProcedureRequest extends FormRequest
             'faq.new.*.question' => 'required|string|max:500',
             'faq.new.*.answer' => 'required|string|max:5000',
             'faq.new.*.order' => 'nullable|integer|min:0',
-
-            'postImage' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
 
             // Lo que SI debe hacer
             'do' => 'sometimes|array',
@@ -136,10 +140,10 @@ class UpdateProcedureRequest extends FormRequest
             'gallery' => 'sometimes|array',
 
             'gallery.deleted' => 'sometimes|array',
-            'gallery.deleted.*' => ['integer', Rule::exists('procedure_result_galleries', 'id')->where('procedure_id', $this->procedure_id)],
+            'gallery.deleted.*' => ['integer', Rule::exists('procedure_result_galleries', 'id')->where('procedure_id', $procedureId)],
 
             'gallery.updated' => 'sometimes|array',
-            'gallery.updated.*.id' => ['required_with:gallery.updated', 'integer', Rule::exists('procedure_result_galleries', 'id')->where('procedure_id', $this->procedure_id)],
+            'gallery.updated.*.id' => ['required_with:gallery.updated', 'integer', Rule::exists('procedure_result_galleries', 'id')->where('procedure_id', $procedureId)],
             'gallery.updated.*.path' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
 
             'gallery.new' => 'sometimes|array',
@@ -147,4 +151,6 @@ class UpdateProcedureRequest extends FormRequest
 
         ];
     }
+
+    
 }

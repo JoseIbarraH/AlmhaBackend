@@ -21,7 +21,7 @@ class ProcedureRecoveryPhase extends Model
 
     public function translations()
     {
-        return $this->hasMany(ProcedureRecoveryPhaseTranslation::class);
+        return $this->hasMany(ProcedureRecoveryPhaseTranslation::class, 'procedure_recovery_phase_id', 'id');
     }
 
     public function translation()

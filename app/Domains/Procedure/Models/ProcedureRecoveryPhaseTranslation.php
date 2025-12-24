@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProcedureRecoveryPhaseTranslation extends Model
 {
     protected $table = "procedure_recovery_phase_translations";
-    protected $filename = [
+    protected $fillable = [
         'procedure_recovery_phase_id',
         'lang',
         'period',

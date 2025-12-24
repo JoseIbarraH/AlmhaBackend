@@ -11,7 +11,7 @@ class ProcedureResultGallery extends Model
 
     protected $fillable = [
         'procedure_id',
-        'image'
+        'path'
     ];
 
     public $timestamps = false;
