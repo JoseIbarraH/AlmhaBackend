@@ -28,10 +28,10 @@ class UpdateProcedureRequest extends FormRequest
         $procedureId = $this->route('id');
         $data = $this->all();
 
-        Log::info('Procedure Id: ', [$data]);
+        Log::info('Procedure Id: ', [$data, $procedureId]);
 
         return [
-            'status' => 'sometimes|in:draft,published,archived', // Estado del procedimiento
+            'status' => 'sometimes|in:active,inactive', // Estado del procedimiento
             'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360', // Imagen principal
 
             'title' => 'sometimes|string|max:255', // Titulo del procedimiento
@@ -152,5 +152,5 @@ class UpdateProcedureRequest extends FormRequest
         ];
     }
 
-    
+
 }

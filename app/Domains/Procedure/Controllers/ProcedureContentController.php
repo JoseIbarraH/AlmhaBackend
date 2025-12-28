@@ -5,9 +5,9 @@ namespace App\Domains\Procedure\Controllers;
 use App\Domains\Procedure\Models\ProcedureFaq;
 use App\Domains\Procedure\Models\ProcedurePostoperativeInstruction;
 use App\Domains\Procedure\Models\ProcedurePreparationStep;
-use App\Domains\Procedure\Models\ProcedurePreparationStepTranslation;
 use App\Domains\Procedure\Models\ProcedureRecoveryPhase;
 use App\Domains\Procedure\Models\ProcedureResultGallery;
+use App\Domains\Procedure\Models\ProcedureTranslation;
 use App\Domains\Procedure\Requests\UpdateProcedureRequest;
 use App\Domains\Procedure\Models\ProcedureSection;
 use App\Domains\Procedure\Models\Procedure;
@@ -31,10 +31,12 @@ class ProcedureContentController extends Controller
         $this->languages = config('languages.supported');
     }
 
-    public function create_procedure(Request $request)
+    public function create_procedure(Request $request, GoogleTranslateService $translator)
     {
         DB::beginTransaction();
         try {
+            $data = $request->all();
+
             $procedure = Procedure::create([
                 'user_id' => auth()->id(),
                 'slug' => uniqid('temp-'),
@@ -42,6 +44,8 @@ class ProcedureContentController extends Controller
                 'image' => '',
                 'status' => 'inactive'
             ]);
+
+            $this->createTranslations($procedure, $data, $translator);
 
             $procedure->slug = null;
             $procedure->save();
@@ -63,6 +67,84 @@ class ProcedureContentController extends Controller
         }
     }
 
+    private function createTranslations(Procedure $procedure, array $data, GoogleTranslateService $translator)
+    {
+        $sourceLang = app()->getLocale();
+        $defaultTextBase = 'New Procedure'; // Texto base en inglés
+
+        // Si no viene título, traducir el texto por defecto a todos los idiomas
+        $defaultTitles = [];
+        if (!isset($data['title'])) {
+            try {
+                // Preparar textos para traducir de una sola vez
+                $textsToTranslate = array_fill(0, count($this->languages), $defaultTextBase);
+
+                foreach ($this->languages as $index => $targetLang) {
+                    if ($targetLang === 'en') {
+                        $defaultTitles[$targetLang] = $defaultTextBase;
+                    } else {
+                        // Traducir el texto por defecto
+                        $translated = $translator->translate($defaultTextBase, $targetLang, 'en');
+                        $defaultTitles[$targetLang] = is_array($translated) ? $translated[0] : $translated;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("Failed to translate default titles", ['error' => $e->getMessage()]);
+                // Fallback: usar el texto base para todos
+                $defaultTitles = array_fill_keys($this->languages, $defaultTextBase);
+            }
+        }
+
+        foreach ($this->languages as $targetLang) {
+            if ($targetLang === $sourceLang) {
+                ProcedureTranslation::create([
+                    'procedure_id' => $procedure->id,
+                    'lang' => $targetLang,
+                    'title' => $data['title'] ?? ($defaultTitles[$targetLang] ?? $defaultTextBase),
+                    'subtitle' => null
+                ]);
+
+                continue;
+            }
+
+            // Si hay título, traducirlo
+            if (isset($data['title'])) {
+                try {
+                    $translated = $translator->translate($data['title'], $targetLang, $sourceLang);
+
+                    ProcedureTranslation::create([
+                        'procedure_id' => $procedure->id,
+                        'lang' => $targetLang,
+                        'title' => is_array($translated) ? $translated[0] : $translated,
+                        'subtitle' => null
+                    ]);
+
+                } catch (\Exception $e) {
+                    Log::warning("Translation failed for procedure {$procedure->id} to {$targetLang}", [
+                        'error' => $e->getMessage(),
+                        'procedure_id' => $procedure->id,
+                        'target_lang' => $targetLang
+                    ]);
+
+                    ProcedureTranslation::create([
+                        'procedure_id' => $procedure->id,
+                        'lang' => $targetLang,
+                        'title' => $data['title'],
+                        'subtitle' => null
+                    ]);
+                }
+            } else {
+                // Usar texto por defecto traducido
+                ProcedureTranslation::create([
+                    'procedure_id' => $procedure->id,
+                    'lang' => $targetLang,
+                    'title' => $defaultTitles[$targetLang] ?? $defaultTextBase,
+                    'subtitle' => null
+                ]);
+            }
+        }
+    }
+
     public function update_procedure(UpdateProcedureRequest $request, $id, GoogleTranslateService $translator)
     {
         DB::beginTransaction();
@@ -71,7 +153,7 @@ class ProcedureContentController extends Controller
             $data = $request->validated();
 
             $this->updateProcedureData($procedure, $data);
-
+            /* 
             $this->updateTranslations($procedure, $data, $translator);
 
             if (isset($data['section'])) {
@@ -100,7 +182,7 @@ class ProcedureContentController extends Controller
 
             if (isset($data['gallery'])) {
                 $this->updateGallery($procedure, $data['gallery']);
-            }
+            } */
 
             $procedure->touch();
 
@@ -1280,6 +1362,29 @@ class ProcedureContentController extends Controller
                     $galleryItem->save();
                 }
             }
+        }
+    }
+
+    public function delete_procedure($id)
+    {
+        DB::beginTransaction();
+        try {
+            $procedure = Procedure::findOrFail($id);
+            $procedure->delete();
+
+            DB::commit();
+
+            return ApiResponse::success(
+                __('messages.procedure.success.deleteProcedure')
+            );
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return ApiResponse::error(
+                __('messages.procedure.error.deleteProcedure'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 }

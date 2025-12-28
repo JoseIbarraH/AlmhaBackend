@@ -36,7 +36,7 @@ class ProcedureController extends Controller
                 ->with('translation')
                 ->paginate($perPage)
                 ->withQueryString();
-            
+
             $procedures->getCollection()->transform(function (Procedure $procedure) {
                 return [
                     'id' => $procedure->id,
@@ -76,10 +76,65 @@ class ProcedureController extends Controller
         }
     }
 
-    public function show($id)
+    public function get_procedure($id)
     {
+        try {
+            $procedure = Procedure::with(['translation'])
+                ->where('id', $id)
+                ->orWhere('slug', $id)
+                ->firstOrFail();
+
+            $data = [
+                'id' => $procedure->id,
+                'slug' => $procedure->slug,
+                'image' => $procedure->image,
+                'status' => $procedure->status,
+                'views' => $procedure->views,
+                'title' => $procedure->translation->title ?? null,
+                'subtitle' => $procedure->translation->subtitle ?? null
+            ];
+
+            return ApiResponse::success(
+                __('messages.procedure.success.getProcedure'),
+                $data
+            );
+
+        } catch (\Throwable $e) {
+            Log::error('Error en get_procedure: ' . $e->getMessage());
+
+            return ApiResponse::error(
+                __('messages.procedure.error.getProcedure'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+        }
 
     }
 
-    
+    public function update_status(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $procedure = Procedure::findOrFail($id);
+            $data = $request->validate([
+                'status' => 'required|in:active,inactive'
+            ]);
+            $procedure->update(['status' => $data['status']]);
+
+            DB::commit();
+            return ApiResponse::success(
+                __('messages.procedure.success.updateStatus'),
+                $procedure
+            );
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return ApiResponse::error(
+                __('messages.procedure.error.updateStatus'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+
 }

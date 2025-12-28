@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers\Setting;
 
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Domains\Procedure\Models\Procedure;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Http\JsonResponse;
+use App\Domains\Blog\Models\Blog;
 use Illuminate\Http\Request;
 use App\Models\TeamMember;
-use App\Models\Service;
-use App\Models\Blog;
 use App\Models\Role;
 use App\Models\User;
 
@@ -25,11 +24,11 @@ class TrashController extends Controller
             'translation' => true,
             'delete_url' => 'images/blog/'
         ],
-        'Service' => [
-            'class' => Service::class,
-            'name_field' => 'serviceTranslation.title',
+        'Procedure' => [
+            'class' => Procedure::class,
+            'name_field' => 'procedureTranslation.title',
             'translation' => true,
-            'delete_url' => 'images/service/'
+            'delete_url' => 'images/procedure/'
         ],
         'TeamMember' => [
             'class' => TeamMember::class,

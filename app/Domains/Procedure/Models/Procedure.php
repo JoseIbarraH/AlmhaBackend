@@ -88,6 +88,13 @@ class Procedure extends Model implements Auditable
         $this->increment('views');
     }
 
+    public function scopeRelationTitle($query, $value)
+    {
+        return $query->whereHas('translation', function ($q) use ($value) {
+            $q->where('title', 'like', "%{$value}%");
+        });
+    }
+
     protected function image(): Attribute
     {
         return Attribute::make(
