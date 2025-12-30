@@ -39,7 +39,7 @@ class UpdateProcedureRequest extends FormRequest
 
             'section' => 'sometimes|array',
             'section.*.type' => 'required_with:section|in:what_is,technique,recovery',
-            'section.*.image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
+            'section.*.image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg,webp|max:15360',
             'section.*.title' => 'sometimes|string|max:255',
             'section.*.contentOne' => 'sometimes|nullable|string|max:5000',
             'section.*.contentTwo' => 'sometimes|nullable|string|max:5000',

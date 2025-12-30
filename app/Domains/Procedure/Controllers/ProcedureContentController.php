@@ -153,7 +153,7 @@ class ProcedureContentController extends Controller
             $data = $request->validated();
 
             $this->updateProcedureData($procedure, $data);
-            /* 
+
             $this->updateTranslations($procedure, $data, $translator);
 
             if (isset($data['section'])) {
@@ -182,7 +182,7 @@ class ProcedureContentController extends Controller
 
             if (isset($data['gallery'])) {
                 $this->updateGallery($procedure, $data['gallery']);
-            } */
+            }
 
             $procedure->touch();
 
@@ -281,20 +281,20 @@ class ProcedureContentController extends Controller
     private function updateSection(Procedure $procedure, array $sections, GoogleTranslateService $translator)
     {
         $sourceLang = app()->getLocale();
+
         $procedureSections = [];
         $toTranslation = [];
 
-        // 1. Procesar y guardar todas las secciones primero
         foreach ($sections as $index => $section) {
             $procedureSection = ProcedureSection::firstOrCreate([
                 'procedure_id' => $procedure->id,
-                'type' => $section['type']
+                'type' => $section['type'],
             ]);
 
-            // Actualizar imagen si existe
             if (isset($section['image']) && $section['image'] instanceof UploadedFile) {
-                if (!empty($procedureSection->image) && Storage::disk('public')->exists($procedureSection->image)) {
-                    Storage::disk('public')->delete($procedureSection->image);
+                $urlClean = Helpers::removeAppUrl($procedureSection->image);
+                if (Storage::disk('public')->exists($urlClean)) {
+                    Storage::disk('public')->delete($urlClean);
                 }
 
                 $procedureSection->image = Helpers::saveWebpFile(
@@ -304,73 +304,109 @@ class ProcedureContentController extends Controller
                 $procedureSection->save();
             }
 
-            // Almacenar la sección para usar después
-            $procedureSections[$index] = [
-                'model' => $procedureSection,
-                'data' => $section
-            ];
+            // Detectar campos enviados
+            $fields = [];
 
-            // Preparar textos para traducir (array simple, mantiene el orden)
-            $toTranslation[] = $section['title'];
-            $toTranslation[] = $section['contentOne'];
-            $toTranslation[] = $section['contentTwo'];
+            foreach (['title', 'contentOne', 'contentTwo'] as $field) {
+                if (array_key_exists($field, $section)) {
+                    $fields[] = $field;
+                    $toTranslation[] = $section[$field];
+                }
+            }
+
+            $procedureSections[] = [
+                'model' => $procedureSection,
+                'data' => $section,
+                'fields' => $fields,
+            ];
         }
 
-        // 2. Traducir por idioma (1 llamada por idioma)
-        foreach ($this->languages as $targetLang) {
-            if ($targetLang === $sourceLang) {
-                // Guardar en idioma original sin traducir
-                foreach ($procedureSections as $index => $sectionData) {
-                    $procedureSection = $sectionData['model'];
-                    $section = $sectionData['data'];
-
-                    $procedureSection->translations()->updateOrCreate(
-                        [
-                            'procedure_section_id' => $procedureSection->id,
-                            'lang' => $targetLang
-                        ],
-                        [
-                            'title' => $section['title'],
-                            'content_one' => $section['contentOne'],
-                            'content_two' => $section['contentTwo']
-                        ]
-                    );
-                }
+        // 2️⃣ Guardar idioma original (SIN limpiar campos)
+        foreach ($procedureSections as $sectionData) {
+            if (empty($sectionData['fields'])) {
                 continue;
             }
 
-            // UNA SOLA llamada a la API por idioma con TODAS las secciones
+            $dataToUpdate = [];
+
+            foreach ($sectionData['fields'] as $field) {
+                if ($field === 'title') {
+                    $dataToUpdate['title'] = $sectionData['data']['title'];
+                }
+                if ($field === 'contentOne') {
+                    $dataToUpdate['content_one'] = $sectionData['data']['contentOne'];
+                }
+                if ($field === 'contentTwo') {
+                    $dataToUpdate['content_two'] = $sectionData['data']['contentTwo'];
+                }
+            }
+
+            if (!empty($dataToUpdate)) {
+                $sectionData['model']->translations()->updateOrCreate(
+                    [
+                        'procedure_section_id' => $sectionData['model']->id,
+                        'lang' => $sourceLang,
+                    ],
+                    $dataToUpdate
+                );
+            }
+        }
+
+        // 3️⃣ Traducciones (1 llamada por idioma)
+        foreach ($this->languages as $targetLang) {
+            if ($targetLang === $sourceLang) {
+                continue;
+            }
+
+            if (empty($toTranslation)) {
+                continue;
+            }
+
             $translatedTexts = $translator->translate(
                 $toTranslation,
                 $targetLang,
                 $sourceLang
             );
 
-            Log::info("Traducciones a {$targetLang}:", [$translatedTexts]);
+            Log::info("Traducciones a {$targetLang}", $translatedTexts);
 
-            // 3. Guardar traducciones para cada sección
-            // Como el array viene ordenado, extraemos de 3 en 3
             $translationIndex = 0;
-            foreach ($procedureSections as $index => $sectionData) {
-                $procedureSection = $sectionData['model'];
 
-                $procedureSection->translations()->updateOrCreate(
-                    [
-                        'procedure_section_id' => $procedureSection->id,
-                        'lang' => $targetLang
-                    ],
-                    [
-                        'title' => $translatedTexts[$translationIndex] ?? '',
-                        'content_one' => $translatedTexts[$translationIndex + 1] ?? '',
-                        'content_two' => $translatedTexts[$translationIndex + 2] ?? ''
-                    ]
-                );
+            foreach ($procedureSections as $sectionData) {
+                if (empty($sectionData['fields'])) {
+                    continue;
+                }
 
-                // Avanzar 3 posiciones para la siguiente sección
-                $translationIndex += 3;
+                $dataToUpdate = [];
+
+                foreach ($sectionData['fields'] as $field) {
+                    $value = $translatedTexts[$translationIndex] ?? '';
+                    $translationIndex++;
+
+                    if ($field === 'title') {
+                        $dataToUpdate['title'] = $value;
+                    }
+                    if ($field === 'contentOne') {
+                        $dataToUpdate['content_one'] = $value;
+                    }
+                    if ($field === 'contentTwo') {
+                        $dataToUpdate['content_two'] = $value;
+                    }
+                }
+
+                if (!empty($dataToUpdate)) {
+                    $sectionData['model']->translations()->updateOrCreate(
+                        [
+                            'procedure_section_id' => $sectionData['model']->id,
+                            'lang' => $targetLang,
+                        ],
+                        $dataToUpdate
+                    );
+                }
             }
         }
     }
+
 
     private function updatePreparationStep(Procedure $procedure, array $preStep, GoogleTranslateService $translator)
     {

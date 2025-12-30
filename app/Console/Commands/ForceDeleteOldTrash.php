@@ -2,12 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Domains\Blog\Models\Blog;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\TeamMember;
 use Illuminate\Console\Command;
 use App\Models\User;
-use App\Models\Blog;
 use Carbon\Carbon;
 
 class ForceDeleteOldTrash extends Command

@@ -38,7 +38,7 @@ class Procedure extends Model implements Auditable
     // Secciones
     public function sections()
     {
-        return $this->hasMany(ProcedureSection::class)->orderBy('order');
+        return $this->hasMany(ProcedureSection::class);
     }
 
     // Pasos de preparación

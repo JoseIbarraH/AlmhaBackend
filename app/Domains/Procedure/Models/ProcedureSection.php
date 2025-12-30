@@ -2,12 +2,13 @@
 
 namespace App\Domains\Procedure\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class ProcedureSection extends Model
 {
     protected $table = "procedure_sections";
-    protected $fillable = ['procedure_id', 'type', 'image', 'order'];
+    protected $fillable = ['procedure_id', 'type', 'image'];
 
     public $timestamps = false;
 
@@ -25,5 +26,16 @@ class ProcedureSection extends Model
     {
         return $this->hasOne(ProcedureSectionTranslation::class)
             ->where('lang', app()->getLocale());
+    }
+
+    protected function image(): Attribute
+    {
+        return Attribute::make(
+            get: fn(?string $value) => match (true) {
+                empty($value) => null,
+                str_starts_with($value, 'http') => $value,
+                default => asset("storage/{$value}"),
+            },
+        );
     }
 }

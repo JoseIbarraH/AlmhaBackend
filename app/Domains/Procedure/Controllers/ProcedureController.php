@@ -27,7 +27,7 @@ class ProcedureController extends Controller
             $perPage = 9;
 
             $procedures = QueryBuilder::for(Procedure::class)
-                ->select('id','slug','status','created_at','updated_at')
+                ->select('id', 'slug', 'status', 'created_at', 'updated_at')
                 ->allowedFilters([
                     AllowedFilter::scope('title', 'RelationTitle'),
                     'status'
@@ -40,7 +40,7 @@ class ProcedureController extends Controller
             $procedures->getCollection()->transform(function (Procedure $procedure) {
                 return [
                     'id' => $procedure->id,
-                    'status'=> $procedure->status,
+                    'status' => $procedure->status,
                     'slug' => $procedure->slug,
                     'title' => $procedure->translation->title ?? 'Default title',
                     'created_at' => $procedure->created_at?->format('Y-m-d H:i:s'),
@@ -67,7 +67,7 @@ class ProcedureController extends Controller
                 ]
             );
         } catch (\Throwable $th) {
-            Log::error("Erro al crear". $th->getMessage());
+            Log::error("Erro al crear" . $th->getMessage());
             return ApiResponse::error(
                 __('messages.procedure.error.listProcedures'),
                 ['exception' => $th->getMessage()],
@@ -91,7 +91,34 @@ class ProcedureController extends Controller
                 'status' => $procedure->status,
                 'views' => $procedure->views,
                 'title' => $procedure->translation->title ?? null,
-                'subtitle' => $procedure->translation->subtitle ?? null
+                'subtitle' => $procedure->translation->subtitle ?? null,
+                'section' => $procedure->sections->map(function ($section) {
+                    return [
+                        'id' => $section->id,
+                        'type' => $section->type,
+                        'image' => $section->image,
+                        'title' => $section->translation->title,
+                        'contentOne' => $section->translation->content_one,
+                        'contentTwo' => $section->translation->content_two
+                    ];
+                })->toArray() ?? [],
+                'preStep' => $procedure->preparationSteps->map(function ($pre) {
+                    return [
+                        'id' => $pre->id,
+                        'title' => $pre->translation->title,
+                        'description' => $pre->translation->description,
+                        'order' => $pre->order
+                    ];
+                })->toArray() ?? [],
+                'phase' => $procedure->recoveryPhases->map(function ($rec) {
+                    return [
+                        'id' => $rec->id,
+                        'period' => $rec->translation->period,
+                        'title' => $rec->translation->title,
+                        'description' => $rec->translation->description,
+                        'order' => $rec->order
+                    ];
+                })->toArray() ?? []
             ];
 
             return ApiResponse::success(

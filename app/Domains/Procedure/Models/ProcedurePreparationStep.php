@@ -23,7 +23,7 @@ class ProcedurePreparationStep extends Model
 
     public function translation()
     {
-        return $this->hasOne(ProcedurePreparationStepTranslation::class)
+        return $this->hasOne(ProcedurePreparationStepTranslation::class, 'procedure_preparation_id', 'id')
             ->where('lang', app()->getLocale());
     }
 }
