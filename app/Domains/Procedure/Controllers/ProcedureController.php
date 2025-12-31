@@ -79,9 +79,16 @@ class ProcedureController extends Controller
     public function get_procedure($id)
     {
         try {
-            $procedure = Procedure::with(['translation'])
+            \DB::enableQueryLog();
+            $procedure = Procedure::with([
+                'translation', // Esta SÍ la usas para title y subtitle
+                'sections.translation',
+                'preparationSteps.translation',
+                'recoveryPhases.translation',
+                'postoperativeDos.translation',
+                'postoperativeDonts.translation'
+            ])
                 ->where('id', $id)
-                ->orWhere('slug', $id)
                 ->firstOrFail();
 
             $data = [
@@ -118,8 +125,26 @@ class ProcedureController extends Controller
                         'description' => $rec->translation->description,
                         'order' => $rec->order
                     ];
+                })->toArray() ?? [],
+                'do' => $procedure->postoperativeDos->map(function ($do) {
+                    return [
+                        'id' => $do->id,
+                        'type' => $do->type,
+                        'order' => $do->order,
+                        'content' => $do->translation->content
+                    ];
+                })->toArray() ?? [],
+                'dont' => $procedure->postoperativeDonts->map(function ($dont) {
+                    return [
+                        'id' => $dont->id,
+                        'type' => $dont->type,
+                        'order' => $dont->order,
+                        'content' => $dont->translation->content
+                    ];
                 })->toArray() ?? []
             ];
+
+            Log::info("Query: ", \DB::getQueryLog());
 
             return ApiResponse::success(
                 __('messages.procedure.success.getProcedure'),
