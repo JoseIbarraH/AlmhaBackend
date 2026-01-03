@@ -4,9 +4,9 @@ namespace App\Domains\TeamMember\Controllers;
 
 use App\Domains\TeamMember\Models\TeamMember;
 use App\Http\Controllers\Controller;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
+use App\Helpers\ApiResponse;
 
 
 class TeamMemberController extends Controller

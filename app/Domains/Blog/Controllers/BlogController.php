@@ -11,11 +11,11 @@ use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
 use App\Domains\Blog\Models\Blog;
 use Illuminate\Http\Request;
+use App\Helpers\ApiResponse;
 use App\Helpers\Helpers;
 
 class BlogController extends Controller

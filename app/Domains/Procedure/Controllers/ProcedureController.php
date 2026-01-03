@@ -3,13 +3,13 @@
 namespace App\Domains\Procedure\Controllers;
 
 use App\Domains\Procedure\Models\Procedure;
-use Log;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 use App\Http\Controllers\Controller;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
+use Log;
 
 
 class ProcedureController extends Controller

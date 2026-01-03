@@ -14,10 +14,10 @@ use App\Domains\Procedure\Models\Procedure;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
+use App\Helpers\ApiResponse;
 use App\Helpers\Helpers;
 use Log;
 

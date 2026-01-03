@@ -7,9 +7,8 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use App\Http\Responses\ApiResponse; // Asumo que esta clase está correctamente importada
+use App\Helpers\ApiResponse;
 
 class Handler extends ExceptionHandler
 {

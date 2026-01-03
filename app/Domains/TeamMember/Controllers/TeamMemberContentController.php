@@ -10,10 +10,10 @@ use App\Domains\TeamMember\Models\TeamMember;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
+use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use App\Helpers\Helpers;
 

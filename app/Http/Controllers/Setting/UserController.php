@@ -4,13 +4,11 @@ namespace App\Http\Controllers\Setting;
 
 use Illuminate\Auth\Events\Registered;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\Rule;
-use Illuminate\Http\Response;
+use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Role;
@@ -167,7 +165,11 @@ class UserController extends Controller
 
             $request->validate([
                 'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255',
+                'email' => [
+                    'required',
+                    'string',
+                    'email',
+                    'max:255',
                     Rule::unique('users', 'email')->ignore($id)
                 ],
                 'status' => 'required|in:active,inactive',

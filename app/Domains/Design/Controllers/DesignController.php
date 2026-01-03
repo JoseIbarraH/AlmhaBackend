@@ -9,10 +9,10 @@ use App\Domains\Design\Models\DesignItem;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\FileProcessor;
+use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 
 class DesignController extends Controller
