@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Domains\TeamMember\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;

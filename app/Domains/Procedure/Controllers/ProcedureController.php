@@ -14,13 +14,6 @@ use Illuminate\Http\Request;
 
 class ProcedureController extends Controller
 {
-    public $languages;
-
-    public function __construct()
-    {
-        $this->languages = config('languages.supported');
-    }
-
     public function list_procedure(Request $request)
     {
         try {
@@ -79,9 +72,8 @@ class ProcedureController extends Controller
     public function get_procedure($id)
     {
         try {
-            \DB::enableQueryLog();
             $procedure = Procedure::with([
-                'translation', // Esta SÍ la usas para title y subtitle
+                'translation',
                 'sections.translation',
                 'preparationSteps.translation',
                 'recoveryPhases.translation',
@@ -99,52 +91,51 @@ class ProcedureController extends Controller
                 'views' => $procedure->views,
                 'title' => $procedure->translation->title ?? null,
                 'subtitle' => $procedure->translation->subtitle ?? null,
-                'section' => $procedure->sections->map(function ($section) {
-                    return [
-                        'id' => $section->id,
-                        'type' => $section->type,
-                        'image' => $section->image,
-                        'title' => $section->translation->title,
-                        'contentOne' => $section->translation->content_one,
-                        'contentTwo' => $section->translation->content_two
-                    ];
-                })->toArray() ?? [],
-                'preStep' => $procedure->preparationSteps->map(function ($pre) {
-                    return [
-                        'id' => $pre->id,
-                        'title' => $pre->translation->title,
-                        'description' => $pre->translation->description,
-                        'order' => $pre->order
-                    ];
-                })->toArray() ?? [],
-                'phase' => $procedure->recoveryPhases->map(function ($rec) {
-                    return [
-                        'id' => $rec->id,
-                        'period' => $rec->translation->period,
-                        'title' => $rec->translation->title,
-                        'description' => $rec->translation->description,
-                        'order' => $rec->order
-                    ];
-                })->toArray() ?? [],
-                'do' => $procedure->postoperativeDos->map(function ($do) {
-                    return [
-                        'id' => $do->id,
-                        'type' => $do->type,
-                        'order' => $do->order,
-                        'content' => $do->translation->content
-                    ];
-                })->toArray() ?? [],
-                'dont' => $procedure->postoperativeDonts->map(function ($dont) {
-                    return [
-                        'id' => $dont->id,
-                        'type' => $dont->type,
-                        'order' => $dont->order,
-                        'content' => $dont->translation->content
-                    ];
-                })->toArray() ?? []
+                'section' => $procedure->sections->map(fn($section) => [
+                    'id' => $section->id,
+                    'type' => $section->type,
+                    'image' => $section->image,
+                    'title' => $section->translation->title,
+                    'contentOne' => $section->translation->content_one,
+                    'contentTwo' => $section->translation->content_two
+                ])->toArray() ?? [],
+                'preStep' => $procedure->preparationSteps->map(fn($pre) => [
+                    'id' => $pre->id,
+                    'title' => $pre->translation->title,
+                    'description' => $pre->translation->description,
+                    'order' => $pre->order
+                ])->toArray() ?? [],
+                'phase' => $procedure->recoveryPhases->map(fn($rec) => [
+                    'id' => $rec->id,
+                    'period' => $rec->translation->period,
+                    'title' => $rec->translation->title,
+                    'description' => $rec->translation->description,
+                    'order' => $rec->order
+                ])->toArray() ?? [],
+                'do' => $procedure->postoperativeDos->map(fn($do) => [
+                    'id' => $do->id,
+                    'type' => $do->type,
+                    'order' => $do->order,
+                    'content' => $do->translation->content
+                ])->toArray() ?? [],
+                'dont' => $procedure->postoperativeDonts->map(fn($dont) => [
+                    'id' => $dont->id,
+                    'type' => $dont->type,
+                    'order' => $dont->order,
+                    'content' => $dont->translation->content
+                ])->toArray() ?? [],
+                'faq' => $procedure->faqs->map(fn($faq) => [
+                    'id' => $faq->id,
+                    'question' => $faq->translation->question,
+                    'answer' => $faq->translation->answer,
+                    'order' => $faq->order
+                ])->toArray() ?? [],
+                'gallery' => $procedure->resultGallery->map(fn($gallery) => [
+                    'id' => $gallery->id,
+                    'path' => $gallery->path,
+                    'order' => $gallery->order
+                ])->toArray() ?? []
             ];
-
-            Log::info("Query: ", \DB::getQueryLog());
 
             return ApiResponse::success(
                 __('messages.procedure.success.getProcedure'),

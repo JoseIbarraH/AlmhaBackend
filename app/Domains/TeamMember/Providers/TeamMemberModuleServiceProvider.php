@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Domains\Blog\Providers;
+namespace App\Domains\TeamMember\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
-class BlogModuleServiceProvider extends ServiceProvider
+class TeamMemberModuleServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {

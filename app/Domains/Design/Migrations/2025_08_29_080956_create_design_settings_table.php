@@ -28,21 +28,6 @@ return new class extends Migration
             ['key' => 'background3', 'value' => true, 'folder' => 'images/design/background/background3'],
             ['key' => 'maintenance', 'value' => true, 'folder' => 'images/design/maintenance'],
         ]);
-
-        Schema::create('design_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('design_id')->constrained('design_settings')->onDelete('cascade');
-            $table->string('type');
-            $table->string('path');
-        });
-
-        Schema::create('design_item_translations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('item_id')->constrained('design_items')->onDelete('cascade');
-            $table->string('lang', 5)->default('es');
-            $table->string('title')->nullable();
-            $table->string('subtitle')->nullable();
-        });
     }
 
     /**
@@ -50,8 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('design_item_translations');
-        Schema::dropIfExists('design_items');
         Schema::dropIfExists('designs');
     }
 };

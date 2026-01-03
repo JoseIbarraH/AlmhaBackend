@@ -1,18 +1,19 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Domains\Design\Controllers;
 
-use App\Http\Requests\Dashboard\Design\StoreRequest;
-use App\Http\Requests\Dashboard\Design\UpdateRequest;
+use App\Domains\Design\Request\UpdateRequest;
+use App\Domains\Design\Request\StoreRequest;
+use App\Domains\Design\Models\DesignSetting;
+use App\Domains\Design\Models\DesignItem;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\FileProcessor;
-use App\Models\DesignSetting;
 use Illuminate\Http\Request;
-use App\Models\DesignItem;
 
 class DesignController extends Controller
 {

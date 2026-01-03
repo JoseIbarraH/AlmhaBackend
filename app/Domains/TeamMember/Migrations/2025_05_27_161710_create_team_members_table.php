@@ -35,12 +35,8 @@ return new class extends Migration {
             $table->string('url', 400);
             $table->string('description', 400)->nullable();
         });
-
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('team_member_translations');

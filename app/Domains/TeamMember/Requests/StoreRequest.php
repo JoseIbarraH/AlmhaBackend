@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Dashboard\Design;
+namespace App\Domains\TeamMember\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateRequest extends FormRequest
+class StoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,19 +23,22 @@ class UpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'path' => [
+            'name' => 'required|string|max:255',
+            'status' => 'required|in:active,inactive',
+            'specialization' => 'required|string|max:300',
+            'biography' => 'required|string',
+            'image' => [
+                'nullable',
                 Rule::when(
-                    fn() => $this->hasFile('path'),
-                    ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:20480']
+                    $this->hasFile('image'),
+                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
                 ),
                 Rule::when(
-                    fn() => is_string($this->input('path')),
+                    is_string($this->input('image')),
                     ['string']
                 ),
             ],
-            'title' => 'nullable|string',
-            'subtitle' => 'nullable|string',
-            'designId' => 'required|integer'
+            'results' => 'nullable'
         ];
     }
 }

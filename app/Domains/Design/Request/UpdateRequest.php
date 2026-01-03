@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Dashboard\Design;
+namespace App\Domains\Design\Request;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreRequest extends FormRequest
+class UpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,7 +24,6 @@ class StoreRequest extends FormRequest
     {
         return [
             'path' => [
-                'required',
                 Rule::when(
                     fn() => $this->hasFile('path'),
                     ['file', 'mimes:jpeg,png,jpg,gif,svg,webp,mp4,webm,mov,avi,ogg', 'max:20480']
@@ -36,7 +35,7 @@ class StoreRequest extends FormRequest
             ],
             'title' => 'nullable|string',
             'subtitle' => 'nullable|string',
-            'designId' => 'required|string'
+            'designId' => 'required|integer'
         ];
     }
 }

@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Models;
+namespace App\Domains\Design\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use OwenIt\Auditing\Contracts\Auditable;
 use Illuminate\Database\Eloquent\Model;
+
 class DesignItem extends Model implements Auditable
 {
     use \OwenIt\Auditing\Auditable;

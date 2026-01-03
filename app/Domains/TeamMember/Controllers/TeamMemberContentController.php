@@ -1,188 +1,29 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Domains\TeamMember\Controllers;
 
-use App\Http\Requests\Dashboard\TeamMember\StoreRequest;
-use App\Http\Requests\Dashboard\TeamMember\UpdateRequest;
+use App\Domains\TeamMember\Models\TeamMemberTranslation;
+use App\Domains\TeamMember\Models\TeamMemberImage;
+use App\Domains\TeamMember\Requests\UpdateRequest;
+use App\Domains\TeamMember\Requests\StoreRequest;
+use App\Domains\TeamMember\Models\TeamMember;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
-use App\Models\TeamMemberTranslation;
+use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
-use App\Models\TeamMemberImage;
 use Illuminate\Http\Request;
-use App\Models\TeamMember;
 use App\Helpers\Helpers;
 
-class TeamMemberController extends Controller
+class TeamMemberContentController extends Controller
 {
-
     public $languages;
 
     public function __construct()
     {
         $this->languages = config('languages.supported');
-    }
-
-    public function list_teamMember(Request $request)
-    {
-        try {
-            $locale = $request->query('locale', app()->getLocale());
-            $perPage = 8;
-
-            // Query principal con relaciones
-            $query = TeamMember::with([
-                'translations' => fn($q) => $q->where('lang', $locale),
-                'images'
-            ])->orderBy('created_at', 'desc');
-
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where('name', 'like', "%{$search}%");
-            }
-
-            $paginate = $query->paginate($perPage)->appends($request->only('search'));
-
-            $paginate->getCollection()->transform(function ($team) {
-                $translation = $team->translations->first();
-
-                return [
-                    'id' => $team->id,
-                    'name' => $team->name,
-                    'status' => $team->status,
-                    'image' => $team->image ? url("storage/{$team->image}") : null,
-                    'biography' => $translation?->biography ?? '',
-                    'specialization' => $translation?->specialization ?? '',
-                    'results' => $team->images->map(fn($img) => [
-                        'url' => url("storage/{$img->url}"),
-                        'description' => $img->description
-                    ]),
-                    'created_at' => $team->created_at->format('Y-m-d H:i:s'),
-                    'updated_at' => $team->updated_at->format('Y-m-d H:i:s'),
-                ];
-            });
-
-            $total = TeamMember::count();
-            $totalActivated = TeamMember::where('status', 'active')->count();
-            $totalDeactivated = TeamMember::where('status', 'inactive')->count();
-            $last = TeamMember::where('created_at', '>=', now()->subDays(15))->count();
-
-            return ApiResponse::success(
-                __('messages.teamMember.success.list_teamMember'),
-                [
-                    'pagination' => $paginate,
-                    'filters' => $request->only('search'),
-                    'stats' => [
-                        'total' => $total,
-                        'totalActivated' => $totalActivated,
-                        'totalDeactivated' => $totalDeactivated,
-                        'lastCreated' => $last,
-                    ],
-                ]
-            );
-
-        } catch (\Throwable $e) {
-            Log::error('Error en list_teamMember: ' . $e->getMessage());
-            return ApiResponse::error(
-                __('messages.teamMember.error.list_teamMember'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    public function get_teamMember($id, Request $request)
-    {
-        try {
-            $locale = $request->query('locale', 'es');
-
-            $team = TeamMember::with([
-                'translations' => fn($q) => $q->where('lang', $locale),
-                'images',
-            ])->findOrFail($id);
-
-            $translation = $team->translations->first();
-
-            $data = [
-                'id' => $team->id,
-                'status' => $team->status,
-                'name' => $team->name ?? '',
-                'image' => $team->image ? url("storage/{$team->image}") : null,
-                'biography' => $translation?->biography ?? '',
-                'specialization' => $translation?->specialization ?? '',
-                'results' => $team->images->filter(fn($img) => $img->lang === 'es')->map(fn($img) => [
-                    'id' => $img->id,
-                    'team_member_id' => $img->team_member_id,
-                    'lang' => $img->lang,
-                    'url' => url("storage/{$img->url}"),
-                    'description' => $img->description,
-                    'created_at' => $img->created_at,
-                    'updated_at' => $img->updated_at,
-                ]),
-                'created_at' => $team->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $team->updated_at->format('Y-m-d H:i:s'),
-            ];
-            return ApiResponse::success(
-                __('messages.teamMember.success.getTeamMember'),
-                $data
-            );
-
-        } catch (\Throwable $e) {
-            Log::error('Error en get_teamMember: ' . $e->getMessage());
-            return ApiResponse::error(
-                __('messages.teamMember.error.getTeamMember'),
-                [['exception' => $e->getMessage()]],
-                500
-            );
-        }
-    }
-
-    public function get_teamMember_client($id, Request $request)
-    {
-        try {
-            $locale = $request->query('locale', app()->getLocale());
-
-            $team = TeamMember::with([
-                'translations' => fn($q) => $q->where('lang', $locale),
-                'images',
-            ])->findOrFail($id);
-
-            $translation = $team->translations->first();
-
-            $data = [
-                'id' => $team->id,
-                'status' => $team->status,
-                'name' => $team->name ?? '',
-                'image' => $team->image ? url("storage/{$team->image}") : null,
-                'biography' => $translation?->biography ?? '',
-                'specialization' => $translation?->specialization ?? '',
-                'results' => $team->images->filter(fn($img) => $img->lang === 'es')->map(fn($img) => [
-                    'id' => $img->id,
-                    'team_member_id' => $img->team_member_id,
-                    'lang' => $img->lang,
-                    'url' => url("storage/{$img->url}"),
-                    'description' => $img->description,
-                    'created_at' => $img->created_at,
-                    'updated_at' => $img->updated_at,
-                ]),
-                'created_at' => $team->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $team->updated_at->format('Y-m-d H:i:s'),
-            ];
-            return ApiResponse::success(
-                __('messages.teamMember.success.getTeamMember'),
-                $data
-            );
-
-        } catch (\Throwable $e) {
-            Log::error('Error en get_teamMember: ' . $e->getMessage());
-            return ApiResponse::error(
-                __('messages.teamMember.error.getTeamMember'),
-                [['exception' => $e->getMessage()]],
-                500
-            );
-        }
     }
 
     public function create_teamMember(StoreRequest $request, GoogleTranslateService $translator)
@@ -192,7 +33,6 @@ class TeamMemberController extends Controller
         try {
             $data = $request->validated();
 
-            // Crear miembro del equipo
             $team = TeamMember::create([
                 'name' => $data['name'],
                 'status' => $data['status'],
@@ -200,20 +40,16 @@ class TeamMemberController extends Controller
                 'image' => ''
             ]);
 
-            // Guardar imagen principal
             $team->image = Helpers::saveWebpFile($data['image'], "images/team/{$team->id}/image_main");
             $team->save();
 
-            // Crear traducciones para todos los idiomas
             $this->createTranslations($team, $data, $translator);
 
-            // Procesar resultados si existen
             if (!empty($data['results'])) {
                 $this->createResults($team, $data['results'], $translator);
             }
 
             DB::commit();
-            Log::info("Se creo el usuario", [$team->load(['translations', 'images'])]);
             return ApiResponse::success(
                 __('messages.teamMember.success.create_teamMember'),
                 $team->load(['translations', 'images'])

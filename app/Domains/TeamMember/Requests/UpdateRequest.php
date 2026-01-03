@@ -1,11 +1,10 @@
 <?php
-
-namespace App\Http\Requests\Dashboard\TeamMember;
+namespace App\Domains\TeamMember\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreRequest extends FormRequest
+class UpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
