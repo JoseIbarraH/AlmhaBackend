@@ -1,20 +1,19 @@
 <?php
 
-namespace App\Http\Controllers\Setting;
+namespace App\Domains\Setting\User\Controllers;
 
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
-
     /**
      * Update the user's profile information.
      */

@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Setting;
+namespace App\Domains\Setting\Audit\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Responses\ApiResponse;
+use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use OwenIt\Auditing\Models\Audit;
 

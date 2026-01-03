@@ -1,18 +1,17 @@
 <?php
 
-namespace App\Http\Controllers\Setting;
+namespace App\Domains\Setting\User\Controllers;
 
+use App\Domains\Setting\User\Models\RoleTranslation;
+use App\Domains\Setting\User\Models\Permission;
+use App\Domains\Setting\User\Models\Role;
 use App\Services\GoogleTranslateService;
 use App\Http\Controllers\Controller;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use App\Models\RoleTranslation;
 use Illuminate\Http\Request;
+use App\Helpers\ApiResponse;
 use Illuminate\Support\Str;
-use App\Models\Permission;
-use App\Helpers\Helpers;
-use App\Models\Role;
 
 class RoleController extends Controller
 {

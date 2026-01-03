@@ -1,19 +1,20 @@
 <?php
 
-namespace App\Http\Controllers\Setting;
+namespace App\Domains\Setting\Trash\Controllers;
 
+use App\Domains\Setting\User\Models\Role;
+use App\Domains\Setting\User\Models\User;
+use App\Domains\TeamMember\Models\TeamMember;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Domains\Procedure\Models\Procedure;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
-use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Http\JsonResponse;
 use App\Domains\Blog\Models\Blog;
 use Illuminate\Http\Request;
-use App\Models\TeamMember;
-use App\Models\Role;
-use App\Models\User;
+use App\Helpers\ApiResponse;
+
 
 class TrashController extends Controller
 {

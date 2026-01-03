@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Setting;
+namespace App\Domains\Setting\User\Controllers;
 
+use App\Domains\Setting\User\Models\Role;
+use App\Domains\Setting\User\Models\User;
 use Illuminate\Auth\Events\Registered;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
@@ -10,8 +12,7 @@ use Illuminate\Validation\Rules;
 use Illuminate\Validation\Rule;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
-use App\Models\User;
-use App\Models\Role;
+
 
 class UserController extends Controller
 {

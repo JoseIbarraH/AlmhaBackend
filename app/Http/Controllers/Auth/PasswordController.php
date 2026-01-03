@@ -7,7 +7,7 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
-use App\Http\Responses\ApiResponse;
+use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 
 

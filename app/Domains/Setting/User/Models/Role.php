@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Domains\Setting\User\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use App\Models\RoleTranslation;
-use OwenIt\Auditing\Contracts\Auditable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 class Role extends Model implements Auditable
 {
     use SoftDeletes;
