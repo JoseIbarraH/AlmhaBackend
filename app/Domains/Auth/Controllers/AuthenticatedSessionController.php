@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Domains\Auth\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use App\Helpers\ApiResponse;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\ApiResponse;
 
 use Illuminate\Http\Request;
 

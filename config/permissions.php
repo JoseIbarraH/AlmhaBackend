@@ -19,12 +19,12 @@ return [
         'delete_blog' => 'delete_blogs',
         'update_status' => 'update_blogs_status'
     ],
-    'service' => [
-        'list_service' => 'view_services',
-        'get_service' => 'show_services',
-        'create_service' => 'create_services',
-        'update_service' => 'update_services',
-        'delete_service' => 'delete_services',
+    'procedure' => [
+        'list_procedure' => 'view_services',
+        'get_procedure' => 'show_services',
+        'create_procedure' => 'create_services',
+        'update_procedure' => 'update_services',
+        'delete_procedure' => 'delete_services',
         'update_status' => 'update_services_status'
     ],
     'design' => [

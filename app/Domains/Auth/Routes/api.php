@@ -1,7 +1,6 @@
 <?php
 
-
-/* use App\Domains\Auth\Controllers\AuthenticatedSessionController;
+use App\Domains\Auth\Controllers\AuthenticatedSessionController;
 use App\Domains\Auth\Controllers\NewPasswordController;
 use App\Domains\Auth\Controllers\RefreshTokenController;
 use Illuminate\Http\Request;
@@ -20,4 +19,4 @@ Route::middleware(['web'])->group(function () {
 Route::post('/reset-password', [NewPasswordController::class, 'store']);
 Route::post('refresh-token', [RefreshTokenController::class, 'refreshToken']);
 
- */
+

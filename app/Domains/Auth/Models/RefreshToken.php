@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Models;
+namespace App\Domains\Auth\Models;
 
+use App\Domains\Setting\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class RefreshToken extends Model
 {
     protected $table = 'refresh_tokens';
-    
+
     protected $fillable = [
         'user_id',
         'token_hash',

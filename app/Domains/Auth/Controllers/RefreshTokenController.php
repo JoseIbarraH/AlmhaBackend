@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Domains\Auth\Controllers;
 
+use App\Domains\Auth\Models\RefreshToken;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\RefreshToken;
 use Illuminate\Support\Str;
 
 class RefreshTokenController extends Controller
 {
-    //
 
     public function refreshToken(Request $request)
     {

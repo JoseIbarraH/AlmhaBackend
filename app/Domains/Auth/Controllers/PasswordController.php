@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Domains\Auth\Controllers;
 
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;

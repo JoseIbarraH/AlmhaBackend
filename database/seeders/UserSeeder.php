@@ -2,11 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Domains\Setting\User\Models\Permission;
+use App\Domains\Setting\User\Models\Role;
+use App\Domains\Setting\User\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Database\Seeder;
-use App\Models\Permission;
-use App\Models\User;
-use App\Models\Role;
+
 
 class UserSeeder extends Seeder
 {
@@ -22,12 +23,11 @@ class UserSeeder extends Seeder
         $allPermissions = Permission::pluck('id');
         $superAdminRole->permissions()->sync($allPermissions);
 
-        // 🔹 Crear usuario inicial
         $user = User::firstOrCreate(
-            ['email' => 'jcibarrah1423@gmail.com'], // evita duplicados
+            ['email' => 'jcibarrah1423@gmail.com'],
             [
                 'name' => 'Jose Carlos Ibarra Herrera',
-                'password' => Hash::make('12345678'), // cambia la contraseña después
+                'password' => Hash::make('12345678'),
                 'status' => 'active'
             ]
         );

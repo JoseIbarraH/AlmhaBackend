@@ -10,5 +10,5 @@ return [
     App\Domains\Setting\Audit\Providers\AuditModuleServiceProvider::class,
     App\Domains\Setting\User\Providers\UserModuleServiceProvider::class,
     App\Domains\Setting\Trash\Providers\TrashModuleServiceProvider::class,
-
+    App\Domains\Auth\Providers\AuthModuleServiceProvider::class,
 ];

@@ -407,7 +407,6 @@ class ProcedureContentController extends Controller
         }
     }
 
-
     private function updatePreparationStep(Procedure $procedure, array $preStep, GoogleTranslateService $translator)
     {
         $sourceLang = app()->getLocale();
@@ -1398,6 +1397,28 @@ class ProcedureContentController extends Controller
                     $galleryItem->save();
                 }
             }
+        }
+    }
+
+    public function update_status($id)
+    {
+        try {
+            $procedure = Procedure::findOrFail($id);
+
+            $procedure->update([
+                'status' => !$procedure->status,
+            ]);
+
+            return ApiResponse::success(
+                __('messages.procedure.success.updateStatus'),
+                $procedure
+            );
+        } catch (\Throwable $e) {
+            return ApiResponse::error(
+                __('messages.procedure.error.updateStatus'),
+                ['exception' => $e->getMessage()],
+                500
+            );
         }
     }
 

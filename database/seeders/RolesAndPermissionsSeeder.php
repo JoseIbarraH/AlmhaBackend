@@ -2,11 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Domains\Setting\User\Models\Permission;
+use App\Domains\Setting\User\Models\PermissionTranslation;
+use App\Domains\Setting\User\Models\Role;
+use App\Domains\Setting\User\Models\RoleTranslation;
 use Illuminate\Database\Seeder;
-use App\Models\Role;
-use App\Models\Permission;
-use App\Models\RoleTranslation;
-use App\Models\PermissionTranslation;
+
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -15,12 +16,12 @@ class RolesAndPermissionsSeeder extends Seeder
         $permissions = [
             'manage_users',
 
-            'view_services',
-            'show_services',
-            'create_services',
-            'update_services',
-            'delete_services',
-            'update_services_status',
+            'view_procedures',
+            'show_procedures',
+            'create_procedures',
+            'update_procedures',
+            'delete_procedures',
+            'update_procedures_status',
 
             'view_blogs',
             'show_blogs',
@@ -56,12 +57,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'es' => [
                 'manage_users' => ['title' => 'Administrador de usuarios', 'description' => 'Administrador de usuarios'],
 
-                'view_services' => ['title' => 'Ver servicios', 'description' => 'Ver servicios creados en el sistema'],
-                'show_services' => ['title' => 'Ver servicio especifico', 'description' => 'Ver servicios específico'],
-                'create_services' => ['title' => 'Registrar servicios', 'description' => 'Registrar nuevos servicios'],
-                'update_services' => ['title' => 'Editar servicios', 'description' => 'Editar información de los servicios'],
-                'delete_services' => ['title' => 'Eliminar servicios', 'description' => 'Eliminar servicios del sistema'],
-                'update_services_status' => ['title' => 'Actualizar estado de servicios', 'description' => 'Activar o desactivar servicios'],
+                'view_procedures' => ['title' => 'Ver procedimientos', 'description' => 'Ver procedimientos creados en el sistema'],
+                'show_procedures' => ['title' => 'Ver procedimiento especifico', 'description' => 'Ver procedimientos específico'],
+                'create_procedures' => ['title' => 'Registrar procedimientos', 'description' => 'Registrar nuevos procedimientos'],
+                'update_procedures' => ['title' => 'Editar procedimientos', 'description' => 'Editar información de los procedimientos'],
+                'delete_procedures' => ['title' => 'Eliminar procedimientos', 'description' => 'Eliminar procedimientos del sistema'],
+                'update_procedures_status' => ['title' => 'Actualizar estado de procedimientos', 'description' => 'Activar o desactivar procedimientos'],
 
                 'view_blogs' => ['title' => 'Ver blogs', 'description' => 'Ver publicaciones del blog'],
                 'show_blogs' => ['title' => 'Ver blog especifico', 'description' => 'Ver blog específico'],
@@ -95,12 +96,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'en' => [
                 'manage_users' => ['title' => 'User administrator', 'description' => 'User administrator'],
 
-                'view_services' => ['title' => 'View services', 'description' => 'View created services'],
-                'show_services' => ['title' => 'Show specific service', 'description' => 'Show specific service'],
-                'create_services' => ['title' => 'Register services', 'description' => 'Register new services'],
-                'update_services' => ['title' => 'Edit services', 'description' => 'Edit service information'],
-                'delete_services' => ['title' => 'Delete services', 'description' => 'Delete services from the system'],
-                'update_services_status' => ['title' => 'Update services status', 'description' => 'Activate or deactivate services'],
+                'view_procedures' => ['title' => 'View procedures', 'description' => 'View procedures created in the system'],
+                'show_procedures' => ['title' => 'View specific procedure', 'description' => 'View a specific procedure'],
+                'create_procedures' => ['title' => 'Create procedures', 'description' => 'Create new procedures'],
+                'update_procedures' => ['title' => 'Edit procedures', 'description' => 'Edit procedure information'],
+                'delete_procedures' => ['title' => 'Delete procedures', 'description' => 'Delete procedures from the system'],
+                'update_procedures_status' => ['title' => 'Update procedure status', 'description' => 'Activate or deactivate procedures'],
 
                 'view_blogs' => ['title' => 'View blogs', 'description' => 'View blog posts'],
                 'show_blogs' => ['title' => 'show specific blogs', 'description' => 'Show specific blog'],
@@ -171,9 +172,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'permissions' => ['view_blogs', 'show_blos', 'create_blogs', 'update_blogs', 'delete_blogs', 'update_blogs_status']
             ],
             'service' => [
-                'es' => ['title' => 'Servicios', 'description' => 'Acceso al módulo de servicios'],
-                'en' => ['title' => 'Services', 'description' => 'Access to the services module'],
-                'permissions' => ['view_services', 'show_services', 'create_services', 'update_services', 'delete_services', 'update_services_status']
+                'es' => ['title' => 'Procedimientos', 'description' => 'Acceso al módulo de procedimientos'],
+                'en' => ['title' => 'Procedures', 'description' => 'Access to the procedures module'],
+                'permissions' => ['view_procedures', 'show_procedures', 'create_procedures', 'update_procedures', 'delete_procedures', 'update_procedures_status']
             ],
             'record' => [
                 'es' => ['title' => 'Registro', 'description' => 'Acceso al módulo de registros'],

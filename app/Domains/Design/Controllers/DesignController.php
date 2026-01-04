@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Helpers\FileProcessor;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
+use App\Helpers\Helpers;
 
 class DesignController extends Controller
 {
@@ -197,9 +198,12 @@ class DesignController extends Controller
         try {
             DB::beginTransaction();
             $item = DesignItem::findOrFail($id);
+            Log::info("url: ", [$item->path]);
 
-            if (Storage::disk('public')->exists($item->path)) {
-                Storage::disk('public')->delete($item->path);
+            $url = Helpers::removeAppUrl($item->path);
+
+            if (Storage::disk('public')->exists($url)) {
+                Storage::disk('public')->delete($url);
             }
 
             $item->delete();
