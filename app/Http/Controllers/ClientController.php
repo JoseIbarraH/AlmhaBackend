@@ -27,6 +27,7 @@ class ClientController extends Controller
                 'carouselNavbar' => 'carouselNavbar',
                 'carouselTool' => 'carouselTool',
                 'imageVideo' => 'imageVideo',
+                'maintenance' => 'maintenance'
             ];
 
             // Ejecutar consultas en paralelo usando lazy collections
@@ -41,7 +42,7 @@ class ClientController extends Controller
                     'translation',
                 ])
                     ->where('status', 'active')
-                    ->orderByDesc('view')
+                    ->orderByDesc('views')
                     ->limit(3)
                     ->get()
             ];

@@ -11,4 +11,5 @@ return [
     App\Domains\Setting\User\Providers\UserModuleServiceProvider::class,
     App\Domains\Setting\Trash\Providers\TrashModuleServiceProvider::class,
     App\Domains\Auth\Providers\AuthModuleServiceProvider::class,
+    App\Domains\Setting\Setting\Providers\SettingModuleServiceProvider::class
 ];

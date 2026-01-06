@@ -5,7 +5,7 @@ use App\Domains\Setting\User\Controllers\RoleController;
 use App\Domains\Setting\User\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('setting')->group(function () {
+Route::prefix('settings')->group(function () {
 
     Route::middleware(['auth:sanctum', 'permission.map'])->prefix('user')->controller(UserController::class)->group(function () {
         Route::get('/', 'list_user');
