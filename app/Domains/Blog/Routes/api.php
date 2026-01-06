@@ -3,7 +3,7 @@
 use App\Domains\Blog\Controllers\BlogController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('blog')->middleware(['auth:sanctum', 'permission.map'])->controller(BlogController::class)->group(function () {
+Route::middleware(['auth:sanctum', 'permission.map'])->prefix('blog')->controller(BlogController::class)->group(function () {
     Route::get('/', 'list_blog');
     Route::get('/categories', 'get_categories');
     Route::get('/{id}', 'get_blog');

@@ -20,12 +20,12 @@ return [
         'update_status' => 'update_blogs_status'
     ],
     'procedure' => [
-        'list_procedure' => 'view_services',
-        'get_procedure' => 'show_services',
-        'create_procedure' => 'create_services',
-        'update_procedure' => 'update_services',
-        'delete_procedure' => 'delete_services',
-        'update_status' => 'update_services_status'
+        'list_procedure' => 'view_procedures',
+        'get_procedure' => 'show_procedures',
+        'create_procedure' => 'create_procedures',
+        'update_procedure' => 'update_procedures',
+        'delete_procedure' => 'delete_procedures',
+        'update_status' => 'update_procedures_status'
     ],
     'design' => [
         'get_design' => 'view_design',
@@ -54,6 +54,12 @@ return [
         'empty_trash' => 'delete_trash',
         'force_delete' => 'delete_trash',
         'restore_trash' => 'restore_trash'
+    ],
+    'setting' => [
+        'list_setting' => 'page_settings',
+        'get_setting' => 'page_settings',
+        'find_group' => 'page_settings',
+        'update_settings' => 'page_settings'
     ]
 
 ];

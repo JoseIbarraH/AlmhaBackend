@@ -51,6 +51,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'restore_trash',
 
             'view_dashboard',
+
+            'page_settings'
         ];
 
         $translations = [
@@ -92,6 +94,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'restore_trash' => ['title' => 'Restaurar desde la papelera', 'description' => 'Permite restaurar los elementos eliminados de la papelera'],
 
                 'view_dashboard' => ['title' => 'Ver dashboard', 'description' => 'Acceso limitado al panel de control'],
+
+                'page_settings' => ['title' => 'Configuraciones de la pagina', 'description' => 'Acceso a las configuraciones de la pagina'],
             ],
             'en' => [
                 'manage_users' => ['title' => 'User administrator', 'description' => 'User administrator'],
@@ -131,6 +135,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'restore_trash' => ['title' => 'Restore from Trash', 'description' => 'Allows restoring deleted items from the trash'],
 
                 'view_dashboard' => ['title' => 'View dashboard', 'description' => 'Limited access to the control panel'],
+
+                'page_settings' => ['title' => 'Page Configuration', 'description' => 'Manage the page configuration settings'],
+
             ],
         ];
 
@@ -186,7 +193,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'en' => ['title' => 'Default', 'description' => 'Default role'],
                 'permissions' => ['view_dashboard']
             ],
-
+            
         ];
 
         foreach ($roles as $code => $data) {
