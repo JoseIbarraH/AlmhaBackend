@@ -4,49 +4,78 @@ namespace App\Domains\Setting\Setting\Controllers;
 
 use App\Domains\Setting\Setting\Models\Setting;
 use App\Http\Controllers\Controller;
+use App\Helpers\ApiResponse;
+use DB;
 use Illuminate\Http\Request;
 
 
 class SettingController extends Controller
 {
+
+    public function list_setting()
+    {
+        return ApiResponse::success(
+            message: 'Setting list success',
+            data: Setting::all()
+                ->groupBy('group')
+                ->map(fn($items) => $items->pluck('value', 'key')),
+            code: 200
+        );
+    }
+
     /**
      * Obtener un setting por key
      */
-    public function get_setting(Request $request)
+    public function get_setting(string $key, Request $request)
     {
-        $data = $request->validate([
-            'key' => 'required|string|max:150',
-            'default' => 'nullable',
-        ]);
+        $default = $request->query('default');
 
-        return response()->json([
-            'key'   => $data['key'],
-            'value' => Setting::getValue(
-                $data['key'],
-                $data['default'] ?? null
-            ),
-        ]);
+        return ApiResponse::success(
+            message: 'Get setting',
+            data: [
+                'key' => $key,
+                'value' => Setting::getValue($key, $default),
+            ],
+            code: 200
+        );
     }
 
     /**
      * Crear o actualizar un setting
      */
-    public function update_setting(Request $request)
+    public function update_settings(Request $request)
     {
         $data = $request->validate([
-            'key'   => 'required|string|max:150',
-            'value' => 'required',
-            'group' => 'nullable|string|max:100',
+            'contact' => 'array',
+            'social' => 'array',
+            'system' => 'array',
         ]);
 
-        Setting::setValue(
-            $data['key'],
-            $data['value'],
-            $data['group'] ?? null
+        DB::transaction(function () use ($data) {
+            foreach ($data as $group => $settings) {
+                foreach ($settings as $key => $value) {
+                    Setting::setValue($key, $value, $group);
+                }
+            }
+        });
+
+        return ApiResponse::success(
+            message: 'Settings updated successfully'
         );
+    }
 
-        return response()->json([
-            'message' => 'Updated setting successfully',
-        ]);
+
+    /**
+     * buscar un grupo de settings
+     */
+    public function find_group($group)
+    {
+
+        $data = Setting::findByGroup($group);
+
+        return ApiResponse::success(
+            message: "Group success",
+            data: $data
+        );
     }
 }

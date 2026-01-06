@@ -2,7 +2,6 @@
 
 namespace App\Domains\Setting\Setting\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use OwenIt\Auditing\Contracts\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,27 +9,34 @@ class Setting extends Model implements Auditable
 {
     use \OwenIt\Auditing\Auditable;
 
-    private $fillable = [
+    protected $fillable = [
         'key',
         'value',
         'group'
     ];
 
     protected $casts = [
-        'value' => 'array',
+        'value' => 'json',
     ];
 
+    public $timestamps = false;
 
-    public function setValue(string $key, $value, ?string $group = null)
+    public static function setValue(string $key, $value, ?string $group = null)
     {
         cache()->forget("setting.$key");
+
+        $normalizedValue = match (true) {
+            is_bool($value) => $value ? true : false,
+            is_null($value) => '',
+            is_array($value) || is_object($value) => json_encode($value),
+            default => (string) $value,
+        };
+
         return self::updateOrCreate(
+            ['key' => $key],
             [
-                'key' => $key
-            ],
-            [
-                'value' => $value,
-                'group' => $group
+                'value' => $normalizedValue,
+                'group' => $group,
             ]
         );
     }
@@ -44,8 +50,14 @@ class Setting extends Model implements Auditable
         });
     }
 
-    public static function findByGroup($group)
+    public static function findByGroup(string $group): array
     {
-        
+        return cache()->rememberForever("settings.group.$group", function () use ($group) {
+            return self::where('group', $group)
+                ->get()
+                ->pluck('value', 'key')
+                ->toArray();
+        });
     }
+
 }

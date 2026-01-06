@@ -15,14 +15,7 @@ return new class extends Migration {
             $table->string('key', 150)->unique();
             $table->json('value');
             $table->string('group')->nullable()->index();
-            $table->timestamps();
         });
-
-        DB::table('settings')->insert([
-            ['key' => 'phone', 'value' => '+57 3131231233', 'group' => 'communication'],
-            ['key' => 'mail', 'value' => 'info@gmail.com', 'group' => 'communication'],
-            ['key' => 'location', 'value' => 'Cartagena', 'group' => 'communication'],
-        ]);
     }
 
     /**

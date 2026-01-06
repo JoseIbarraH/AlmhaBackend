@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('folder')->default('images/design/default');
         });
 
-        DB::table('design_settings')->insert([
+        /* DB::table('design_settings')->insert([
             ['key' => 'imageVideo', 'value' => false, 'folder' => 'images/design/imageVideo'],
             ['key' => 'carousel', 'value' => true, 'folder' => 'images/design/carousel'],
             ['key' => 'carouselNavbar', 'value' => true, 'folder' => 'images/design/carouselNavbar'],
@@ -27,7 +27,7 @@ return new class extends Migration
             ['key' => 'background2', 'value' => true, 'folder' => 'images/design/background/background2'],
             ['key' => 'background3', 'value' => true, 'folder' => 'images/design/background/background3'],
             ['key' => 'maintenance', 'value' => true, 'folder' => 'images/design/maintenance'],
-        ]);
+        ]); */
     }
 
     /**
