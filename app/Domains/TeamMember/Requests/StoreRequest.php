@@ -22,23 +22,18 @@ class StoreRequest extends FormRequest
      */
     public function rules(): array
     {
+        \Log::info("Datos: ", [$this->all()]);
+
         return [
-            'name' => 'required|string|max:255',
-            'status' => 'required|in:active,inactive',
-            'specialization' => 'required|string|max:300',
-            'biography' => 'required|string',
-            'image' => [
-                'nullable',
-                Rule::when(
-                    $this->hasFile('image'),
-                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
-                ),
-                Rule::when(
-                    is_string($this->input('image')),
-                    ['string']
-                ),
-            ],
-            'results' => 'nullable'
+            'name' => 'sometimes|string|max:255',
+            'status' => 'sometimes|in:active,inactive',
+            'specialization' => 'sometimes|string|max:255',
+            'biography' => 'sometimes|string',
+            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
+
+            'result' => 'sometimes|array',
+            'result.*.path' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
+            'result.*.description' => 'nullable|string|max:5000',
         ];
     }
 }

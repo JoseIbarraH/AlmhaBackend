@@ -208,8 +208,9 @@ class ProcedureContentController extends Controller
         }
 
         if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-            if (!empty($procedure->image) && Storage::disk('public')->exists($procedure->image)) {
-                Storage::disk('public')->delete($procedure->image);
+            $path = Helpers::removeAppUrl($procedure->image);
+            if (!empty($path) && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
             }
 
             $updates['image'] = Helpers::saveWebpFile($data['image'], "images/procedure/{$procedure->id}/procedure_image");

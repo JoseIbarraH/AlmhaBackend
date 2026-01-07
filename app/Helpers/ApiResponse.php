@@ -17,6 +17,17 @@ class ApiResponse
 
     public static function error($message = 'Ocurrió un error inesperado', $errors = null, $code = 400): JsonResponse
     {
+        // Si $errors es una excepción, extraemos el mensaje real solo en modo debug
+        if ($errors instanceof \Throwable) {
+            $errors = config('app.debug')
+                ? $errors->getMessage()
+                : 'Error interno del servidor';
+        }
+
+        if ($errors !== 'Error interno del servidor') {
+            \Log::error("API Error: $message", ['context' => $errors]);
+        }
+
         return response()->json([
             'success' => false,
             'message' => $message,

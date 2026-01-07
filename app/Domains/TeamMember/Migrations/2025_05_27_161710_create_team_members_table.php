@@ -13,34 +13,29 @@ return new class extends Migration {
         Schema::create('team_members', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('name', 150);
+            $table->string('slug')->unique();
+            $table->string('name', 255)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->string('image')->nullable();
             $table->softDeletes();
             $table->timestamps();
+
+            $table->index('name');
+            $table->index('status');
         });
 
         Schema::create('team_member_translations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('team_member_id')->constrained('team_members')->onDelete('cascade');
             $table->string('lang', 5);
-            $table->string('specialization');
-            $table->text('biography');
-        });
-
-        Schema::create('team_member_images', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('team_member_id')->constrained('team_members')->onDelete('cascade');
-            $table->string('lang', 5);
-            $table->string('url', 400);
-            $table->string('description', 400)->nullable();
+            $table->string('specialization')->nullable();
+            $table->text('biography')->nullable();
         });
     }
 
     public function down(): void
     {
         Schema::dropIfExists('team_member_translations');
-        Schema::dropIfExists('team_member_images');
         Schema::dropIfExists('team_members');
     }
 };

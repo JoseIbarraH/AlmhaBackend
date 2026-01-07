@@ -14,9 +14,9 @@ class TeamMemberImage extends Model implements Auditable
 
     protected $fillable = [
         'team_member_id',
-        'url',
-        'description',
-        'lang'
+        'path',
+        'order',
+
     ];
 
     protected $touches = ['teamMember'];
@@ -27,7 +27,17 @@ class TeamMemberImage extends Model implements Auditable
         return $this->belongsTo(TeamMember::class);
     }
 
-    protected function url(): Attribute
+    public function translations()
+    {
+        return $this->hasMany(TeamMemberImageTranslation::class, 'team_member_image_id', 'id');
+    }
+
+    public function translation()
+    {
+        return $this->hasOne(TeamMemberImageTranslation::class, 'team_member_image_id', 'id');
+    }
+
+    protected function path(): Attribute
     {
         return Attribute::make(
             get: fn(?string $value) => match (true) {

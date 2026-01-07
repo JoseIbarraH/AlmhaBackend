@@ -7,17 +7,19 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Sluggable\SlugOptions;
+use Spatie\Sluggable\HasSlug;
 
 class TeamMember extends Model implements Auditable
 {
-    use SoftDeletes;
-    use HasFactory;
+    use SoftDeletes, HasFactory, HasSlug;
     use \OwenIt\Auditing\Auditable;
 
     protected $table = 'team_members';
 
     protected $fillable = [
         'user_id',
+        'slug',
         'name',
         'status',
         'image'
@@ -35,7 +37,7 @@ class TeamMember extends Model implements Auditable
 
     public function images()
     {
-        return $this->hasMany(TeamMemberImage::class)->where('lang', app()->getLocale());
+        return $this->hasMany(TeamMemberImage::class);
     }
 
     protected function image(): Attribute
@@ -49,4 +51,12 @@ class TeamMember extends Model implements Auditable
         );
     }
 
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom(function ($model) {
+                return $model->name ?? '';
+            })
+            ->saveSlugsTo('slug');
+    }
 }

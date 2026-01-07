@@ -21,23 +21,31 @@ class UpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $teamMemberId = $this->route('id');
+        \Log::info('Team ID: ', [$teamMemberId]);
+        \Log::info('Team: ', [$this->all()]);
+
         return [
-            'name' => 'required|string|max:255',
-            'status' => 'required|in:active,inactive',
-            'specialization' => 'required|string|max:300',
-            'biography' => 'required|string',
-            'image' => [
-                'nullable',
-                Rule::when(
-                    $this->hasFile('image'),
-                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
-                ),
-                Rule::when(
-                    is_string($this->input('image')),
-                    ['string']
-                ),
-            ],
-            'results' => 'nullable'
+            'name' => 'sometimes|string|max:255',
+            'status' => 'sometimes|in:active,inactive',
+            'specialization' => 'sometimes|string|max:255',
+            'biography' => 'sometimes|string',
+            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
+
+            'result' => 'sometimes|array',
+            'result.deleted' => 'sometimes|array',
+            'result.deleted.*' => ['integer', Rule::exists('team_member_images', 'id')->where('team_member_id', $teamMemberId)],
+
+            'result.updated' => 'sometimes|array',
+            'result.updated.*.id' => ['required_with:result.updated', 'integer', Rule::exists('team_member_images', 'id')->where('team_member_id', $teamMemberId)],
+            'result.updated.*.path' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
+            'result.updated.*.description' => 'nullable|string|max:5000',
+            'result.updated.*.order' => 'nullable|integer|min:0',
+
+            'result.new' => 'sometimes|array',
+            'result.new.*.path' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
+            'result.new.*.description' => 'nullable|string|max:5000',
+            'result.new.*.order' => 'nullable|integer|min:0',
         ];
     }
 }

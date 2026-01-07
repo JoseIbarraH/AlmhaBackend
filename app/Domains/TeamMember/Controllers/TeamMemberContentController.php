@@ -2,8 +2,8 @@
 
 namespace App\Domains\TeamMember\Controllers;
 
-use App\Domains\TeamMember\Models\TeamMemberTranslation;
 use App\Domains\TeamMember\Models\TeamMemberImage;
+use App\Domains\TeamMember\Models\TeamMemberTranslation;
 use App\Domains\TeamMember\Requests\UpdateRequest;
 use App\Domains\TeamMember\Requests\StoreRequest;
 use App\Domains\TeamMember\Models\TeamMember;
@@ -12,9 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\UploadedFile;
 use App\Helpers\ApiResponse;
-use Illuminate\Http\Request;
 use App\Helpers\Helpers;
 
 class TeamMemberContentController extends Controller
@@ -34,145 +32,148 @@ class TeamMemberContentController extends Controller
             $data = $request->validated();
 
             $team = TeamMember::create([
-                'name' => $data['name'],
-                'status' => $data['status'],
                 'user_id' => auth()->id(),
-                'image' => ''
+                'slug' => uniqid('temp-'),
+                'name' => $data['name'] ?? '',
+                'image' => '',
+                'status' => $data['status'] ?? 'inactive'
             ]);
 
-            $team->image = Helpers::saveWebpFile($data['image'], "images/team/{$team->id}/image_main");
-            $team->save();
+            if ($request->hasFile('image')) {
+                $path = Helpers::saveWebpFile($request->file('image'), "images/team/{$team->id}/main_image");
+                $team->update(['image' => $path]);
+            }
 
             $this->createTranslations($team, $data, $translator);
 
-            if (!empty($data['results'])) {
-                $this->createResults($team, $data['results'], $translator);
-            }
+            $this->createImages($team, $data['result'], $translator);
+
+            $team->slug = null;
+            $team->save();
 
             DB::commit();
             return ApiResponse::success(
-                __('messages.teamMember.success.create_teamMember'),
-                $team->load(['translations', 'images'])
+                "Member of the successfully created team"
             );
-
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error en create_teamMember', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
 
             return ApiResponse::error(
-                __('messages.teamMember.error.create_teamMember'),
-                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
-                500
+                message: "Error creating successful team member",
+                errors: $e,
+                code: 500
             );
         }
     }
 
-    /**
-     * Crear traducciones para todos los idiomas
-     */
-    private function createTranslations(TeamMember $team, array $data, GoogleTranslateService $translator): void
+    private function createTranslations(TeamMember $team, array $data, GoogleTranslateService $translator)
     {
-        foreach ($this->languages as $lang) {
-            if ($lang === 'es') {
-                // Crear traducción en español
-                TeamMemberTranslation::create([
-                    'team_member_id' => $team->id,
-                    'specialization' => $data['specialization'],
-                    'biography' => $data['biography'],
-                    'lang' => $lang
-                ]);
-                continue;
-            }
+        $sourceLang = app()->getLocale();
 
-            try {
-                // Traducir ambos campos en UNA sola llamada API
-                $translated = $translator->translate([
-                    $data['specialization'],
-                    $data['biography']
-                ], $lang);
+        $fieldsToTranslate = array_filter([
+            'specialization' => $data['specialization'] ?? null,
+            'biography' => $data['biography'] ?? null
+        ]);
 
-                TeamMemberTranslation::create([
-                    'team_member_id' => $team->id,
-                    'specialization' => $translated[0] ?? $data['specialization'],
-                    'biography' => $translated[1] ?? $data['biography'],
-                    'lang' => $lang
-                ]);
-
-            } catch (\Exception $e) {
-                \Log::error("Translation error for team member {$team->id} to {$lang}: " . $e->getMessage());
-
-                // Fallback: crear con texto original
-                TeamMemberTranslation::create([
-                    'team_member_id' => $team->id,
-                    'specialization' => $data['specialization'],
-                    'biography' => $data['biography'],
-                    'lang' => $lang
-                ]);
-            }
+        if (empty($fieldsToTranslate)) {
+            return;
         }
+
+        $translationsData = [];
+
+        foreach ($this->languages as $targetLang) {
+            $translationRecord = [
+                'team_member_id' => $team->id,
+                'lang' => $targetLang
+            ];
+
+            if ($targetLang === $sourceLang) {
+                $translationRecord = array_merge($translationRecord, $fieldsToTranslate);
+            } else {
+                $textsToTranslate = array_values($fieldsToTranslate);
+                $translatedTexts = $translator->translate($textsToTranslate, $targetLang, $sourceLang);
+
+                $fieldKeys = array_keys($fieldsToTranslate);
+                foreach ($fieldKeys as $index => $field) {
+                    $translationRecord[$field] = $translatedTexts[$index] ?? $fieldsToTranslate[$field];
+                }
+            }
+
+            $translationsData[] = $translationRecord;
+        }
+
+        TeamMemberTranslation::insert($translationsData);
     }
 
-    /**
-     * Crear imágenes de resultados con traducciones
-     */
-    private function createResults(TeamMember $team, array $results, GoogleTranslateService $translator): void
+    private function createImages(TeamMember $team, array $results, GoogleTranslateService $translator): void
     {
-        // Guardar rutas de imágenes
-        $imagePaths = [];
-        $descriptions = [];
-
-        foreach ($results as $result) {
-            $path = Helpers::saveWebpFile($result['url'], "images/team/{$team->id}/results");
-            $imagePaths[] = $path;
-            $descriptions[] = $result['description'] ?? '';
+        if (empty($results)) {
+            return;
         }
 
-        // Traducir por idioma
-        foreach ($this->languages as $lang) {
-            if ($lang === 'es') {
-                // Español: descripciones originales
-                foreach ($imagePaths as $index => $path) {
-                    TeamMemberImage::create([
-                        'team_member_id' => $team->id,
-                        'url' => $path,
-                        'description' => $descriptions[$index],
-                        'lang' => $lang
-                    ]);
-                }
+        $sourceLang = app()->getLocale();
+
+        // 1. Guardar imágenes y preparar descripciones
+        $savedImages = [];
+        foreach ($results as $result) {
+            if (!isset($result['path']) || !$result['path'] instanceof \Illuminate\Http\UploadedFile) {
                 continue;
             }
 
-            try {
-                // UNA sola llamada con TODAS las descripciones
-                $translated = $translator->translate($descriptions, $lang);
+            $savedImages[] = [
+                'path' => Helpers::saveWebpFile($result['path'], "images/team/{$team->id}/results"),
+                'description' => $result['description'] ?? ''
+            ];
+        }
 
-                foreach ($imagePaths as $index => $path) {
-                    TeamMemberImage::create([
-                        'team_member_id' => $team->id,
-                        'url' => $path,
-                        'description' => $translated[$index] ?? $descriptions[$index],
-                        'lang' => $lang
-                    ]);
+        if (empty($savedImages)) {
+            return;
+        }
+
+        // 2. Preparar todas las traducciones por idioma
+        $descriptions = array_column($savedImages, 'description');
+        $nonEmptyDescriptions = array_filter($descriptions);
+
+        $translationsByLang = [];
+
+        foreach ($this->languages as $targetLang) {
+            if ($targetLang === $sourceLang || empty($nonEmptyDescriptions)) {
+                $translationsByLang[$targetLang] = $descriptions;
+            } else {
+                $translated = $translator->translate(
+                    array_values($nonEmptyDescriptions),
+                    $targetLang,
+                    $sourceLang
+                );
+
+                $translatedDescriptions = [];
+                $translatedIndex = 0;
+                foreach ($descriptions as $desc) {
+                    $translatedDescriptions[] = !empty($desc)
+                        ? ($translated[$translatedIndex++] ?? $desc)
+                        : '';
                 }
-
-            } catch (\Exception $e) {
-                \Log::error("Translation error for images to {$lang}: " . $e->getMessage());
-
-                // Fallback
-                foreach ($imagePaths as $index => $path) {
-                    TeamMemberImage::create([
-                        'team_member_id' => $team->id,
-                        'url' => $path,
-                        'description' => $descriptions[$index],
-                        'lang' => $lang
-                    ]);
-                }
+                $translationsByLang[$targetLang] = $translatedDescriptions;
             }
+        }
+
+        // 3. Crear imágenes con sus traducciones
+        foreach ($savedImages as $index => $image) {
+            $teamImage = $team->images()->create([
+                'path' => $image['path']
+            ]);
+
+            $translationsData = [];
+            foreach ($this->languages as $targetLang) {
+                $translationsData[] = [
+                    'team_member_image_id' => $teamImage->id,
+                    'lang' => $targetLang,
+                    'description' => $translationsByLang[$targetLang][$index] ?? ''
+                ];
+            }
+
+            // Insertar todas las traducciones de esta imagen de una vez
+            DB::table('team_member_image_translations')->insert($translationsData);
         }
     }
 
@@ -183,53 +184,32 @@ class TeamMemberContentController extends Controller
             $data = $request->validated();
             $team = TeamMember::findOrFail($id);
 
-            // Actualizar datos básicos del miembro
-            if (isset($data['name']) || isset($data['status']) || isset($data['image'])) {
-                $this->updateTeamMember($team, $data);
-            }
+            $this->updateData($team, $data);
+            $this->updateTranslations($team, $data, $translator);
 
-            // Actualizar traducciones
-            if (isset($data['specialization']) || isset($data['biography'])) {
-                $this->updateTranslations($team, $data, $translator);
-            }
-
-            // Actualizar imágenes de resultados
-            if (isset($data['results'])) {
-                $this->updateResults($team, $data['results'], $translator);
+            if (isset($data['result'])) {
+                $this->updateResults($team, $data['result'], $translator);
             }
 
             DB::commit();
-
             return ApiResponse::success(
-                __('messages.teamMember.success.updateTeamMember'),
-                $team->fresh(['translations', 'images'])
+                __('messages.teamMember.success.updateTeamMember')
             );
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error en update_teamMember', [
-                'team_member_id' => $id,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
 
             return ApiResponse::error(
                 __('messages.teamMember.error.updateTeamMember'),
-                config('app.debug') ? $e->getMessage() : 'Error interno del servidor',
+                $e,
                 500
             );
         }
     }
 
-    /**
-     * Actualizar datos básicos del miembro del equipo
-     */
-    private function updateTeamMember(TeamMember $team, array $data): void
+    private function updateData(TeamMember $team, array $data)
     {
         $updates = [];
-
         if (isset($data['name'])) {
             $updates['name'] = $data['name'];
         }
@@ -238,14 +218,13 @@ class TeamMemberContentController extends Controller
             $updates['status'] = $data['status'];
         }
 
-        // Actualizar imagen principal
-        if (!empty($data['image']) && $data['image'] instanceof UploadedFile) {
-            // Eliminar imagen anterior
-            if (!empty($team->image) && Storage::disk('public')->exists($team->image)) {
-                Storage::disk('public')->delete($team->image);
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            $path = Helpers::removeAppUrl($team->image);
+            if (!empty($path) && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
             }
 
-            $updates['image'] = Helpers::saveWebpFile($data['image'], "images/team/{$team->id}/image_main");
+            $updates['image'] = Helpers::saveWebpFile($data['image'], "images/team/{$team->id}/main_image");
         }
 
         if (!empty($updates)) {
@@ -253,269 +232,237 @@ class TeamMemberContentController extends Controller
         }
     }
 
-    /**
-     * Actualizar traducciones para todos los idiomas
-     */
-    private function updateTranslations(TeamMember $team, array $data, GoogleTranslateService $translator): void
+    private function updateTranslations(TeamMember $team, array $data, GoogleTranslateService $translator)
     {
-        // Obtener traducción en español
-        $translationEs = TeamMemberTranslation::firstOrCreate([
+        $sourceLang = app()->getLocale();
+        $fields = ['specialization', 'biography'];
+
+        $sourceTranslation = $team->translations()->firstOrNew([
             'team_member_id' => $team->id,
-            'lang' => 'es'
+            'lang' => $sourceLang,
         ]);
 
-        $specializationChanged = isset($data['specialization']) && $data['specialization'] !== $translationEs->specialization;
-        $biographyChanged = isset($data['biography']) && $data['biography'] !== $translationEs->biography;
+        $changedFields = [];
+        $textsToTranslate = [];
 
-        // Si no hay cambios, salir
-        if (!$specializationChanged && !$biographyChanged) {
+        foreach ($fields as $field) {
+            // Solo procesar si el campo está presente en $data
+            if (array_key_exists($field, $data)) {
+                // Si es un campo nuevo o cambió su valor
+                if (!$sourceTranslation->exists || $data[$field] !== $sourceTranslation->{$field}) {
+                    $changedFields[] = $field;
+                    $textsToTranslate[] = $data[$field];
+                }
+                // Actualizar el valor en el idioma fuente
+                $sourceTranslation->{$field} = $data[$field];
+            }
+        }
+
+        // Guardar la traducción fuente solo si hay cambios o es nueva
+        if (!empty($changedFields) || !$sourceTranslation->exists) {
+            $sourceTranslation->save();
+        }
+
+        // Si no hay campos que traducir, salir
+        if (empty($changedFields)) {
             return;
         }
 
-        // Actualizar español
-        $translationEs->update([
-            'specialization' => $data['specialization'] ?? $translationEs->specialization,
-            'biography' => $data['biography'] ?? $translationEs->biography,
-        ]);
-
-        // Preparar textos para traducir
-        $textsToTranslate = [];
-        $changedFields = [];
-
-        if ($specializationChanged) {
-            $textsToTranslate[] = $data['specialization'];
-            $changedFields[] = 'specialization';
-        }
-
-        if ($biographyChanged) {
-            $textsToTranslate[] = $data['biography'];
-            $changedFields[] = 'biography';
-        }
-
         // Traducir a otros idiomas
-        foreach ($this->languages as $lang) {
-            if ($lang === 'es') {
+        foreach ($this->languages as $targetLang) {
+            if ($targetLang === $sourceLang) {
                 continue;
             }
 
-            try {
-                // UNA sola llamada API con todos los textos cambiados
-                $translated = $translator->translate($textsToTranslate, $lang);
+            $translatedTexts = $translator->translate($textsToTranslate, $targetLang, $sourceLang);
 
-                $translation = TeamMemberTranslation::firstOrCreate([
-                    'team_member_id' => $team->id,
-                    'lang' => $lang
-                ]);
-
-                // Actualizar solo los campos que cambiaron
-                $updatedFields = [];
-                foreach ($changedFields as $index => $field) {
-                    $updatedFields[$field] = $translated[$index] ?? $translation->$field;
-                }
-
-                $translation->update($updatedFields);
-                $team->auditEvent('updated')->setOldValues($translation)->setNewValues($updatedFields)->save();
-
-            } catch (\Exception $e) {
-                \Log::error("Translation error for team member {$team->id} to {$lang}: " . $e->getMessage());
-            }
-        }
-    }
-
-    /**
-     * Actualizar imágenes de resultados con traducciones optimizadas
-     */
-    private function updateResults(TeamMember $team, array $results, GoogleTranslateService $translator): void
-    {
-        // IDs recibidos (para identificar qué mantener)
-        $receivedIds = collect($results)->pluck('id')->filter()->toArray();
-
-        // Eliminar imágenes que ya no están en la lista
-        $imagesToDelete = TeamMemberImage::where('team_member_id', $team->id)
-            ->whereNotIn('id', $receivedIds)
-            ->get()
-            ->groupBy('url');
-
-        foreach ($imagesToDelete as $url => $imagesGroup) {
-            // Eliminar archivo físico solo una vez por URL
-            $firstImage = $imagesGroup->first();
-            if ($firstImage->url && Storage::disk('public')->exists($firstImage->url)) {
-                Storage::disk('public')->delete($firstImage->url);
-            }
-
-            // Eliminar todos los registros de esta URL (todos los idiomas)
-            foreach ($imagesGroup as $image) {
-                $image->delete();
-            }
-        }
-
-        // Obtener imágenes existentes en español
-        $existingImagesEs = TeamMemberImage::where('team_member_id', $team->id)
-            ->where('lang', 'es')
-            ->get()
-            ->keyBy('id');
-
-        // Procesar cada resultado
-        $processedImages = [];
-
-        foreach ($results as $result) {
-            $imageEs = null;
-            $isNewImage = empty($result['id']) || !isset($existingImagesEs[$result['id']]);
-
-            if (!$isNewImage) {
-                // Actualizar imagen existente
-                $imageEs = $existingImagesEs[$result['id']];
-                $oldUrl = $imageEs->url;
-
-                // Manejar actualización de URL
-                if (!empty($result['url'])) {
-                    if ($result['url'] instanceof UploadedFile) {
-                        // Nueva imagen subida
-                        if ($oldUrl && Storage::disk('public')->exists($oldUrl)) {
-                            Storage::disk('public')->delete($oldUrl);
-                        }
-                        $newUrl = Helpers::saveWebpFile($result['url'], "images/team/{$team->id}/results");
-                        $imageEs->url = $newUrl;
-
-                        // Actualizar URL en todas las traducciones existentes
-                        TeamMemberImage::where('team_member_id', $team->id)
-                            ->where('url', $oldUrl)
-                            ->update(['url' => $newUrl]);
-                    }
-
-                    if (is_string($result['url'])) {
-                        // URL como string (sin cambios en la imagen)
-                        $urlDecoded = urldecode(Helpers::removeAppUrl($result['url']));
-                        if ($urlDecoded !== $oldUrl) {
-                            $imageEs->url = $urlDecoded;
-                        }
-                    }
-                }
-
-                $imageEs->description = $result['description'] ?? '';
-                $imageEs->save();
-            } else {
-                // Crear nueva imagen
-                $newUrl = $result['url'] instanceof UploadedFile
-                    ? Helpers::saveWebpFile($result['url'], "images/team/{$team->id}/results")
-                    : urldecode(Helpers::removeAppUrl($result['url']));
-
-                $imageEs = TeamMemberImage::create([
-                    'team_member_id' => $team->id,
-                    'url' => $newUrl,
-                    'description' => $result['description'] ?? '',
-                    'lang' => 'es',
-                ]);
-            }
-
-            $processedImages[] = [
-                'url' => $imageEs->url,
-                'description' => $imageEs->description,
-                'is_new' => $isNewImage
-            ];
-        }
-
-        // Traducir todas las descripciones en batch por idioma
-        foreach ($this->languages as $lang) {
-            if ($lang === 'es') {
-                continue;
-            }
-
-            try {
-                // Recolectar todas las descripciones
-                $descriptions = array_column($processedImages, 'description');
-
-                // UNA sola llamada API con TODAS las descripciones
-                $translated = $translator->translate($descriptions, $lang);
-
-                // Actualizar o crear imágenes traducidas
-                foreach ($processedImages as $index => $imageData) {
-                    $existingTranslation = TeamMemberImage::where('team_member_id', $team->id)
-                        ->where('lang', $lang)
-                        ->where('url', $imageData['url'])
-                        ->first();
-
-                    $translatedDescription = $translated[$index] ?? $imageData['description'];
-
-                    if ($existingTranslation) {
-                        $existingTranslation->update([
-                            'description' => $translatedDescription
-                        ]);
-                    } else {
-                        TeamMemberImage::create([
-                            'team_member_id' => $team->id,
-                            'url' => $imageData['url'],
-                            'description' => $translatedDescription,
-                            'lang' => $lang,
-                        ]);
-                    }
-                }
-
-            } catch (\Exception $e) {
-                \Log::error("Translation error for team member images {$team->id} to {$lang}: " . $e->getMessage());
-
-                // Fallback: crear con descripciones originales
-                foreach ($processedImages as $imageData) {
-                    TeamMemberImage::firstOrCreate([
-                        'team_member_id' => $team->id,
-                        'url' => $imageData['url'],
-                        'lang' => $lang,
-                    ], [
-                        'description' => $imageData['description']
-                    ]);
-                }
-            }
-        }
-    }
-
-    public function delete_teamMember($id)
-    {
-        DB::beginTransaction();
-        try {
-            $team = TeamMember::findOrFail($id);
-            $team->delete();
-
-            DB::commit();
-
-            return ApiResponse::success(
-                __('messages.teamMember.success.delete_teamMember')
-            );
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('Error en update_teamMember: ' . $e->getMessage());
-
-            return ApiResponse::error(
-                __('messages.teamMember.error.delete_teamMember'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
-    public function update_status(Request $request, $id)
-    {
-        DB::beginTransaction();
-        try {
-            $team = TeamMember::findOrFail($id);
-            $data = $request->validate([
-                'status' => 'required|in:active,inactive'
+            $translation = $team->translations()->firstOrNew([
+                'team_member_id' => $team->id,
+                'lang' => $targetLang,
             ]);
-            $team->update(['status' => $data['status']]);
 
-            DB::commit();
-            return ApiResponse::success(
-                __('messages.teamMember.success.updateStatus'),
-                $data
-            );
-        } catch (\Throwable $e) {
-            DB::rollBack();
+            // Solo actualizar los campos que cambiaron
+            foreach ($changedFields as $index => $field) {
+                $translation->{$field} = $translatedTexts[$index] ?? $translation->{$field};
+            }
 
-            return ApiResponse::error(
-                __('messages.teamMember.error.updateStatus'),
-                ['exception' => $e->getMessage()],
-                500
-            );
+            $translation->save();
+        }
+    }
+
+    private function updateResults(TeamMember $team, array $results, GoogleTranslateService $translator)
+    {
+        $sourceLang = app()->getLocale();
+
+        if (isset($results['deleted'])) {
+            $resultsToDelete = TeamMemberImage::whereIn('id', $results['deleted'])->get();
+
+            foreach ($resultsToDelete as $resultItem) {
+                $path = Helpers::removeAppUrl($resultItem->path);
+                if (!empty($path) && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            TeamMemberImage::whereIn('id', $results['deleted'])->delete();
+        }
+
+        if (isset($results['new'])) {
+            $toTranslation = [];
+            $teamMemberResults = [];
+
+            foreach ($results['new'] as $index => $result) {
+                if (!is_array($result)) {
+                    continue;
+                }
+
+                $path = Helpers::saveWebpFile($result['path'], "images/team/{$team->id}/results");
+
+                $teamMemberResult = $team->images()->create([
+                    'path' => $path,
+                    'order' => $result['order']
+                ]);
+
+                $teamMemberResults[$index] = [
+                    'model' => $teamMemberResult,
+                    'data' => $result,
+                ];
+
+                $toTranslation[] = $result['description'] ?? '';
+            }
+
+            foreach ($this->languages as $targetLang) {
+                if ($targetLang === $sourceLang) {
+                    foreach ($teamMemberResults as $resultData) {
+                        $resultData['model']->translations()->updateOrCreate(
+                            [
+                                'team_member_image_id' => $resultData['model']->id,
+                                'lang' => $targetLang
+                            ],
+                            [
+                                'description' => $resultData['data']['description'] ?? '',
+                            ]
+                        );
+                    }
+                    continue;
+                }
+
+                $translatedTexts = $translator->translate($toTranslation, $targetLang, $sourceLang);
+
+                $translationIndex = 0;
+                foreach ($teamMemberResults as $resultData) {
+                    $resultData['model']->translations()->updateOrCreate(
+                        [
+                            'team_member_image_id' => $resultData['model']->id,
+                            'lang' => $targetLang
+                        ],
+                        [
+                            'description' => $translatedTexts[$translationIndex] ?? '',
+                        ]
+                    );
+
+                    $translationIndex++;
+                }
+            }
+        }
+
+        if (isset($results['updated'])) {
+            $toTranslation = [];
+            $teamMemberResults = [];
+
+            foreach ($results['updated'] as $index => $result) {
+                if (!is_array($result) || !isset($result['id'])) {
+                    continue;
+                }
+
+                $teamMemberResult = TeamMemberImage::findOrFail($result['id']);
+
+                if (isset($result['order'])) {
+                    $teamMemberResult->order = $result['order'];
+                }
+
+                $teamMemberResult->save();
+
+                $teamMemberResults[$index] = [
+                    'model' => $teamMemberResult,
+                    'data' => $result,
+                ];
+
+                // Solo agregar a traducción si los campos existen y son diferentes
+                $translation = $teamMemberResult->translations()
+                    ->where('lang', $sourceLang)
+                    ->first();
+
+                if (isset($result['description']) && (!$translation || $result['description'] !== $translation->description)) {
+                    $toTranslation[] = $result['description'];
+                } else {
+                    $toTranslation[] = null;
+                }
+            }
+
+            // Filtrar valores null antes de traducir
+            $textsToTranslate = array_filter($toTranslation, fn($text) => $text !== null);
+
+            if (empty($textsToTranslate)) {
+                return;
+            }
+
+            foreach ($this->languages as $targetLang) {
+                if ($targetLang === $sourceLang) {
+                    foreach ($teamMemberResults as $resultData) {
+                        $updateData = [];
+
+                        if (isset($resultData['data']['description'])) {
+                            $updateData['description'] = $resultData['data']['description'];
+                        }
+
+                        if (!empty($updateData)) {
+                            $resultData['model']->translations()->updateOrCreate(
+                                [
+                                    'team_member_image_id' => $resultData['model']->id,
+                                    'lang' => $targetLang
+                                ],
+                                $updateData
+                            );
+                        }
+                    }
+                    continue;
+                }
+
+                $translatedTexts = $translator->translate($textsToTranslate, $targetLang, $sourceLang);
+
+                $translationIndex = 0;
+                $fullTranslations = [];
+
+                foreach ($toTranslation as $originalText) {
+                    if ($originalText === null) {
+                        $fullTranslations[] = null;
+                    } else {
+                        $fullTranslations[] = $translatedTexts[$translationIndex] ?? null;
+                        $translationIndex++;
+                    }
+                }
+
+                $arrayIndex = 0;
+                foreach ($teamMemberResults as $resultData) {
+                    $updateData = [];
+
+                    if ($fullTranslations[$arrayIndex] !== null) {
+                        $updateData['description'] = $fullTranslations[$arrayIndex];
+                    }
+                    $arrayIndex++;
+
+                    if (!empty($updateData)) {
+                        $resultData['model']->translations()->updateOrCreate(
+                            [
+                                'team_member_image_id' => $resultData['model']->id,
+                                'lang' => $targetLang
+                            ],
+                            $updateData
+                        );
+                    }
+                }
+            }
         }
     }
 }

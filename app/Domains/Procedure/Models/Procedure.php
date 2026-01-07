@@ -16,7 +16,7 @@ class Procedure extends Model implements Auditable
     use \OwenIt\Auditing\Auditable;
 
     protected $table = "procedures";
-    protected $fillable = ['slug', 'image', 'status', 'views'];
+    protected $fillable = ['user_id', 'slug', 'image', 'status', 'views'];
 
     protected $casts = [
         'views' => 'integer',
