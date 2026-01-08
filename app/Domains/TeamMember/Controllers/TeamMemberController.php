@@ -71,8 +71,8 @@ class TeamMemberController extends Controller
         try {
             $team = TeamMember::with([
                 'translation',
-                'images',
-            ])->findOrFail($id);
+                'images.translation',
+            ])->where('id', $id)->firstOrFail();
 
             $translation = $team->translations->first();
 
@@ -81,19 +81,14 @@ class TeamMemberController extends Controller
                 'status' => $team->status,
                 'name' => $team->name ?? '',
                 'image' => $team->image,
-                'biography' => $translation?->biography ?? '',
-                'specialization' => $translation?->specialization ?? '',
-                'results' => $team->images->map(fn($img) => [
+                'biography' => $translation->biography ?? null,
+                'specialization' => $translation->specialization ?? null,
+                'result' => $team->images->map(fn($img) => [
                     'id' => $img->id,
-                    'team_member_id' => $img->team_member_id,
-                    'lang' => $img->lang,
-                    'url' => $img->url,
-                    'description' => $img->description,
-                    'created_at' => $img->created_at,
-                    'updated_at' => $img->updated_at,
-                ]),
-                'created_at' => $team->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $team->updated_at->format('Y-m-d H:i:s'),
+                    'path' => $img->path,
+                    'order' => $img->order,
+                    'description' => $img->translation->description
+                ])
             ];
 
             return ApiResponse::success(

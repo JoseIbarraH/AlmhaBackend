@@ -37,7 +37,7 @@ class TeamMember extends Model implements Auditable
 
     public function images()
     {
-        return $this->hasMany(TeamMemberImage::class);
+        return $this->hasMany(TeamMemberImage::class)->orderBy('order');
     }
 
     protected function image(): Attribute

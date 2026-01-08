@@ -26,6 +26,7 @@ class UpdateProcedureRequest extends FormRequest
     {
 
         $procedureId = $this->route('id');
+        Log::info("data: ", [$this->all()]);
 
         return [
             'status' => 'sometimes|in:active,inactive', // Estado del procedimiento

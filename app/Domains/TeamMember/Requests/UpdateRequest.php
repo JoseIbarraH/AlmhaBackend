@@ -38,8 +38,8 @@ class UpdateRequest extends FormRequest
 
             'result.updated' => 'sometimes|array',
             'result.updated.*.id' => ['required_with:result.updated', 'integer', Rule::exists('team_member_images', 'id')->where('team_member_id', $teamMemberId)],
-            'result.updated.*.path' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
-            'result.updated.*.description' => 'nullable|string|max:5000',
+            'result.updated.*.path' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
+            'result.updated.*.description' => 'sometimes|string|max:5000',
             'result.updated.*.order' => 'nullable|integer|min:0',
 
             'result.new' => 'sometimes|array',

@@ -1335,7 +1335,7 @@ class ProcedureContentController extends Controller
         // Eliminar imágenes
         if (isset($gallery['deleted'])) {
             $galleriesToDelete = ProcedureResultGallery::whereIn('id', $gallery['deleted'])->get();
-
+            Log::info('asd', [$galleriesToDelete]);
             foreach ($galleriesToDelete as $galleryItem) {
                 if (!empty($galleryItem->path) && Storage::disk('public')->exists($galleryItem->path)) {
                     Storage::disk('public')->delete($galleryItem->path);

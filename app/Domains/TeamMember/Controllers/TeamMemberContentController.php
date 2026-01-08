@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\ApiResponse;
+use Illuminate\Http\Request;
 use App\Helpers\Helpers;
 
 class TeamMemberContentController extends Controller
@@ -24,156 +25,41 @@ class TeamMemberContentController extends Controller
         $this->languages = config('languages.supported');
     }
 
-    public function create_teamMember(StoreRequest $request, GoogleTranslateService $translator)
+    public function create_teamMember(Request $request)
     {
         DB::beginTransaction();
 
         try {
-            $data = $request->validated();
+            $data = $request->validate([
+                'name' => 'required|string'
+            ]);
 
             $team = TeamMember::create([
                 'user_id' => auth()->id(),
                 'slug' => uniqid('temp-'),
-                'name' => $data['name'] ?? '',
+                'name' => $data['name'],
                 'image' => '',
-                'status' => $data['status'] ?? 'inactive'
+                'status' => 'inactive'
             ]);
-
-            if ($request->hasFile('image')) {
-                $path = Helpers::saveWebpFile($request->file('image'), "images/team/{$team->id}/main_image");
-                $team->update(['image' => $path]);
-            }
-
-            $this->createTranslations($team, $data, $translator);
-
-            $this->createImages($team, $data['result'], $translator);
 
             $team->slug = null;
             $team->save();
 
             DB::commit();
-            return ApiResponse::success(
-                "Member of the successfully created team"
-            );
-        } catch (\Throwable $e) {
-            DB::rollBack();
 
+            return ApiResponse::success(
+                message: 'team member successfully created',
+                data: [
+                    'id' => $team->id
+                ]
+            );
+        } catch (\Throwable $th) {
+            DB::rollBack();
             return ApiResponse::error(
-                message: "Error creating successful team member",
-                errors: $e,
+                message: 'Error creating team member',
+                errors: $th,
                 code: 500
             );
-        }
-    }
-
-    private function createTranslations(TeamMember $team, array $data, GoogleTranslateService $translator)
-    {
-        $sourceLang = app()->getLocale();
-
-        $fieldsToTranslate = array_filter([
-            'specialization' => $data['specialization'] ?? null,
-            'biography' => $data['biography'] ?? null
-        ]);
-
-        if (empty($fieldsToTranslate)) {
-            return;
-        }
-
-        $translationsData = [];
-
-        foreach ($this->languages as $targetLang) {
-            $translationRecord = [
-                'team_member_id' => $team->id,
-                'lang' => $targetLang
-            ];
-
-            if ($targetLang === $sourceLang) {
-                $translationRecord = array_merge($translationRecord, $fieldsToTranslate);
-            } else {
-                $textsToTranslate = array_values($fieldsToTranslate);
-                $translatedTexts = $translator->translate($textsToTranslate, $targetLang, $sourceLang);
-
-                $fieldKeys = array_keys($fieldsToTranslate);
-                foreach ($fieldKeys as $index => $field) {
-                    $translationRecord[$field] = $translatedTexts[$index] ?? $fieldsToTranslate[$field];
-                }
-            }
-
-            $translationsData[] = $translationRecord;
-        }
-
-        TeamMemberTranslation::insert($translationsData);
-    }
-
-    private function createImages(TeamMember $team, array $results, GoogleTranslateService $translator): void
-    {
-        if (empty($results)) {
-            return;
-        }
-
-        $sourceLang = app()->getLocale();
-
-        // 1. Guardar imágenes y preparar descripciones
-        $savedImages = [];
-        foreach ($results as $result) {
-            if (!isset($result['path']) || !$result['path'] instanceof \Illuminate\Http\UploadedFile) {
-                continue;
-            }
-
-            $savedImages[] = [
-                'path' => Helpers::saveWebpFile($result['path'], "images/team/{$team->id}/results"),
-                'description' => $result['description'] ?? ''
-            ];
-        }
-
-        if (empty($savedImages)) {
-            return;
-        }
-
-        // 2. Preparar todas las traducciones por idioma
-        $descriptions = array_column($savedImages, 'description');
-        $nonEmptyDescriptions = array_filter($descriptions);
-
-        $translationsByLang = [];
-
-        foreach ($this->languages as $targetLang) {
-            if ($targetLang === $sourceLang || empty($nonEmptyDescriptions)) {
-                $translationsByLang[$targetLang] = $descriptions;
-            } else {
-                $translated = $translator->translate(
-                    array_values($nonEmptyDescriptions),
-                    $targetLang,
-                    $sourceLang
-                );
-
-                $translatedDescriptions = [];
-                $translatedIndex = 0;
-                foreach ($descriptions as $desc) {
-                    $translatedDescriptions[] = !empty($desc)
-                        ? ($translated[$translatedIndex++] ?? $desc)
-                        : '';
-                }
-                $translationsByLang[$targetLang] = $translatedDescriptions;
-            }
-        }
-
-        // 3. Crear imágenes con sus traducciones
-        foreach ($savedImages as $index => $image) {
-            $teamImage = $team->images()->create([
-                'path' => $image['path']
-            ]);
-
-            $translationsData = [];
-            foreach ($this->languages as $targetLang) {
-                $translationsData[] = [
-                    'team_member_image_id' => $teamImage->id,
-                    'lang' => $targetLang,
-                    'description' => $translationsByLang[$targetLang][$index] ?? ''
-                ];
-            }
-
-            // Insertar todas las traducciones de esta imagen de una vez
-            DB::table('team_member_image_translations')->insert($translationsData);
         }
     }
 
@@ -463,6 +349,54 @@ class TeamMemberContentController extends Controller
                     }
                 }
             }
+        }
+    }
+
+    public function update_status(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $blog = TeamMember::findOrFail($id);
+            $data = $request->validate([
+                'status' => 'required|in:active,inactive'
+            ]);
+            $blog->update(['status' => $data['status']]);
+
+            DB::commit();
+            return ApiResponse::success(
+                __('messages.blog.success.updateStatus'),
+                $blog
+            );
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return ApiResponse::error(
+                __('messages.blog.error.updateStatus'),
+                ['exception' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    public function delete_teamMember($id)
+    {
+        DB::beginTransaction();
+        try {
+            $team = TeamMember::findOrFail($id);
+            $team->delete();
+
+            DB::commit();
+
+            return ApiResponse::success(
+                "Member successfully removed"
+            );
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return ApiResponse::error(
+                "Error deleting member",
+                $e,
+                500
+            );
         }
     }
 }

@@ -89,8 +89,8 @@ class ProcedureController extends Controller
                 'image' => $procedure->image,
                 'status' => $procedure->status,
                 'views' => $procedure->views,
-                'title' => $procedure->translation->title ?? null,
-                'subtitle' => $procedure->translation->subtitle ?? null,
+                'title' => $procedure->translation->title ?? '',
+                'subtitle' => $procedure->translation->subtitle ?? '',
                 'section' => $procedure->sections->map(fn($section) => [
                     'id' => $section->id,
                     'type' => $section->type,
