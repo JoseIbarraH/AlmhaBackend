@@ -74,15 +74,13 @@ class TeamMemberController extends Controller
                 'images.translation',
             ])->where('id', $id)->firstOrFail();
 
-            $translation = $team->translations->first();
-
             $data = [
                 'id' => $team->id,
                 'status' => $team->status,
                 'name' => $team->name ?? '',
                 'image' => $team->image,
-                'biography' => $translation->biography ?? null,
-                'specialization' => $translation->specialization ?? null,
+                'biography' => $team->translation->biography ?? '',
+                'specialization' => $team->translation->specialization ?? '',
                 'result' => $team->images->map(fn($img) => [
                     'id' => $img->id,
                     'path' => $img->path,

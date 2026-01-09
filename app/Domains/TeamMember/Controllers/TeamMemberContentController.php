@@ -104,7 +104,7 @@ class TeamMemberContentController extends Controller
             $updates['status'] = $data['status'];
         }
 
-        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+        if (isset($data['image'])) {
             $path = Helpers::removeAppUrl($team->image);
             if (!empty($path) && Storage::disk('public')->exists($path)) {
                 Storage::disk('public')->delete($path);
@@ -123,7 +123,7 @@ class TeamMemberContentController extends Controller
         $sourceLang = app()->getLocale();
         $fields = ['specialization', 'biography'];
 
-        $sourceTranslation = $team->translations()->firstOrNew([
+        $sourceTranslation = $team->translations()->updateOrCreate([
             'team_member_id' => $team->id,
             'lang' => $sourceLang,
         ]);
@@ -162,7 +162,7 @@ class TeamMemberContentController extends Controller
 
             $translatedTexts = $translator->translate($textsToTranslate, $targetLang, $sourceLang);
 
-            $translation = $team->translations()->firstOrNew([
+            $translation = $team->translations()->updateOrCreate([
                 'team_member_id' => $team->id,
                 'lang' => $targetLang,
             ]);

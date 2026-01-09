@@ -23,7 +23,8 @@ class TeamMemberImage extends Model implements Auditable
 
     public $timestamps = false;
 
-    public function teamMember(){
+    public function teamMember()
+    {
         return $this->belongsTo(TeamMember::class);
     }
 
@@ -34,7 +35,7 @@ class TeamMemberImage extends Model implements Auditable
 
     public function translation()
     {
-        return $this->hasOne(TeamMemberImageTranslation::class, 'team_member_image_id', 'id');
+        return $this->hasOne(TeamMemberImageTranslation::class, 'team_member_image_id', 'id')->where('lang', app()->getLocale());
     }
 
     protected function path(): Attribute
