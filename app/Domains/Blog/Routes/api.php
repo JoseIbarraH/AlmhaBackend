@@ -15,7 +15,7 @@ Route::middleware(['auth:sanctum', 'permission.map'])->prefix('blog')->controlle
     Route::delete('/delete_image/{id}', 'delete_image');
 });
 
-Route::prefix('category')->controller(CategoryController::class)->group(function () {
+Route::middleware(['auth:sanctum', 'permission.map'])->prefix('category')->controller(CategoryController::class)->group(function () {
     Route::get('/', 'list_categories');
     Route::post('/', 'create_category');
     Route::put('/{id}', 'update_category');

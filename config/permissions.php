@@ -19,6 +19,12 @@ return [
         'delete_blog' => 'delete_blogs',
         'update_status' => 'update_blogs_status'
     ],
+    'category' => [
+        'list_categories' => 'update_blogs',
+        'create_category' => 'update_blogs',
+        'delete_category' => 'update_blogs',
+        'update_category' => 'update_blogs'
+    ],
     'procedure' => [
         'list_procedure' => 'view_procedures',
         'get_procedure' => 'show_procedures',
