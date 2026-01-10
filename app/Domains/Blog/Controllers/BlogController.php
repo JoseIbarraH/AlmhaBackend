@@ -278,8 +278,9 @@ class BlogController extends Controller
         }
 
         if (!empty($data['image']) && $data['image'] instanceof UploadedFile) {
-            if (!empty($blog->image) && Storage::disk('public')->exists($blog->image)) {
-                Storage::disk('public')->delete($blog->image);
+            $path = Helpers::removeAppUrl($blog->image);
+            if (!empty($path) && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
             }
 
             $updates['image'] = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");
