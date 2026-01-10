@@ -31,9 +31,6 @@ class GoogleTranslateService
             $this->client = new TranslationServiceClient([
                 'credentials' => $keyFile,
             ]);
-
-            Log::info("Google Translate Client inicializado correctamente");
-
         } catch (Exception $e) {
             Log::error('Error inicializando Google Translate Client:', [
                 'message' => $e->getMessage()

@@ -14,6 +14,8 @@ class BlogCategory extends Model implements Auditable
         'code',
     ];
 
+    public $timestamps = false;
+
     public function blogs()
     {
         return $this->hasMany(Blog::class, 'category_id');
@@ -22,18 +24,20 @@ class BlogCategory extends Model implements Auditable
     /**
      * Obtener la traducción según el idioma actual
      */
-    public function translation($lang = null)
+    public function translation()
     {
-        $locale = $lang ?? app()->getLocale();
-        return $this->hasOne(BlogCategoryTranslation::class, 'category_id')->where('lang', $locale);
+        return $this->hasOne(BlogCategoryTranslation::class, 'category_id')->where('lang', app()->getLocale());
     }
 
-    /**
-     * Accesor para ->name (devuelve el nombre traducido automáticamente)
-     */
-    public function getNameAttribute()
+    public function translations()
     {
-        $translation = $this->translation();
-        return $translation?->name ?? $this->code;
+        return $this->hasMany(BlogCategoryTranslation::class, 'category_id');
+    }
+
+    public function scopeRelationTitle($query, $value)
+    {
+        return $query->whereHas('translation', function ($q) use ($value) {
+            $q->where('title', 'like', "%{$value}%");
+        });
     }
 }

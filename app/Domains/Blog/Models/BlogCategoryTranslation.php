@@ -15,6 +15,8 @@ class BlogCategoryTranslation extends Model implements Auditable
         'title'
     ];
 
+    public $timestamps = false;
+
     /**
      * Relación: Una traducción pertenece a una categoría
      */

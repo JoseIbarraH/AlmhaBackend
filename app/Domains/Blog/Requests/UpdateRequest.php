@@ -23,21 +23,12 @@ class UpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string',
-            'content' => 'required|string',
-            'status' => 'required|in:active,inactive',
-            'category' => 'required',
-            'image' => [
-                'nullable',
-                Rule::when(
-                    $this->hasFile('image_name'),
-                    ['image', 'mimes:jpeg,png,jpg,gif,svg', 'max:15360']
-                ),
-                Rule::when(
-                    is_string($this->input('image_name')),
-                    ['string']
-                ),
-            ]
+            'title' => 'sometimes|string',
+            'content' => 'sometimes|string',
+            'status' => 'sometimes|in:active,inactive',
+            'writer' => 'sometimes|string',
+            'category' => 'sometimes|string',
+            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
         ];
     }
 }

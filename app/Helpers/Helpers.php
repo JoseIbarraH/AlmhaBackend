@@ -5,7 +5,6 @@ namespace App\Helpers;
 use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
@@ -70,5 +69,13 @@ class Helpers
         return $slug;
     }
 
+    public static function generateUniqueCode(int $length = 10): string
+    {
+        do {
+            $code = Str::lower(Str::random($length)); // alfanumérico
+        } while (\DB::table('blog_categories')->where('code', $code)->exists());
+
+        return $code;
+    }
 
 }

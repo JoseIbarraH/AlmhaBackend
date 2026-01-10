@@ -69,79 +69,39 @@ class ProcedureContentController extends Controller
 
     private function createTranslations(Procedure $procedure, array $data, GoogleTranslateService $translator)
     {
-        $sourceLang = app()->getLocale();
-        $defaultTextBase = 'New Procedure'; // Texto base en inglés
+        $currentLocale = app()->getLocale();
 
-        // Si no viene título, traducir el texto por defecto a todos los idiomas
-        $defaultTitles = [];
-        if (!isset($data['title'])) {
-            try {
-                // Preparar textos para traducir de una sola vez
-                $textsToTranslate = array_fill(0, count($this->languages), $defaultTextBase);
-
-                foreach ($this->languages as $index => $targetLang) {
-                    if ($targetLang === 'en') {
-                        $defaultTitles[$targetLang] = $defaultTextBase;
-                    } else {
-                        // Traducir el texto por defecto
-                        $translated = $translator->translate($defaultTextBase, $targetLang, 'en');
-                        $defaultTitles[$targetLang] = is_array($translated) ? $translated[0] : $translated;
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::warning("Failed to translate default titles", ['error' => $e->getMessage()]);
-                // Fallback: usar el texto base para todos
-                $defaultTitles = array_fill_keys($this->languages, $defaultTextBase);
-            }
-        }
+        // Determinar texto base y su idioma original
+        // Si no viene título, usamos 'New Procedure' y asumimos inglés como origen
+        $baseTitle = $data['title'] ?? 'New Procedure';
+        $baseLang = isset($data['title']) ? $currentLocale : 'en';
 
         foreach ($this->languages as $targetLang) {
-            if ($targetLang === $sourceLang) {
-                ProcedureTranslation::create([
-                    'procedure_id' => $procedure->id,
-                    'lang' => $targetLang,
-                    'title' => $data['title'] ?? ($defaultTitles[$targetLang] ?? $defaultTextBase),
-                    'subtitle' => null
-                ]);
+            $titleToSave = '';
 
-                continue;
+            // 1. Si es el idioma base, usar texto original
+            if ($targetLang === $baseLang) {
+                $titleToSave = $baseTitle;
             }
-
-            // Si hay título, traducirlo
-            if (isset($data['title'])) {
+            // 2. Si no, traducir desde el idioma base al idioma destino
+            else {
                 try {
-                    $translated = $translator->translate($data['title'], $targetLang, $sourceLang);
-
-                    ProcedureTranslation::create([
-                        'procedure_id' => $procedure->id,
-                        'lang' => $targetLang,
-                        'title' => is_array($translated) ? $translated[0] : $translated,
-                        'subtitle' => null
-                    ]);
-
+                    $translated = $translator->translate($baseTitle, $targetLang, $baseLang);
+                    $titleToSave = is_array($translated) ? $translated[0] : $translated;
                 } catch (\Exception $e) {
                     Log::warning("Translation failed for procedure {$procedure->id} to {$targetLang}", [
-                        'error' => $e->getMessage(),
-                        'procedure_id' => $procedure->id,
-                        'target_lang' => $targetLang
+                        'error' => $e->getMessage()
                     ]);
-
-                    ProcedureTranslation::create([
-                        'procedure_id' => $procedure->id,
-                        'lang' => $targetLang,
-                        'title' => $data['title'],
-                        'subtitle' => null
-                    ]);
+                    $titleToSave = $baseTitle; // Fallback
                 }
-            } else {
-                // Usar texto por defecto traducido
-                ProcedureTranslation::create([
-                    'procedure_id' => $procedure->id,
-                    'lang' => $targetLang,
-                    'title' => $defaultTitles[$targetLang] ?? $defaultTextBase,
-                    'subtitle' => null
-                ]);
             }
+
+            ProcedureTranslation::create([
+                'procedure_id' => $procedure->id,
+                'lang' => $targetLang,
+                'title' => $titleToSave,
+                'subtitle' => null
+            ]);
         }
     }
 
@@ -1401,27 +1361,6 @@ class ProcedureContentController extends Controller
         }
     }
 
-    public function update_status($id)
-    {
-        try {
-            $procedure = Procedure::findOrFail($id);
-
-            $procedure->update([
-                'status' => !$procedure->status,
-            ]);
-
-            return ApiResponse::success(
-                __('messages.procedure.success.updateStatus'),
-                $procedure
-            );
-        } catch (\Throwable $e) {
-            return ApiResponse::error(
-                __('messages.procedure.error.updateStatus'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
 
     public function delete_procedure($id)
     {

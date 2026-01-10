@@ -4,7 +4,6 @@ namespace App\Domains\Blog\Controllers;
 
 use App\Domains\Blog\Requests\UpdateRequest;
 use App\Domains\Blog\Models\BlogTranslation;
-use App\Domains\Blog\Models\BlogCategory;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -104,6 +103,7 @@ class BlogController extends Controller
                 'id' => $blog->id,
                 'slug' => $blog->slug,
                 'image' => $blog->image,
+                'writer' => $blog->writer,
                 'title' => $blog->translation->title ?? null,
                 'content' => $blog->translation->content ?? null,
                 'category' => $blog->category_id,
@@ -111,15 +111,15 @@ class BlogController extends Controller
             ];
 
             return ApiResponse::success(
-                __('messages.blog.success.getBlog'),
+                "blog obtained successfully",
                 $data
             );
         } catch (\Throwable $e) {
             Log::error('Error en get_blog: ' . $e->getMessage());
 
             return ApiResponse::error(
-                __('messages.blog.error.getBlog'),
-                ['exception' => $e->getMessage()],
+                "Error retrieving blog",
+                $e,
                 500
             );
         }
@@ -136,9 +136,9 @@ class BlogController extends Controller
 
             $blog = Blog::create([
                 'user_id' => auth()->id(),
-                'category_id' => $data['category_id'] ?? 1,
-                'writer' => auth()->user()->name,
-                'status' => $data['status'] ?? 'inactive',
+                'category_id' => null,
+                'writer' => '',
+                'status' => 'inactive',
                 'view' => 0,
                 'slug' => uniqid('temp-'),
                 'image' => '',
@@ -283,6 +283,10 @@ class BlogController extends Controller
             }
 
             $updates['image'] = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");
+        }
+
+        if (isset($data['writer']) && $data['writer'] !== $blog->writer) {
+            $updates['writer'] = $data['writer'];
         }
 
         if (!empty($updates)) {
@@ -485,44 +489,5 @@ class BlogController extends Controller
             );
         }
     }
-
-    /**
-     * Get all categories
-     */
-    public function get_categories(Request $request)
-    {
-        try {
-            $locale = $request->query('locale', app()->getLocale());
-
-            $categories = BlogCategory::join('blog_category_translations as t', function ($join) use ($locale) {
-                $join->on('blog_categories.id', '=', 't.category_id')->where('t.lang', $locale);
-            })
-                ->select(
-                    'blog_categories.id',
-                    'blog_categories.code',
-                    't.title'
-                )
-                ->get()
-                ->map(function ($categories) {
-                    return [
-                        'id' => $categories->id,
-                        'code' => $categories->code,
-                        'title' => $categories->title
-                    ];
-                });
-
-            return ApiResponse::success(
-                __('messages.blog.success.getCategories'),
-                ['categories' => $categories]
-            );
-        } catch (\Throwable $e) {
-            return ApiResponse::error(
-                __('messages.blog.error.getCategories'),
-                ['exception' => $e->getMessage()],
-                500
-            );
-        }
-    }
-
 }
 

@@ -17,33 +17,19 @@ return new class extends Migration {
         });
 
         // Datos iniciales para permitir SET DEFAULT = 1
-        DB::table('blog_categories')->insert([
-            ['id' => 1, 'code' => 'general'],
-            ['id' => 2, 'code' => 'facial'],
-            ['id' => 3, 'code' => 'bodily'],
-            ['id' => 4, 'code' => 'non-surgical'],
-        ]);
+        // Datos iniciales movidos a BlogCategorySeeder
 
         /**
          * 2. BLOG CATEGORY TRANSLATIONS
          */
-        Schema::create('blog_category_translations', function (Blueprint $table){
+        Schema::create('blog_category_translations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained('blog_categories')->onDelete('cascade');
             $table->string('lang', 5);
             $table->string('title');
         });
 
-        DB::table('blog_category_translations')->insert([
-            ['id' => 1, 'category_id' => 1, 'lang' => 'es', 'title' => 'General'],
-            ['id' => 2, 'category_id' => 1, 'lang' => 'en', 'title' => 'General'],
-            ['id' => 3, 'category_id' => 2, 'lang' => 'es', 'title' => 'Facial'],
-            ['id' => 4, 'category_id' => 2, 'lang' => 'en', 'title' => 'Facial'],
-            ['id' => 5, 'category_id' => 3, 'lang' => 'es', 'title' => 'Corporal'],
-            ['id' => 6, 'category_id' => 3, 'lang' => 'en', 'title' => 'Bodily'],
-            ['id' => 7, 'category_id' => 4, 'lang' => 'es', 'title' => 'No quirúrgico'],
-            ['id' => 8, 'category_id' => 4, 'lang' => 'en', 'title' => 'Non-surgical'],
-        ]);
+        // Datos iniciales movidos a BlogCategorySeeder
         /**
          * 3. BLOGS
          */
@@ -52,7 +38,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('slug')->unique();
             $table->string('image')->nullable();
-            $table->unsignedBigInteger('category_id')->default(1);
+            $table->unsignedInteger('category_id')->nullable();
             $table->string('writer')->nullable();
             $table->integer('view')->default(0);
             $table->enum('status', ['inactive', 'active'])->default('inactive');
