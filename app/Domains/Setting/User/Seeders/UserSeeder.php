@@ -1,13 +1,12 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Domains\Setting\User\Seeders;
 
 use App\Domains\Setting\User\Models\Permission;
 use App\Domains\Setting\User\Models\Role;
 use App\Domains\Setting\User\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Database\Seeder;
-
 
 class UserSeeder extends Seeder
 {

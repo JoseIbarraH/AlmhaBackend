@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Domains\Setting\User\Seeders;
 
 use App\Domains\Setting\User\Models\Permission;
 use App\Domains\Setting\User\Models\PermissionTranslation;
@@ -193,7 +193,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'en' => ['title' => 'Default', 'description' => 'Default role'],
                 'permissions' => ['view_dashboard']
             ],
-            
+
         ];
 
         foreach ($roles as $code => $data) {

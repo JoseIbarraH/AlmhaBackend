@@ -88,6 +88,7 @@ class ProcedureController extends Controller
                 'slug' => $procedure->slug,
                 'image' => $procedure->image,
                 'status' => $procedure->status,
+                'category' => $procedure->category_id,
                 'views' => $procedure->views,
                 'title' => $procedure->translation->title ?? '',
                 'subtitle' => $procedure->translation->subtitle ?? '',

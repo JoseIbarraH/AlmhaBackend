@@ -167,6 +167,10 @@ class ProcedureContentController extends Controller
             $updates['status'] = $data['status'];
         }
 
+        if (array_key_exists('category', $data)) {
+            $updates['category_id'] = $data['category'];
+        }
+
         if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
             $path = Helpers::removeAppUrl($procedure->image);
             if (!empty($path) && Storage::disk('public')->exists($path)) {

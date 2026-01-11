@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Domains\Blog\Controllers;
+namespace App\Domains\Procedure\Controllers;
 
-use App\Domains\Blog\Models\BlogCategory;
+use App\Domains\Procedure\Models\ProcedureCategory;
 use App\Services\GoogleTranslateService;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -12,7 +12,7 @@ use App\Helpers\ApiResponse;
 use App\Helpers\Helpers;
 
 
-class CategoryController extends Controller
+class ProcedureCategoryController extends Controller
 {
     public $languages;
 
@@ -27,12 +27,12 @@ class CategoryController extends Controller
     public function list_categories(Request $request)
     {
         try {
-            $categories = QueryBuilder::for(BlogCategory::class)
+            $categories = QueryBuilder::for(ProcedureCategory::class)
                 ->select('id', 'code')
                 ->allowedFilters([AllowedFilter::scope('title', 'RelationTitle')])
                 ->get();
 
-            $categories->transform(function (BlogCategory $category) {
+            $categories->transform(function (ProcedureCategory $category) {
                 return [
                     'id' => $category->id,
                     'code' => $category->code,
@@ -61,7 +61,7 @@ class CategoryController extends Controller
                 'title' => 'required|string'
             ]);
 
-            $blogCategory = BlogCategory::create([
+            $blogCategory = ProcedureCategory::create([
                 'code' => Helpers::generateUniqueCode(8)
             ]);
 
@@ -110,7 +110,7 @@ class CategoryController extends Controller
                 );
             }
 
-            $category = BlogCategory::findOrFail($id);
+            $category = ProcedureCategory::findOrFail($id);
 
             // Reassign blogs to general category (ID 1)
             $category->blogs()->update(['category_id' => 1]);
@@ -133,7 +133,7 @@ class CategoryController extends Controller
     {
         try {
             $sourceLang = app()->getLocale();
-            $category = BlogCategory::findOrFail($id);
+            $category = ProcedureCategory::findOrFail($id);
 
             $data = $request->validate([
                 'title' => 'required|string'

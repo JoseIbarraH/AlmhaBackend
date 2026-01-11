@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Procedure\Controllers\ProcedureCategoryController;
 use App\Domains\Procedure\Controllers\ProcedureController;
 use App\Domains\Procedure\Controllers\ProcedureContentController;
 use Illuminate\Support\Facades\Route;
@@ -14,5 +15,12 @@ Route::middleware(['auth:sanctum', 'permission.map'])->prefix('procedure')->cont
     Route::post("/", "create_procedure");
     Route::patch("/{id}", "update_procedure");
     Route::delete("/{id}", "delete_procedure");
+});
+
+Route::middleware(['auth:sanctum', 'permission.map'])->prefix('procedure-category')->controller(ProcedureCategoryController::class)->group(function () {
+    Route::get('/', 'list_categories');
+    Route::post('/', 'create_category');
+    Route::put('/{id}', 'update_category');
+    Route::delete('/{id}', 'delete_category');
 });
 

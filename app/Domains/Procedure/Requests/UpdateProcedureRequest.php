@@ -34,6 +34,7 @@ class UpdateProcedureRequest extends FormRequest
 
             'title' => 'sometimes|string|max:255', // Titulo del procedimiento
             'subtitle' => 'sometimes|string|max:255', // Subtitulo del procedimiento
+            'category' => 'sometimes|nullable|string|max:255',
 
             'section' => 'sometimes|array',
             'section.*.type' => 'required_with:section|in:what_is,technique,recovery',

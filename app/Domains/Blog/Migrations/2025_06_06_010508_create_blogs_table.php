@@ -38,7 +38,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('slug')->unique();
             $table->string('image')->nullable();
-            $table->unsignedInteger('category_id')->nullable();
+            $table->unsignedBigInteger('category_id')->nullable();
             $table->string('writer')->nullable();
             $table->integer('view')->default(0);
             $table->enum('status', ['inactive', 'active'])->default('inactive');

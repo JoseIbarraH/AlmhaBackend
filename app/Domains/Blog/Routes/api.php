@@ -1,7 +1,7 @@
 <?php
 
 use App\Domains\Blog\Controllers\BlogController;
-use App\Domains\Blog\Controllers\CategoryController;
+use App\Domains\Blog\Controllers\BlogCategoryController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'permission.map'])->prefix('blog')->controller(BlogController::class)->group(function () {
@@ -15,7 +15,7 @@ Route::middleware(['auth:sanctum', 'permission.map'])->prefix('blog')->controlle
     Route::delete('/delete_image/{id}', 'delete_image');
 });
 
-Route::middleware(['auth:sanctum', 'permission.map'])->prefix('category')->controller(CategoryController::class)->group(function () {
+Route::middleware(['auth:sanctum', 'permission.map'])->prefix('blog-category')->controller(BlogCategoryController::class)->group(function () {
     Route::get('/', 'list_categories');
     Route::post('/', 'create_category');
     Route::put('/{id}', 'update_category');
