@@ -16,9 +16,9 @@ class ProcedureCategory extends Model implements Auditable
 
     public $timestamps = false;
 
-    public function blogs()
+    public function procedures()
     {
-        return $this->hasMany(Procedure::class, 'category_id');
+        return $this->hasMany(Procedure::class, 'category_code', 'code');
     }
 
     /**

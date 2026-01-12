@@ -13,7 +13,7 @@ return new class extends Migration {
          */
         Schema::create('blog_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->string('code', 50)->unique();
         });
 
         // Datos iniciales para permitir SET DEFAULT = 1
@@ -38,13 +38,14 @@ return new class extends Migration {
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('slug')->unique();
             $table->string('image')->nullable();
-            $table->unsignedBigInteger('category_id')->nullable();
+            $table->string('category_code', 50)->nullable();
             $table->string('writer')->nullable();
             $table->integer('view')->default(0);
             $table->enum('status', ['inactive', 'active'])->default('inactive');
             $table->timestamps();
             $table->softDeletes();
-            $table->foreign('category_id')->references('id')->on('blog_categories')->onDelete('set default');
+
+            $table->foreign('category_code')->references('code')->on('blog_categories')->nullOnDelete();
         });
 
         /**
@@ -62,9 +63,9 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('blog_translations');
-        Schema::dropIfExists('blogs');
         Schema::dropIfExists('blog_category_translations');
         Schema::dropIfExists('blog_categories');
+        Schema::dropIfExists('blog_translations');
+        Schema::dropIfExists('blogs');
     }
 };

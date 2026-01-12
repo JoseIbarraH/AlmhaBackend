@@ -168,7 +168,7 @@ class ProcedureContentController extends Controller
         }
 
         if (array_key_exists('category', $data)) {
-            $updates['category_id'] = $data['category'];
+            $updates['category_code'] = $data['category'];
         }
 
         if (isset($data['image']) && $data['image'] instanceof UploadedFile) {

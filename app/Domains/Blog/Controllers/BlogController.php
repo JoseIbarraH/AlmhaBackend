@@ -35,7 +35,7 @@ class BlogController extends Controller
             $perPage = 9;
 
             $blogs = QueryBuilder::for(Blog::class)
-                ->select('id', 'category_id', 'slug', 'status', 'created_at', 'updated_at')
+                ->select('id', 'slug', 'status', 'created_at', 'updated_at')
                 ->allowedIncludes(['translation', 'category.translation'])
                 ->allowedFilters([
                     AllowedFilter::scope('title', 'RelationTitle'),
@@ -52,7 +52,6 @@ class BlogController extends Controller
                     'id' => $blog->id,
                     'title' => $blog->translation?->title,
                     'slug' => $blog->slug,
-                    'category' => $blog->category?->translation?->title,
                     'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
                 ];
@@ -106,7 +105,7 @@ class BlogController extends Controller
                 'writer' => $blog->writer,
                 'title' => $blog->translation->title ?? null,
                 'content' => $blog->translation->content ?? null,
-                'category' => $blog->category_id,
+                'category' => $blog->category_code,
                 'status' => $blog->status,
             ];
 
@@ -136,7 +135,7 @@ class BlogController extends Controller
 
             $blog = Blog::create([
                 'user_id' => auth()->id(),
-                'category_id' => null,
+                'category_code' => null,
                 'writer' => '',
                 'status' => 'inactive',
                 'view' => 0,
@@ -269,8 +268,8 @@ class BlogController extends Controller
     private function updateBlogData(Blog $blog, array $data): void
     {
         $updates = [];
-        if (isset($data['category']) && $data['category'] !== $blog->category_id) {
-            $updates['category_id'] = $data['category'];
+        if (isset($data['category']) && $data['category'] !== $blog->category_code) {
+            $updates['category_code'] = $data['category'];
         }
 
         if (isset($data['status']) && $data['status'] !== $blog->status) {

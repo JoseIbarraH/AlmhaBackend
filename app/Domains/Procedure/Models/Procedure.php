@@ -16,12 +16,16 @@ class Procedure extends Model implements Auditable
     use \OwenIt\Auditing\Auditable;
 
     protected $table = "procedures";
-    protected $fillable = ['user_id', 'slug', 'image', 'status', 'views', 'category_id'];
+    protected $fillable = ['user_id', 'slug', 'image', 'status', 'views', 'category_code'];
 
     protected $casts = [
         'views' => 'integer',
     ];
 
+    public function category()
+    {
+        return $this->belongsTo(ProcedureCategory::class, 'category_code', 'code');
+    }
     // Relación con traducciones
     public function translations()
     {

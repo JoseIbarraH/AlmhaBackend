@@ -21,7 +21,7 @@ class Blog extends Model implements Auditable
         'user_id',
         'slug',
         'image',
-        'category_id',
+        'category_code',
         'writer',
         'view',
         'status',
@@ -32,7 +32,7 @@ class Blog extends Model implements Auditable
      */
     public function category()
     {
-        return $this->belongsTo(BlogCategory::class, 'category_id');
+        return $this->belongsTo(BlogCategory::class, 'category_code', 'code');
     }
 
     /**

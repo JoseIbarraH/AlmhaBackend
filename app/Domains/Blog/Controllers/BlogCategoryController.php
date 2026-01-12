@@ -113,7 +113,7 @@ class BlogCategoryController extends Controller
             $category = BlogCategory::findOrFail($id);
 
             // Reassign blogs to general category (ID 1)
-            $category->blogs()->update(['category_id' => 1]);
+            $category->blogs()->update(['category_code' => 'general']);
 
             $category->delete();
 

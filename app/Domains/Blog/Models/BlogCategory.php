@@ -18,7 +18,7 @@ class BlogCategory extends Model implements Auditable
 
     public function blogs()
     {
-        return $this->hasMany(Blog::class, 'category_id');
+        return $this->hasMany(Blog::class, 'category_code', 'code');
     }
 
     /**

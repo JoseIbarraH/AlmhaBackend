@@ -15,11 +15,13 @@ return new class extends Migration {
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('slug')->unique();
             $table->string('image')->nullable();
-            $table->unsignedBigInteger('category_id')->nullable();
+            $table->string('category_code', 50)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->unsignedBigInteger('views')->default(0);
             $table->timestamps();
             $table->softDeletes();
+
+            $table->foreign('category_code')->references('code')->on('procedure_categories')->nullOnDelete();
 
             $table->index('slug');
             $table->index('status');

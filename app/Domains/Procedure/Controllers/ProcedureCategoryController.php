@@ -113,7 +113,7 @@ class ProcedureCategoryController extends Controller
             $category = ProcedureCategory::findOrFail($id);
 
             // Reassign blogs to general category (ID 1)
-            $category->blogs()->update(['category_id' => 1]);
+            $category->procedures()->update(['category_code' => 'general']);
 
             $category->delete();
 

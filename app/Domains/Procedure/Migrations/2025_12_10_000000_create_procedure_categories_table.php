@@ -12,7 +12,8 @@ return new class extends Migration {
     {
         Schema::create('procedure_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->string('code', 50)->unique();
+
         });
 
         Schema::create('procedure_category_translations', function (Blueprint $table) {

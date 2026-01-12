@@ -21,7 +21,7 @@ class ClientController extends Controller
         );
     }
 
-    public function list_procedures()
+    public function list_procedures(Request $request)
     {
 
     }
