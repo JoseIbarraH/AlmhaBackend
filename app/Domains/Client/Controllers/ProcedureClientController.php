@@ -19,7 +19,7 @@ class ProcedureClientController extends Controller
             $procedures = QueryBuilder::for(Procedure::class)
                 ->select('id', 'slug', 'image', 'status', 'category_code', 'created_at')
                 ->allowedFilters([
-                        AllowedFilter::scope('title', 'RelationTitle'),
+                        AllowedFilter::scope('search', 'RelationTitle'),
                         AllowedFilter::exact('category_code')
                     ])
                 ->defaultSort('-views')
