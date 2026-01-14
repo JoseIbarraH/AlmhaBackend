@@ -26,8 +26,11 @@ class DesignItem extends Model implements Auditable
         return $this->belongsTo(DesignSetting::class, 'design_id');
     }
 
-    public function translations($lang = null)
+    public function translations(bool $lang = false)
     {
+        if ($lang) {
+            return $this->hasMany(DesignItemTranslation::class, 'item_id')->where('lang', app()->getLocale());
+        }
         return $this->hasMany(DesignItemTranslation::class, 'item_id');
     }
 

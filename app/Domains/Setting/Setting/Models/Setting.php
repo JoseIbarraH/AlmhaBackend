@@ -25,6 +25,10 @@ class Setting extends Model implements Auditable
     {
         cache()->forget("setting.$key");
 
+        if ($group) {
+            cache()->forget("settings.group.$group");
+        }
+
         $normalizedValue = match (true) {
             is_bool($value) => $value ? true : false,
             is_null($value) => '',

@@ -64,13 +64,11 @@ class SettingController extends Controller
         );
     }
 
-
     /**
      * buscar un grupo de settings
      */
     public function find_group($group)
     {
-
         $data = Setting::findByGroup($group);
 
         return ApiResponse::success(

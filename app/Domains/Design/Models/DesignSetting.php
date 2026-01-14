@@ -46,4 +46,21 @@ class DesignSetting extends Model
         );
         return $setting;
     }
+
+    /**
+     * Obtener configuración con items y traducciones en un idioma específico.
+     */
+    public static function getData(string $key, $lang = null)
+    {
+        $lang = $lang ?? app()->getLocale();
+
+        return static::where('key', $key)
+            ->with([
+                'designItems.translations' => function ($query) use ($lang) {
+                    $query->where('lang', $lang);
+                }
+            ])
+            ->first();
+    }
+
 }
