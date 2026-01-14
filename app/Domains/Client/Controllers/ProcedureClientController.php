@@ -14,14 +14,15 @@ class ProcedureClientController extends Controller
     public function list_procedure(Request $request)
     {
         try {
-            $perPage = 9;
+            $perPage = 6;
 
             $procedures = QueryBuilder::for(Procedure::class)
                 ->select('id', 'slug', 'image', 'status', 'category_code', 'created_at')
                 ->allowedFilters([
-                    AllowedFilter::scope('title', 'RelationTitle')
-                ])
-                ->defaultSort('-created_at')
+                        AllowedFilter::scope('title', 'RelationTitle'),
+                        AllowedFilter::exact('category_code')
+                    ])
+                ->defaultSort('-views')
                 ->with(['translation', 'category.translation'])
                 ->where('status', 'active')
                 ->whereHas('category')
