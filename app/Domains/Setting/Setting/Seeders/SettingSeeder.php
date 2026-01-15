@@ -57,6 +57,11 @@ class SettingSeeder extends Seeder
                 'key' => 'social_linkedin',
                 'value' => '',
                 'group' => 'social',
+            ],
+            [
+                'key' => 'social_tiktok',
+                'value' => '',
+                'group' => 'social'
             ]
         ];
 

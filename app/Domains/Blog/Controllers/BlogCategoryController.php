@@ -102,18 +102,9 @@ class BlogCategoryController extends Controller
     public function delete_category($id)
     {
         try {
-            if ($id == 1) {
-                return ApiResponse::error(
-                    "You cannot delete the general category",
-                    null,
-                    403
-                );
-            }
 
             $category = BlogCategory::findOrFail($id);
 
-            // Reassign blogs to general category (ID 1)
-            $category->blogs()->update(['category_code' => 'general']);
 
             $category->delete();
 
