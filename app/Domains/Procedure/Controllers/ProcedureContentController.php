@@ -259,9 +259,11 @@ class ProcedureContentController extends Controller
             ]);
 
             if (isset($section['image']) && $section['image'] instanceof UploadedFile) {
-                $urlClean = Helpers::removeAppUrl($procedureSection->image);
-                if (Storage::disk('public')->exists($urlClean)) {
-                    Storage::disk('public')->delete($urlClean);
+                if ($procedureSection->image) {
+                    $urlClean = Helpers::removeAppUrl($procedureSection->image);
+                    if (Storage::disk('public')->exists($urlClean)) {
+                        Storage::disk('public')->delete($urlClean);
+                    }
                 }
 
                 $procedureSection->image = Helpers::saveWebpFile(

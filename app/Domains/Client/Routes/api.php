@@ -11,6 +11,6 @@ Route::prefix('client')->controller(ClientController::class)->group(function () 
 });
 
 Route::prefix('client')->controller(ProcedureClientController::class)->group(function () {
-    Route::get('/procedures', 'list_procedure');
-
+    Route::get('/procedure', 'list_procedure');
+    Route::get('/procedure/{slug}', 'get_procedure');
 });

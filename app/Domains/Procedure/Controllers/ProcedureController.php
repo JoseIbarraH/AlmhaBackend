@@ -152,7 +152,6 @@ class ProcedureController extends Controller
                 500
             );
         }
-
     }
 
     public function update_status(Request $request, $id)
