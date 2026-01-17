@@ -62,6 +62,16 @@ class SettingSeeder extends Seeder
                 'key' => 'social_tiktok',
                 'value' => '',
                 'group' => 'social'
+            ],
+            [
+                'key' => 'whatsapp',
+                'value' => json_encode([
+                    'phone' => '573211331233',
+                    'default_message' => 'Hola, quiero información sobre {{procedure}}',
+                    'is_active' => true,
+                    'open_in_new_tab' => true
+                ]),
+                'group' => 'contact'
             ]
         ];
 

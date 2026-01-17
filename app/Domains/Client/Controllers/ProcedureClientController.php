@@ -3,6 +3,7 @@
 namespace App\Domains\Client\Controllers;
 
 use App\Domains\Procedure\Models\Procedure;
+use App\Domains\Procedure\Models\ProcedureCategory;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 use App\Http\Controllers\Controller;
@@ -43,11 +44,20 @@ class ProcedureClientController extends Controller
                 ];
             });
 
+            // Obtener todas las categorías para los filtros
+            $categories = ProcedureCategory::with('translation')->get()->map(function ($category) {
+                return [
+                    'code' => $category->code,
+                    'title' => $category->translation->title ?? $category->code,
+                ];
+            });
+
             return ApiResponse::success(
                 "list of procedures obtained correctly",
                 [
                     'pagination' => $procedures,
                     'filters' => $request->only('search'),
+                    'categories' => $categories
                 ]
             );
         } catch (\Throwable $th) {

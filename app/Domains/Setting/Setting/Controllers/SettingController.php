@@ -14,11 +14,18 @@ class SettingController extends Controller
 
     public function list_setting()
     {
+        $data = Setting::all()->groupBy('group')->map(function ($items) {
+            return $items->mapWithKeys(function ($item) {
+                if ($item->key === 'whatsapp') {
+                    return [$item->key => json_decode($item->value)];
+                }
+                return [$item->key => $item->value];
+            });
+        });
+
         return ApiResponse::success(
             message: 'Setting list success',
-            data: Setting::all()
-                ->groupBy('group')
-                ->map(fn($items) => $items->pluck('value', 'key')),
+            data: $data,
             code: 200
         );
     }
@@ -58,6 +65,7 @@ class SettingController extends Controller
                 }
             }
         });
+
 
         return ApiResponse::success(
             message: 'Settings updated successfully'
