@@ -23,7 +23,7 @@ class Blog extends Model implements Auditable
         'image',
         'category_code',
         'writer',
-        'view',
+        'views',
         'status',
     ];
 

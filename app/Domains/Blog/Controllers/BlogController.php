@@ -51,6 +51,7 @@ class BlogController extends Controller
                 return [
                     'id' => $blog->id,
                     'title' => $blog->translation?->title,
+                    'status' => $blog->status,
                     'slug' => $blog->slug,
                     'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
@@ -138,7 +139,7 @@ class BlogController extends Controller
                 'category_code' => null,
                 'writer' => '',
                 'status' => 'inactive',
-                'view' => 0,
+                'views' => 0,
                 'slug' => uniqid('temp-'),
                 'image' => '',
             ]);
@@ -277,9 +278,11 @@ class BlogController extends Controller
         }
 
         if (!empty($data['image']) && $data['image'] instanceof UploadedFile) {
-            $path = Helpers::removeAppUrl($blog->image);
-            if (!empty($path) && Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
+            if ($blog->image) {
+                $path = Helpers::removeAppUrl($blog->image);
+                if (!empty($path) && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
             }
 
             $updates['image'] = Helpers::saveWebpFile($data['image'], "images/blog/{$blog->id}/blog_image");

@@ -40,7 +40,7 @@ return new class extends Migration {
             $table->string('image')->nullable();
             $table->string('category_code', 50)->nullable();
             $table->string('writer')->nullable();
-            $table->integer('view')->default(0);
+            $table->integer('views')->default(0);
             $table->enum('status', ['inactive', 'active'])->default('inactive');
             $table->timestamps();
             $table->softDeletes();

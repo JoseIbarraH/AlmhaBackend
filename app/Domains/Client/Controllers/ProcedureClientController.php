@@ -36,8 +36,8 @@ class ProcedureClientController extends Controller
                     'status' => $procedure->status,
                     'slug' => $procedure->slug,
                     'image' => $procedure->image,
-                    'title' => $procedure->translation->title ?? 'Default title',
-                    'subtitle' => $procedure->translation->subtitle ?? 'Default subtitle',
+                    'title' => $procedure->translation->title ?? '',
+                    'subtitle' => $procedure->translation->subtitle ?? '',
                     'category' => $procedure->category?->translation?->title,
                     'category_code' => $procedure->category->code,
                     'created_at' => $procedure->created_at?->format('Y-m-d H:i:s')
@@ -45,12 +45,20 @@ class ProcedureClientController extends Controller
             });
 
             // Obtener todas las categorías para los filtros
-            $categories = ProcedureCategory::with('translation')->get()->map(function ($category) {
-                return [
-                    'code' => $category->code,
-                    'title' => $category->translation->title ?? $category->code,
-                ];
-            });
+            $categories = ProcedureCategory::with('translation')
+                ->withCount([
+                    'procedures' => function ($query) {
+                        $query->where('status', 'active');
+                    }
+                ])
+                ->get()
+                ->map(function ($category) {
+                    return [
+                        'code' => $category->code,
+                        'title' => $category->translation->title ?? $category->code,
+                        'count' => $category->procedures_count,
+                    ];
+                });
 
             return ApiResponse::success(
                 "list of procedures obtained correctly",
