@@ -18,4 +18,5 @@ Route::prefix('client')->controller(ProcedureClientController::class)->group(fun
 
 Route::prefix('client')->controller(BlogClientController::class)->group(function () {
     Route::get('/blog', 'list_blog');
+    Route::get('/blog/{slug}', 'get_blog');
 });

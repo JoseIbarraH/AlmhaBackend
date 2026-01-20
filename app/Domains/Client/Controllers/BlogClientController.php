@@ -16,18 +16,21 @@ class BlogClientController extends Controller
     public function list_blog(Request $request)
     {
         try {
-            $perPage = 9;
+            $perPage = 6;
 
-            $blogs = QueryBuilder::for(Blog::class)
+            $query = QueryBuilder::for(Blog::class)
                 ->select('id', 'slug', 'status', 'writer', 'image', 'category_code', 'created_at')
                 ->allowedFilters([
                     AllowedFilter::scope('search', 'RelationTitle'),
                     AllowedFilter::exact('category_code')
                 ])
-                ->defaultSort('-views')
+                ->allowedSorts(['created_at', 'views'])
                 ->with(['translation', 'category.translation'])
                 ->where('status', 'active')
-                ->whereHas('category')
+                ->whereHas('category');
+
+            $blogs = (clone $query)
+                ->defaultSort('-views')
                 ->paginate($perPage)
                 ->withQueryString();
 
@@ -67,12 +70,27 @@ class BlogClientController extends Controller
                     ];
                 });
 
+            $lastThree = (clone $query)
+                ->defaultSort('-created_at')
+                ->limit(3)
+                ->get()
+                ->transform(function ($blog) {
+                    return [
+                        'id' => $blog->id,
+                        'title' => $blog->translation->title,
+                        'slug' => $blog->slug,
+                        'image' => $blog->image,
+                        'created_at' => $blog->created_at
+                    ];
+                });
+
             return ApiResponse::success(
                 "list of blogs obtained successfully",
                 [
                     'pagination' => $blogs,
                     'filters' => $request->only('search'),
-                    'categories' => $categories
+                    'categories' => $categories,
+                    'last_three' => $lastThree
                 ]
             );
 
@@ -81,6 +99,41 @@ class BlogClientController extends Controller
 
             return ApiResponse::error(
                 "Error retrieving blog list",
+                $e,
+                500
+            );
+        }
+    }
+
+    public function get_blog($id)
+    {
+        try {
+            $blog = Blog::with(['translation', 'category.translation'])
+                ->orWhere('slug', $id)
+                ->firstOrFail();
+
+            $data = [
+                'id' => $blog->id,
+                'slug' => $blog->slug,
+                'image' => $blog->image,
+                'writer' => $blog->writer,
+                'title' => $blog->translation->title ?? '',
+                'content' => $blog->translation->content ?? '',
+                'category' => $blog->category?->translation?->title,
+                'category_code' => $blog->category->code,
+                'status' => $blog->status,
+                'created_at' => $blog->created_at
+            ];
+
+            return ApiResponse::success(
+                "blog obtained successfully",
+                $data
+            );
+        } catch (\Throwable $e) {
+            \Log::error('Error en get_blog: ' . $e->getMessage());
+
+            return ApiResponse::error(
+                "Error retrieving blog",
                 $e,
                 500
             );
