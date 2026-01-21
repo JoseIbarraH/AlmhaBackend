@@ -3,14 +3,11 @@
 namespace App\Domains\TeamMember\Controllers;
 
 use App\Domains\TeamMember\Models\TeamMemberImage;
-use App\Domains\TeamMember\Models\TeamMemberTranslation;
 use App\Domains\TeamMember\Requests\UpdateRequest;
-use App\Domains\TeamMember\Requests\StoreRequest;
 use App\Domains\TeamMember\Models\TeamMember;
 use App\Services\GoogleTranslateService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
@@ -105,9 +102,11 @@ class TeamMemberContentController extends Controller
         }
 
         if (isset($data['image'])) {
-            $path = Helpers::removeAppUrl($team->image);
-            if (!empty($path) && Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
+            if ($team->image) {
+                $path = Helpers::removeAppUrl($team->image);
+                if (!empty($path) && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
             }
 
             $updates['image'] = Helpers::saveWebpFile($data['image'], "images/team/{$team->id}/main_image");

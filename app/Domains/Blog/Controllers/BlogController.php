@@ -108,6 +108,21 @@ class BlogController extends Controller
                 'content' => $blog->translation->content ?? null,
                 'category' => $blog->category_code,
                 'status' => $blog->status,
+                'random_blogs' => Blog::where('status', 'active')
+                    ->where('id', '!=', $blog->id)
+                    ->inRandomOrder()
+                    ->limit(3)
+                    ->get()
+                    ->map(function ($randomBlog) {
+                        return [
+                            'id' => $randomBlog->id,
+                            'title' => $randomBlog->translation->title ?? null,
+                            'slug' => $randomBlog->slug,
+                            'image' => $randomBlog->image,
+                            'category' => $randomBlog->category_code,
+                            'created_at' => $randomBlog->created_at->format('Y-m-d H:i:s'),
+                        ];
+                    }),
             ];
 
             return ApiResponse::success(

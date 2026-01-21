@@ -176,7 +176,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'blog' => [
                 'es' => ['title' => 'Blog', 'description' => 'Acceso al módulo de blog'],
                 'en' => ['title' => 'Blog', 'description' => 'Access to the blog module'],
-                'permissions' => ['view_blogs', 'show_blos', 'create_blogs', 'update_blogs', 'delete_blogs', 'update_blogs_status']
+                'permissions' => ['view_blogs', 'show_blogs', 'create_blogs', 'update_blogs', 'delete_blogs', 'update_blogs_status']
             ],
             'service' => [
                 'es' => ['title' => 'Procedimientos', 'description' => 'Acceso al módulo de procedimientos'],

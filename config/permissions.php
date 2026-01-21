@@ -17,7 +17,9 @@ return [
         'create_blog' => 'create_blogs',
         'update_blog' => 'update_blogs',
         'delete_blog' => 'delete_blogs',
-        'update_status' => 'update_blogs_status'
+        'update_status' => 'update_blogs_status',
+        'upload_image' => 'create_blogs', // Asumiendo create o update
+        'delete_image' => 'delete_blogs'
     ],
     'blogCategory' => [
         'list_categories' => 'update_blogs',
@@ -42,6 +44,7 @@ return [
     ],
     'role' => [
         'list_role' => 'manage_users',
+        'list_permission' => 'manage_users',
         'create_role' => 'manage_users',
         'update_role' => 'manage_users',
         'delete_role' => 'manage_users',
@@ -53,6 +56,11 @@ return [
         'create_user' => 'manage_users',
         'update_user' => 'manage_users',
         'delete_user' => 'manage_users'
+    ],
+    'profile' => [
+        'update_account' => null, // Generalmente el perfil propio no requiere permiso específico extra
+        'change_password' => null,
+        'destroy_account' => null
     ],
     'trash' => [
         'list_trash' => 'view_trash',
@@ -66,6 +74,9 @@ return [
         'get_setting' => 'page_settings',
         'find_group' => 'page_settings',
         'update_settings' => 'page_settings'
+    ],
+    'audit' => [
+        'list_audit' => 'view_reports'
     ]
 
 ];
