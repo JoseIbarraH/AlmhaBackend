@@ -2,6 +2,7 @@
 
 
 use App\Domains\Client\Controllers\ProcedureClientController;
+use App\Domains\Client\Controllers\ContactPageController;
 use App\Domains\Client\Controllers\BlogClientController;
 use App\Domains\Client\Controllers\ClientController;
 use Illuminate\Support\Facades\Route;
@@ -9,6 +10,10 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('client')->controller(ClientController::class)->group(function () {
     Route::get('/maintenance', 'maintenance');
     Route::get('/navbar-data', 'navbarData');
+});
+
+Route::prefix('client')->controller(ContactPageController::class)->group(function () {
+    Route::get('/contact-data', 'index');
 });
 
 Route::prefix('client')->controller(ProcedureClientController::class)->group(function () {

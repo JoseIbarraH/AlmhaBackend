@@ -140,6 +140,8 @@ class BlogClientController extends Controller
                     }),
             ];
 
+            $blog->increment('views');
+
             return ApiResponse::success(
                 "blog obtained successfully",
                 $data
