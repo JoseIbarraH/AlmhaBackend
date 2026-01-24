@@ -39,4 +39,8 @@ return [
         'credentials_file' => storage_path('app/private/' . env('GOOGLE_CLOUD_TRANSLATE_CREDENTIALS_FILE', 'google-key.json')),
     ],
 
+    'google_analytics' => [
+        'property_id' => env('GOOGLE_ANALYTICS_PROPERTY_ID'),
+        'credentials_file' => storage_path('app/private/' . env('GOOGLE_ANALYTICS_CREDENTIALS_FILE', 'analytics-key.json')),
+    ],
 ];
