@@ -39,20 +39,13 @@ return [
 
         'smtp' => [
             'transport' => 'smtp',
-            'host' => env('MAIL_HOST', 'stalwart-mail-server'),
-            'port' => env('MAIL_PORT', 587),
-            'encryption' => null, // Forzamos null aquí también
+            'host' => env('MAIL_HOST'),
+            'port' => env('MAIL_PORT'),
+            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'stream' => [
-                'ssl' => [
-                    'allow_self_signed' => true,
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'check_hostname' => false,
-                ],
-            ],
         ],
+
 
         'ses' => [
             'transport' => 'ses',
