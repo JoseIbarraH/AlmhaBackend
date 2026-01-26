@@ -9,22 +9,19 @@ class NewsletterController extends Controller
 {
     public function sendTestEmail()
     {
-        // Esta es la dirección de Mail-Tester que se queda cargando
-        $testEmail = 'test-psn03xtrl@srv1.mail-tester.com';
-
-        $data = ['title' => 'Prueba de Entregabilidad', 'content' => 'Contenido de mi newsletter.'];
+        // Busca MAIL_TEST_RECIPIENT en el .env, si no existe usa el correo por defecto
+        $testEmail = env('MAIL_TEST_RECIPIENT', 'test@test.com');
 
         try {
-            Mail::send([], [], function ($message) use ($testEmail) {
+            \Mail::send([], [], function ($message) use ($testEmail) {
                 $message->to($testEmail)
-                        ->subject('Prueba desde Laravel y Stalwart')
-                        // Texto plano para evitar que Mail-Tester te baje puntos
-                        ->text('Hola, esta es una prueba de envío desde mi servidor autohospedado.');
+                    ->subject('Prueba desde Laravel y Stalwart')
+                    ->text('Hola, esta es una prueba de envío desde mi servidor autohospedado.');
             });
 
-            return "¡Correo enviado con éxito! Revisa la página de Mail-Tester ahora.";
+            return "¡Correo enviado con éxito a {$testEmail}! Revisa la página de Mail-Tester ahora.";
         } catch (\Exception $e) {
-            \Log::info($e);
+            \Log::error("Error en envío de prueba: " . $e->getMessage());
             return "Error al enviar: " . $e->getMessage();
         }
     }
