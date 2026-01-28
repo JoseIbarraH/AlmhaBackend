@@ -156,4 +156,42 @@ class BlogClientController extends Controller
             );
         }
     }
+
+    public function subscribe(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email'
+            ]);
+
+            $email = $request->input('email');
+
+            // Check if already subscribed
+            $subscriber = \App\Domains\Client\Models\Subscriber::where('email', $email)->first();
+
+            if ($subscriber) {
+                if (!$subscriber->is_active) {
+                    $subscriber->update(['is_active' => true]);
+                    return ApiResponse::success("Re-subscribed successfully");
+                }
+                return ApiResponse::success("Already subscribed");
+            }
+
+            \App\Domains\Client\Models\Subscriber::create([
+                'email' => $email,
+                'is_active' => true,
+                'subscribed_at' => now()
+            ]);
+
+            return ApiResponse::success("Subscribed successfully");
+
+        } catch (\Throwable $e) {
+            return ApiResponse::error(
+                "Error subscribing",
+                $e->getMessage(),
+                500
+            );
+        }
+    }
+
 }

@@ -42,6 +42,8 @@ return new class extends Migration {
             $table->string('writer')->nullable();
             $table->integer('views')->default(0);
             $table->enum('status', ['inactive', 'active'])->default('inactive');
+            $table->timestamp('published_at')->nullable();
+            $table->timestamp('notification_sent_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

@@ -25,6 +25,13 @@ class Blog extends Model implements Auditable
         'writer',
         'views',
         'status',
+        'published_at',
+        'notification_sent_at'
+    ];
+
+    protected $casts = [
+        'published_at' => 'datetime',
+        'notification_sent_at' => 'datetime',
     ];
 
     /**

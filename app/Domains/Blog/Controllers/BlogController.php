@@ -35,7 +35,7 @@ class BlogController extends Controller
             $perPage = 9;
 
             $blogs = QueryBuilder::for(Blog::class)
-                ->select('id', 'slug', 'status', 'created_at', 'updated_at')
+                ->select('id', 'slug', 'status', 'created_at', 'updated_at', 'published_at')
                 ->allowedIncludes(['translation', 'category.translation'])
                 ->allowedFilters([
                     AllowedFilter::scope('title', 'RelationTitle'),
@@ -55,6 +55,7 @@ class BlogController extends Controller
                     'slug' => $blog->slug,
                     'created_at' => $blog->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $blog->updated_at->format('Y-m-d H:i:s'),
+                    'published_at' => $blog->published_at,
                 ];
             });
 
@@ -504,6 +505,43 @@ class BlogController extends Controller
             return ApiResponse::error(
                 errors: ['exception' => $e->getMessage()],
                 code: 500
+            );
+        }
+    }
+
+    /**
+     * Publish blog and send notifications.
+     */
+    public function publish_blog($id)
+    {
+        DB::beginTransaction();
+        try {
+            $blog = Blog::with('translation')->findOrFail($id);
+
+            // Dispatch Job to handle emails in background
+            \App\Domains\Blog\Jobs\SendNewsletterJob::dispatch($blog);
+
+            $blog->update([
+                'published_at' => now(),
+                'notification_sent_at' => now(),
+                'status' => 'active' // Optional: auto-activate if desired, but user separated buttons
+            ]);
+
+            DB::commit();
+
+            return ApiResponse::success(
+                __('messages.blog.success.published', ['count' => 'Notifying in background']),
+                ['status' => 'queued']
+            );
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error publishing blog: ' . $e->getMessage());
+
+            return ApiResponse::error(
+                __('messages.blog.error.publish'),
+                ['exception' => $e->getMessage()],
+                500
             );
         }
     }

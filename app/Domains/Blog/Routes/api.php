@@ -11,6 +11,7 @@ Route::middleware(['auth:sanctum', 'permission.map'])->prefix('blog')->controlle
     Route::match(['post', 'put', 'patch'], '/{id}', 'update_blog');
     Route::delete('/{id}', 'delete_blog');
     Route::post('/update_status/{id}', 'update_status');
+    Route::post('/publish/{id}', 'publish_blog');
     Route::post('/upload_image/{id}', 'upload_image');
     Route::delete('/delete_image/{id}', 'delete_image');
 });
