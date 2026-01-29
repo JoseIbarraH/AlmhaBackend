@@ -1,0 +1,52 @@
+FROM php:8.3-cli
+
+# Instala dependencias del sistema y extensiones PHP necesarias
+RUN apt-get update && apt-get install -y \
+    git unzip curl libpng-dev libonig-dev libxml2-dev \
+    libzip-dev libpq-dev libcurl4-openssl-dev libssl-dev \
+    zlib1g-dev libicu-dev g++ procps \
+    libfreetype6-dev libjpeg62-turbo-dev libwebp-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install gd \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip exif pcntl bcmath sockets intl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Instala Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Define el directorio de trabajo
+WORKDIR /var/www
+
+# Copia los archivos esenciales primero
+COPY composer.json composer.lock artisan ./
+
+# Crea las carpetas básicas de Laravel
+RUN mkdir -p bootstrap/cache storage/app storage/framework/cache/data \
+    storage/framework/sessions storage/framework/views storage/logs
+
+# Instala dependencias de Composer
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
+
+# Copia el resto del proyecto
+COPY . .
+
+# Ejecuta los post-scripts de Composer
+RUN composer dump-autoload --optimize
+
+# Limpia caches
+RUN php artisan config:clear \
+    && php artisan route:clear \
+    && php artisan view:clear
+
+# Asigna permisos correctos
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+# Script de inicio para el worker
+RUN echo '#!/bin/bash\n\
+php artisan config:cache\n\
+exec php artisan queue:work --verbose --tries=3 --timeout=90 --sleep=3\n\
+' > /start-worker.sh && chmod +x /start-worker.sh
+
+# Comando de inicio por defecto
+CMD ["/start-worker.sh"]
