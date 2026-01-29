@@ -53,6 +53,7 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'frontend_url_client' => env('FRONTEND_URL_CLIENT', 'http://localhost'),
 
     /*
     |--------------------------------------------------------------------------
