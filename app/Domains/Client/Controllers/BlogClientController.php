@@ -2,6 +2,7 @@
 
 namespace App\Domains\Client\Controllers;
 
+use App\Domains\Client\Jobs\SendWelcomeEmail;
 use App\Domains\Blog\Models\BlogCategory;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -182,6 +183,8 @@ class BlogClientController extends Controller
                 'is_active' => true,
                 'subscribed_at' => now()
             ]);
+
+            SendWelcomeEmail::dispatch($email);
 
             return ApiResponse::success("Subscribed successfully");
 

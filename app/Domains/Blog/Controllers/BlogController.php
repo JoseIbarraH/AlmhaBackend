@@ -519,7 +519,7 @@ class BlogController extends Controller
             $blog = Blog::with('translation')->findOrFail($id);
 
             // Dispatch Job to handle emails in background
-            \App\Domains\Blog\Jobs\SendNewsletterJob::dispatch($blog);
+            \App\Domains\Blog\Jobs\PrepareBlogNotifications::dispatch($blog);
 
             $blog->update([
                 'published_at' => now(),

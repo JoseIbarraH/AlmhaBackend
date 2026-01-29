@@ -10,6 +10,7 @@ class ClientModuleServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/../Migrations');
+        $this->loadViewsFrom(__DIR__ . '/../Resources/Views', 'client');
 
         Route::prefix('api')->middleware('api')->group(__DIR__ . '/../Routes/api.php');
     }
