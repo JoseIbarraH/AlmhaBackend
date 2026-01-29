@@ -1,6 +1,8 @@
 FROM php:8.3-cli AS base
 
-# Instala dependencias del sistema y extensiones PHP necesarias
+# ------------------------
+# Dependencias del sistema
+# ------------------------
 RUN apt-get update && apt-get install -y \
     git unzip curl libpng-dev libonig-dev libxml2-dev \
     libzip-dev libpq-dev libcurl4-openssl-dev libssl-dev \
@@ -10,7 +12,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install gd \
     && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip exif pcntl bcmath sockets intl
 
-# Instala Swoole desde GitHub
+# ------------------------
+# Swoole
+# ------------------------
 RUN curl -L -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/tags/v5.1.0.tar.gz \
     && tar -xf swoole.tar.gz \
     && cd swoole-src-5.1.0 \
@@ -20,48 +24,57 @@ RUN curl -L -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/t
     && make install \
     && docker-php-ext-enable swoole
 
-# Instala Composer
+# ------------------------
+# Composer
+# ------------------------
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Define el directorio de trabajo
 WORKDIR /var/www
 
-# Copia los archivos esenciales primero
+# ------------------------
+# Composer deps (cacheable)
+# ------------------------
 COPY composer.json composer.lock artisan ./
-
-# Crea las carpetas básicas de Laravel
-RUN mkdir -p bootstrap/cache storage/app storage/app/public/images storage/framework/cache/data \
+RUN mkdir -p bootstrap/cache storage/app storage/framework/cache/data \
     storage/framework/sessions storage/framework/views storage/logs
 
-# Instala dependencias de Composer
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# Copia el resto del proyecto
+# ------------------------
+# Proyecto completo
+# ------------------------
 COPY . .
 
-# Ejecuta los post-scripts de Composer (dump-autoload, etc.)
 RUN composer dump-autoload --optimize
 
-# Limpia y genera caches
-RUN php artisan config:clear \
-    && php artisan route:clear \
-    && php artisan view:clear \
-    && php artisan storage:link
+RUN php artisan storage:link || true
 
-# Asigna permisos correctos
 RUN chown -R www-data:www-data /var/www \
-    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+    && chmod -R 775 storage bootstrap/cache
 
-# Expone el puerto 9000 (usado por Octane/Swoole)
 EXPOSE 9000
 
-# Script de inicio
-RUN echo '#!/bin/bash\n\
-    php artisan config:cache\n\
-    php artisan route:cache\n\
-    php artisan view:cache\n\
-    exec php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000\n\
-    ' > /start.sh && chmod +x /start.sh
+# ------------------------
+# Entrypoint inteligente
+# ------------------------
+RUN echo '#!/bin/sh\n\
+set -e\n\
+\n\
+php artisan config:clear\n\
+php artisan route:clear\n\
+php artisan view:clear\n\
+\n\
+php artisan config:cache\n\
+php artisan route:cache\n\
+php artisan view:cache\n\
+\n\
+if [ "$APP_ROLE" = "worker" ]; then\n\
+  echo \"🚀 Starting Laravel Queue Worker\";\n\
+  exec php artisan queue:work redis --sleep=3 --tries=3 --timeout=90;\n\
+else\n\
+  echo \"🚀 Starting Laravel Octane (Swoole)\";\n\
+  exec php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000;\n\
+fi\n\
+' > /entrypoint.sh && chmod +x /entrypoint.sh
 
-# Comando de inicio por defecto
-CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=swoole --host=0.0.0.0 --port=9000"]
+CMD ["/entrypoint.sh"]

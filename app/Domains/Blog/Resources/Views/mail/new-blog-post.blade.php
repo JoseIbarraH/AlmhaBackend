@@ -106,7 +106,7 @@
         </div>
 
         <div class="btn-container">
-            <a href="{{ config('app.frontend_url') }}/blog/{{ $blog->slug }}" class="btn">Leer artículo completo</a>
+            <a href="{{ config('app.frontend_url') }}/en/blog/{{ $blog->slug }}" class="btn">Leer artículo completo</a>
         </div>
 
         <div class="content">
