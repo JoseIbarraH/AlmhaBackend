@@ -29,6 +29,7 @@ return new class extends Migration {
             $table->foreignId('team_member_id')->constrained('team_members')->onDelete('cascade');
             $table->string('lang', 5);
             $table->string('specialization')->nullable();
+            $table->text('description')->nullable();
             $table->text('biography')->nullable();
         });
     }

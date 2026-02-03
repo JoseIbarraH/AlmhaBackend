@@ -164,6 +164,8 @@ class ProcedureController extends Controller
             ]);
             $procedure->update(['status' => $data['status']]);
 
+            \Illuminate\Support\Facades\Cache::tags(['procedures', 'navbar'])->flush();
+
             DB::commit();
             return ApiResponse::success(
                 __('messages.procedure.success.updateStatus'),

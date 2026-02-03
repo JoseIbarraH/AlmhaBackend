@@ -66,6 +66,7 @@ class SettingController extends Controller
             }
         });
 
+        \Illuminate\Support\Facades\Cache::tags(['navbar', 'contact', 'maintenance'])->flush();
 
         return ApiResponse::success(
             message: 'Settings updated successfully'

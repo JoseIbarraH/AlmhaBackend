@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Domains\Setting\Setting\Models\Setting;
 use App\Domains\Procedure\Models\Procedure;
 use App\Helpers\ApiResponse;
+use Illuminate\Support\Facades\Cache;
 
 use Illuminate\Http\Request;
 
@@ -19,46 +20,51 @@ class ContactPageController extends Controller
             }
 
             // Obtener settings relevantes para contacto
-            $settingKeys = [
-                'contact_phone',
-                'contact_email',
-                'contact_location',
-                'whatsapp'
-            ];
+            $settings = Cache::tags(['contact', 'procedures'])->remember("contact_settings_{$request->lang}", 86400, function () {
+                // Obtener settings relevantes para contacto
+                $settingKeys = [
+                    'contact_phone',
+                    'contact_email',
+                    'contact_location',
+                    'whatsapp'
+                ];
 
-            $dbSettings = Setting::whereIn('key', $settingKeys)
-                ->pluck('value', 'key');
+                $dbSettings = Setting::whereIn('key', $settingKeys)
+                    ->pluck('value', 'key');
 
-            // Parsear whatsapp settings
-            $whatsappSettings = json_decode($dbSettings['whatsapp'] ?? '{}', true);
+                // Parsear whatsapp settings
+                $whatsappSettings = json_decode($dbSettings['whatsapp'] ?? '{}', true);
 
-            $settings = [
-                'phone' => $dbSettings['contact_phone'] ?? null,
-                'email' => $dbSettings['contact_email'] ?? null,
-                'location' => $dbSettings['contact_location'] ?? null,
-                'whatsapp_number' => $whatsappSettings['phone'] ?? null,
-                'whatsapp_message' => $whatsappSettings['default_message'] ?? null,
-                'whatsapp_active' => $whatsappSettings['is_active'] ?? false,
-                'whatsapp_open_new_tab' => $whatsappSettings['open_in_new_tab'] ?? false,
-            ];
+                $data = [
+                    'phone' => $dbSettings['contact_phone'] ?? null,
+                    'email' => $dbSettings['contact_email'] ?? null,
+                    'location' => $dbSettings['contact_location'] ?? null,
+                    'whatsapp_number' => $whatsappSettings['phone'] ?? null,
+                    'whatsapp_message' => $whatsappSettings['default_message'] ?? null,
+                    'whatsapp_active' => $whatsappSettings['is_active'] ?? false,
+                    'whatsapp_open_new_tab' => $whatsappSettings['open_in_new_tab'] ?? false,
+                ];
 
-            // Obtener procedimientos para el select
-            $procedures = Procedure::where('status', 'active')
-                ->with('translation')
-                ->get()
-                ->map(function ($procedure) {
-                    return [
-                        'id' => $procedure->id,
-                        'title' => $procedure->translation?->title ?? 'Sin título',
-                    ];
-                });
+                // Obtener procedimientos para el select
+                $procedures = Procedure::where('status', 'active')
+                    ->with('translation')
+                    ->get()
+                    ->map(function ($procedure) {
+                        return [
+                            'id' => $procedure->id,
+                            'title' => $procedure->translation?->title ?? 'Sin título',
+                        ];
+                    });
+
+                return [
+                    'settings' => $data,
+                    'procedures' => $procedures
+                ];
+            });
 
             return ApiResponse::success(
                 "Contact data retrieved successfully",
-                [
-                    'settings' => $settings,
-                    'procedures' => $procedures
-                ]
+                $settings
             );
 
         } catch (\Throwable $e) {

@@ -80,6 +80,7 @@ class TeamMemberController extends Controller
                 'name' => $team->name ?? '',
                 'image' => $team->image,
                 'biography' => $team->translation->biography ?? '',
+                'description' => $team->translation->description ?? '',
                 'specialization' => $team->translation->specialization ?? '',
                 'result' => $team->images->map(fn($img) => [
                     'id' => $img->id,

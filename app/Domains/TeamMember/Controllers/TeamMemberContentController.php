@@ -42,6 +42,8 @@ class TeamMemberContentController extends Controller
             $team->slug = null;
             $team->save();
 
+            \Illuminate\Support\Facades\Cache::tags(['members'])->flush();
+
             DB::commit();
 
             return ApiResponse::success(
@@ -73,6 +75,8 @@ class TeamMemberContentController extends Controller
             if (isset($data['result'])) {
                 $this->updateResults($team, $data['result'], $translator);
             }
+
+            \Illuminate\Support\Facades\Cache::tags(['members'])->flush();
 
             DB::commit();
             return ApiResponse::success(
@@ -120,7 +124,7 @@ class TeamMemberContentController extends Controller
     private function updateTranslations(TeamMember $team, array $data, GoogleTranslateService $translator)
     {
         $sourceLang = app()->getLocale();
-        $fields = ['specialization', 'biography'];
+        $fields = ['specialization', 'biography', 'description'];
 
         $sourceTranslation = $team->translations()->updateOrCreate([
             'team_member_id' => $team->id,
@@ -184,6 +188,7 @@ class TeamMemberContentController extends Controller
 
             foreach ($resultsToDelete as $resultItem) {
                 $path = Helpers::removeAppUrl($resultItem->path);
+                \Log::info($path);
                 if (!empty($path) && Storage::disk('public')->exists($path)) {
                     Storage::disk('public')->delete($path);
                 }
@@ -361,6 +366,8 @@ class TeamMemberContentController extends Controller
             ]);
             $blog->update(['status' => $data['status']]);
 
+            \Illuminate\Support\Facades\Cache::tags(['members'])->flush();
+
             DB::commit();
             return ApiResponse::success(
                 __('messages.blog.success.updateStatus'),
@@ -382,6 +389,8 @@ class TeamMemberContentController extends Controller
         try {
             $team = TeamMember::findOrFail($id);
             $team->delete();
+
+            \Illuminate\Support\Facades\Cache::tags(['members'])->flush();
 
             DB::commit();
 

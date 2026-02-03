@@ -165,6 +165,8 @@ class BlogController extends Controller
             $blog->slug = null;
             $blog->save();
 
+            \Illuminate\Support\Facades\Cache::tags(['blogs'])->flush();
+
             DB::commit();
 
             return ApiResponse::success(
@@ -255,6 +257,8 @@ class BlogController extends Controller
 
             $blog->touch();
             $blog->save();
+
+            \Illuminate\Support\Facades\Cache::tags(['blogs'])->flush();
 
             DB::commit();
 
@@ -390,6 +394,8 @@ class BlogController extends Controller
             $blog = Blog::findOrFail($id);
             $blog->delete();
 
+            \Illuminate\Support\Facades\Cache::tags(['blogs'])->flush();
+
             DB::commit();
 
             return ApiResponse::success(
@@ -418,6 +424,8 @@ class BlogController extends Controller
                 'status' => 'required|in:active,inactive'
             ]);
             $blog->update(['status' => $data['status']]);
+
+            \Illuminate\Support\Facades\Cache::tags(['blogs'])->flush();
 
             DB::commit();
             return ApiResponse::success(
@@ -526,6 +534,8 @@ class BlogController extends Controller
                 'notification_sent_at' => now(),
                 'status' => 'active' // Optional: auto-activate if desired, but user separated buttons
             ]);
+
+            \Illuminate\Support\Facades\Cache::tags(['blogs'])->flush();
 
             DB::commit();
 

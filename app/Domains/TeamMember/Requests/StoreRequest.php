@@ -29,6 +29,7 @@ class StoreRequest extends FormRequest
             'status' => 'sometimes|in:active,inactive',
             'specialization' => 'sometimes|string|max:255',
             'biography' => 'sometimes|string',
+            'description' => 'sometimes|string',
             'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:15360',
 
             'result' => 'sometimes|array',

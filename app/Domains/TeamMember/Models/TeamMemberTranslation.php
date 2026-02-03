@@ -15,13 +15,15 @@ class TeamMemberTranslation extends Model implements Auditable
         'lang',
         'specialization',
         'biography',
+        'description',
     ];
 
     public $timestamps = false;
 
     protected $touches = ['teamMember'];
 
-    public function teamMember(){
+    public function teamMember()
+    {
         return $this->belongsTo(TeamMember::class, 'team_member_id');
     }
 }

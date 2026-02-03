@@ -50,6 +50,8 @@ class ProcedureContentController extends Controller
             $procedure->slug = null;
             $procedure->save();
 
+            \Illuminate\Support\Facades\Cache::tags(['procedures', 'navbar'])->flush();
+
             DB::commit();
 
             return ApiResponse::success(
@@ -145,6 +147,8 @@ class ProcedureContentController extends Controller
             }
 
             $procedure->touch();
+
+            \Illuminate\Support\Facades\Cache::tags(['procedures', 'navbar'])->flush();
 
             DB::commit();
 

@@ -121,6 +121,9 @@ class DesignController extends Controller
             ]);
 
             $this->updateCreateTranslations($item, $data, $translator);
+
+            \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
+
             DB::commit();
             return ApiResponse::success(
                 __('messages.design.success.createItem')
@@ -171,6 +174,8 @@ class DesignController extends Controller
                 'path' => $pathType['path']
             ]);
 
+            \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
+
             DB::commit();
 
             return ApiResponse::success(
@@ -208,6 +213,8 @@ class DesignController extends Controller
 
             $item->delete();
 
+            \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
+
             DB::commit();
             return ApiResponse::success(
                 __('messages.design.success.deleteItem')
@@ -243,6 +250,8 @@ class DesignController extends Controller
             DesignSetting::where('key', 'imageVideo')->update([
                 'value' => $data['imageVideoEnabled']
             ]);
+
+            \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
 
             return ApiResponse::success(
                 __('messages.design.success.updateState')
