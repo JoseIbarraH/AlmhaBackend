@@ -45,7 +45,7 @@ class SettingController extends Controller
             ],
             code: 200
         );
-    }
+    } 
 
     /**
      * Crear o actualizar un setting

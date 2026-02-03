@@ -16,7 +16,7 @@ class ClientController extends Controller
     public function maintenance()
     {
         $value = Cache::tags(['maintenance'])->remember('maintenance_mode', 86400, function () {
-            return json_decode(Setting::getValue('is_maintenance_mode'));
+            return Setting::getValue('is_maintenance_mode');
         });
 
         return ApiResponse::success(
