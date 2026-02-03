@@ -22,7 +22,7 @@ class BlogClientController extends Controller
             $perPage = 6;
 
             // Cache list of blogs
-            $blogs = Cache::tags(['blogs'])->remember("blogs_list_page_{$request->page}_{$request->search}_{$request->category_code}", 86400, function () use ($perPage, $request) {
+            $blogs = Cache::tags(['blogs'])->remember("blogs_list_page_{$request->page}_{$request->search}_{$request->category_code}_" . app()->getLocale(), 86400, function () use ($perPage, $request) {
                 $query = QueryBuilder::for(Blog::class)
                     ->select('id', 'slug', 'status', 'writer', 'image', 'category_code', 'created_at')
                     ->allowedFilters([
@@ -57,10 +57,13 @@ class BlogClientController extends Controller
                 return $b;
             });
 
-            $categories = Cache::tags(['blogs'])->remember('blog_categories_with_count', 86400, function () {
+            $categories = Cache::tags(['blogs'])->remember('blog_categories_with_count_' . app()->getLocale(), 86400, function () {
                 return BlogCategory::with('translation')
-                    ->withCount(['blogs' => function ($query) {
-                        $query->where('status', 'active'); }])
+                    ->withCount([
+                        'blogs' => function ($query) {
+                            $query->where('status', 'active');
+                        }
+                    ])
                     ->get()
                     ->map(function ($category) {
                         return [
@@ -71,7 +74,7 @@ class BlogClientController extends Controller
                     });
             });
 
-            $lastThree = Cache::tags(['blogs'])->remember('blog_last_three', 86400, function () {
+            $lastThree = Cache::tags(['blogs'])->remember('blog_last_three_' . app()->getLocale(), 86400, function () {
                 return QueryBuilder::for(Blog::class)
                     ->select('id', 'slug', 'image', 'created_at')
                     ->with('translation')
@@ -115,7 +118,7 @@ class BlogClientController extends Controller
     public function get_blog($id)
     {
         try {
-            $data = Cache::tags(['blogs'])->remember("blog_detail_{$id}", 86400, function () use ($id) {
+            $data = Cache::tags(['blogs'])->remember("blog_detail_{$id}_" . app()->getLocale(), 86400, function () use ($id) {
                 $blog = Blog::with(['translation', 'category.translation'])
                     ->orWhere('slug', $id)
                     ->firstOrFail();

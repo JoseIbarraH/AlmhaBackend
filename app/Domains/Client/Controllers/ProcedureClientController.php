@@ -17,7 +17,7 @@ class ProcedureClientController extends Controller
         try {
             $perPage = 6;
 
-            $procedures = \Illuminate\Support\Facades\Cache::tags(['procedures'])->remember("procedures_list_page_{$request->page}_{$request->search}_{$request->category_code}", 86400, function () use ($perPage, $request) {
+            $procedures = \Illuminate\Support\Facades\Cache::tags(['procedures'])->remember("procedures_list_page_{$request->page}_{$request->search}_{$request->category_code}_" . app()->getLocale(), 86400, function () use ($perPage, $request) {
                 $query = QueryBuilder::for(Procedure::class)
                     ->select('id', 'slug', 'image', 'status', 'category_code', 'created_at')
                     ->allowedFilters([
@@ -51,7 +51,7 @@ class ProcedureClientController extends Controller
             });
 
             // Obtener todas las categorías para los filtros
-            $categories = \Illuminate\Support\Facades\Cache::tags(['procedures'])->remember("procedure_categories_count", 86400, function () {
+            $categories = \Illuminate\Support\Facades\Cache::tags(['procedures'])->remember("procedure_categories_count_" . app()->getLocale(), 86400, function () {
                 return ProcedureCategory::with('translation')
                     ->withCount([
                         'procedures' => function ($query) {
@@ -89,7 +89,7 @@ class ProcedureClientController extends Controller
     public function get_procedure($slug)
     {
         try {
-            $data = \Illuminate\Support\Facades\Cache::tags(['procedures'])->remember("procedure_detail_{$slug}", 86400, function () use ($slug) {
+            $data = \Illuminate\Support\Facades\Cache::tags(['procedures'])->remember("procedure_detail_{$slug}_" . app()->getLocale(), 86400, function () use ($slug) {
                 $procedure = Procedure::with([
                     'translation',
                     'sections.translation',

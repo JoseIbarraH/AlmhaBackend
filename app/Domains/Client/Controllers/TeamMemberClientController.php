@@ -15,7 +15,7 @@ class TeamMemberClientController extends Controller
     {
         try {
             // Usamos tags(['members']) para que luego sea fácil invalidar este caché específico
-            $members = Cache::tags(['members'])->remember('team_members_active', 86400, function () {
+            $members = Cache::tags(['members'])->remember('team_members_active_' . app()->getLocale(), 86400, function () {
                 return QueryBuilder::for(TeamMember::class)
                     ->where('status', 'active')
                     ->with(['translation'])
@@ -43,10 +43,10 @@ class TeamMemberClientController extends Controller
     public function get_member($id)
     {
         try {
-            $data = Cache::tags(['members'])->remember("member_detail_{$id}", 86400, function () use ($id) {
+            $data = Cache::tags(['members'])->remember("member_detail_{$id}_" . app()->getLocale(), 86400, function () use ($id) {
                 $member = TeamMember::with(['translation', 'images'])
-                ->orWhere('slug', $id)
-                ->firstOrFail();
+                    ->orWhere('slug', $id)
+                    ->firstOrFail();
 
                 return [
                     'id' => $member->id,

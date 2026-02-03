@@ -10,6 +10,7 @@ use Google\Analytics\Data\V1beta\DateRange;
 use Google\Analytics\Data\V1beta\Dimension;
 use Google\Analytics\Data\V1beta\Metric;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class AnalyticsController extends Controller
@@ -21,49 +22,53 @@ class AnalyticsController extends Controller
             $client = new BetaAnalyticsDataClient(['credentials' => $config['credentials_file']]);
             $propertyId = 'properties/' . $config['property_id'];
 
-            // --- DEFINICIÓN DE REPORTES ---
+            $data = Cache::remember('analytics_dashboard_data', 120 * 60, function () use ($client, $propertyId) {
+                // --- DEFINICIÓN DE REPORTES ---
 
-            $dateRange = new DateRange(['start_date' => '30daysAgo', 'end_date' => 'today']);
+                $dateRange = new DateRange(['start_date' => '30daysAgo', 'end_date' => 'today']);
 
-            $overviewReq = $this->getOverviewRequest($dateRange);
-            $weeklyReq = $this->getWeeklyRequest($dateRange);
-            $activePagesReq = $this->getActivePagesRequest($dateRange);
-            $sourcesReq = $this->getSourcesRequest($dateRange);
-            $socialReq = $this->getSocialRequest($dateRange);
-            $geoReq = $this->getGeoRequest($dateRange);
-            $topPagesReq = $this->getTopPagesRequest($dateRange);
-            $devicesReq = $this->getDevicesRequest($dateRange);
+                $overviewReq = $this->getOverviewRequest($dateRange);
+                $weeklyReq = $this->getWeeklyRequest($dateRange);
+                $activePagesReq = $this->getActivePagesRequest($dateRange);
+                $sourcesReq = $this->getSourcesRequest($dateRange);
+                $socialReq = $this->getSocialRequest($dateRange);
+                $geoReq = $this->getGeoRequest($dateRange);
+                $topPagesReq = $this->getTopPagesRequest($dateRange);
+                $devicesReq = $this->getDevicesRequest($dateRange);
 
-            // --- EJECUCIÓN EN BATCH ---
+                // --- EJECUCIÓN EN BATCH ---
 
-            $batch1 = (new BatchRunReportsRequest())
-                ->setProperty($propertyId)
-                ->setRequests([$overviewReq, $weeklyReq, $activePagesReq, $sourcesReq, $socialReq]);
+                $batch1 = (new BatchRunReportsRequest())
+                    ->setProperty($propertyId)
+                    ->setRequests([$overviewReq, $weeklyReq, $activePagesReq, $sourcesReq, $socialReq]);
 
-            $batch2 = (new BatchRunReportsRequest())
-                ->setProperty($propertyId)
-                ->setRequests([$geoReq, $topPagesReq, $devicesReq]);
+                $batch2 = (new BatchRunReportsRequest())
+                    ->setProperty($propertyId)
+                    ->setRequests([$geoReq, $topPagesReq, $devicesReq]);
 
-            $res1 = $client->batchRunReports($batch1);
-            $res2 = $client->batchRunReports($batch2);
+                $res1 = $client->batchRunReports($batch1);
+                $res2 = $client->batchRunReports($batch2);
 
-            $reports1 = iterator_to_array($res1->getReports());
-            $reports2 = iterator_to_array($res2->getReports());
+                $reports1 = iterator_to_array($res1->getReports());
+                $reports2 = iterator_to_array($res2->getReports());
 
-            // --- PROCESAMIENTO Y LIMPIEZA ---
+                // --- PROCESAMIENTO Y LIMPIEZA ---
 
-            $overview = $this->processOverview($reports1[0]);
+                $overview = $this->processOverview($reports1[0]);
 
-            return response()->json([
-                'overview' => $overview,
-                'weekly_traffic' => $this->processWeeklyTraffic($reports1[1]),
-                'active_users_by_url' => $this->processActivePages($reports1[2]),
-                'traffic_sources' => $this->processTrafficSources($reports1[3]),
-                'social_sources' => $this->processSocialSources($reports1[4]),
-                'geo_distribution' => $this->processGeoDistribution($reports2[0], $overview['active_users']),
-                'top_pages' => $this->processTopPages($reports2[1]),
-                'devices' => $this->processDevices($reports2[2]),
-            ]);
+                return [
+                    'overview' => $overview,
+                    'weekly_traffic' => $this->processWeeklyTraffic($reports1[1]),
+                    'active_users_by_url' => $this->processActivePages($reports1[2]),
+                    'traffic_sources' => $this->processTrafficSources($reports1[3]),
+                    'social_sources' => $this->processSocialSources($reports1[4]),
+                    'geo_distribution' => $this->processGeoDistribution($reports2[0], $overview['active_users']),
+                    'top_pages' => $this->processTopPages($reports2[1]),
+                    'devices' => $this->processDevices($reports2[2]),
+                ];
+            });
+
+            return response()->json($data);
 
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);

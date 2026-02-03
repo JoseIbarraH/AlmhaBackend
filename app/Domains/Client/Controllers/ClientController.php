@@ -32,7 +32,7 @@ class ClientController extends Controller
     public function navbarData()
     {
         try {
-            $data = Cache::tags(['navbar', 'procedures', 'settings'])->remember('navbar_data', 86400, function () {
+            $data = Cache::tags(['navbar', 'procedures', 'settings'])->remember('navbar_data_' . app()->getLocale(), 86400, function () {
                 $carouselNavbar = DesignSetting::getData('carouselNavbar');
 
                 $carousel = $carouselNavbar->designItems->map(function ($item) {
