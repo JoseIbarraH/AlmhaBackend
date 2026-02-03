@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip exif pcntl bcmath sockets intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
 # Instala Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
