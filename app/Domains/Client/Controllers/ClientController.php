@@ -2,14 +2,13 @@
 
 namespace App\Domains\Client\Controllers;
 
+use App\Domains\Setting\Setting\Models\Setting;
 use App\Domains\Design\Models\DesignSetting;
 use App\Domains\Procedure\Models\Procedure;
-use App\Domains\Setting\Setting\Models\Setting;
 use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class ClientController extends Controller
 {

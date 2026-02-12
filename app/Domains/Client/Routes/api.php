@@ -1,6 +1,7 @@
 <?php
 
 
+use App\Domains\Client\Controllers\HomeController;
 use App\Domains\Client\Controllers\ProcedureClientController;
 use App\Domains\Client\Controllers\ContactPageController;
 use App\Domains\Client\Controllers\BlogClientController;
@@ -31,4 +32,8 @@ Route::prefix('client')->controller(BlogClientController::class)->group(function
 Route::prefix('client')->controller(TeamMemberClientController::class)->group(function () {
     Route::get('/members', 'list_members');
     Route::get('/members/{slug}', 'get_member');
+});
+
+Route::prefix('client')->controller(HomeController::class)->group(function () {
+    Route::get('/home', 'getHomeData');
 });

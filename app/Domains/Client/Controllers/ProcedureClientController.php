@@ -2,8 +2,8 @@
 
 namespace App\Domains\Client\Controllers;
 
-use App\Domains\Procedure\Models\Procedure;
 use App\Domains\Procedure\Models\ProcedureCategory;
+use App\Domains\Procedure\Models\Procedure;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 use App\Http\Controllers\Controller;

@@ -44,7 +44,7 @@ class DesignController extends Controller
 
             $transformedSettings = $settingsCollection->reduce(function ($carry, $design) use ($groupMapping) {
                 $key = $design->key;
-                $groupName = $groupMapping[$key] ?? 'others'; // Evita errores si la key no está en el mapa
+                $groupName = $groupMapping[$key] ?? 'others';
 
                 // Procesar ítems con seguridad
                 $itemsArray = $design->designItems->map(function ($item) {
@@ -53,7 +53,7 @@ class DesignController extends Controller
                         'type' => $item->type,
                         'path' => $item->path,
                         'full_path' => $item->full_path,
-                        'title' => $item->translation->title ?? '', // El null-safe a veces da problemas en versiones viejas de PHP, mejor usar ??
+                        'title' => $item->translation->title ?? '',
                         'subtitle' => $item->translation->subtitle ?? '',
                     ];
                 })->values()->toArray();
@@ -122,6 +122,9 @@ class DesignController extends Controller
 
             $this->updateCreateTranslations($item, $data, $translator);
 
+            foreach ($this->languages as $lang) {
+                \Illuminate\Support\Facades\Cache::forget("home_data_{$lang}");
+            }
             \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
 
             DB::commit();
@@ -174,6 +177,9 @@ class DesignController extends Controller
                 'path' => $pathType['path']
             ]);
 
+            foreach ($this->languages as $lang) {
+                \Illuminate\Support\Facades\Cache::forget("home_data_{$lang}");
+            }
             \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
 
             DB::commit();
@@ -213,6 +219,9 @@ class DesignController extends Controller
 
             $item->delete();
 
+            foreach ($this->languages as $lang) {
+                \Illuminate\Support\Facades\Cache::forget("home_data_{$lang}");
+            }
             \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
 
             DB::commit();
@@ -224,6 +233,44 @@ class DesignController extends Controller
 
             return ApiResponse::error(
                 __('messages.design.error.deleteItem'),
+                ['exception' => $th->getMessage()],
+                500
+            );
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    // Toggle Item //////
+    ////////////////////////////////////////////////////
+
+    public function toggle_item(Request $request, $id)
+    {
+        try {
+            DB::beginTransaction();
+            $data = $request->validate([
+                'enabled' => 'required|boolean'
+            ]);
+
+            $setting = DesignSetting::findOrFail($id);
+            $setting->update([
+                'value' => $data['enabled'] ? true : false
+            ]);
+
+            foreach ($this->languages as $lang) {
+                \Illuminate\Support\Facades\Cache::forget("home_data_{$lang}");
+            }
+            \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
+
+            DB::commit();
+
+            return ApiResponse::success(
+                __('messages.design.success.updateState')
+            );
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th);
+            return ApiResponse::error(
+                __('messages.design.error.updateState'),
                 ['exception' => $th->getMessage()],
                 500
             );
@@ -251,6 +298,9 @@ class DesignController extends Controller
                 'value' => $data['imageVideoEnabled']
             ]);
 
+            foreach ($this->languages as $lang) {
+                \Illuminate\Support\Facades\Cache::forget("home_data_{$lang}");
+            }
             \Illuminate\Support\Facades\Cache::tags(['navbar'])->flush();
 
             return ApiResponse::success(

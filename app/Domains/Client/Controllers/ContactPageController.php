@@ -2,11 +2,11 @@
 
 namespace App\Domains\Client\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Domains\Setting\Setting\Models\Setting;
 use App\Domains\Procedure\Models\Procedure;
-use App\Helpers\ApiResponse;
 use Illuminate\Support\Facades\Cache;
+use App\Http\Controllers\Controller;
+use App\Helpers\ApiResponse;
 
 use Illuminate\Http\Request;
 

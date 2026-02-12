@@ -11,5 +11,6 @@ Route::middleware(['auth:sanctum', 'permission.map'])->prefix('design')->control
 
     Route::prefix('settings')->group(function () {
         Route::post('/state', 'update_state');
+        Route::post('/toggle/{id}', 'toggle_item');
     });
 });
