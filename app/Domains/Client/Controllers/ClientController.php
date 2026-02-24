@@ -31,31 +31,11 @@ class ClientController extends Controller
     public function navbarData()
     {
         try {
-            $data = Cache::tags(['navbar', 'procedures', 'settings'])->remember('navbar_data_' . app()->getLocale(), 86400, function () {
-                $carouselNavbar = DesignSetting::getData('carouselNavbar');
-
-                $carousel = $carouselNavbar->designItems->map(function ($item) {
-                    return [
-                        'image' => $item->path,
-                        'title' => $item->translation->title,
-                        'subtitle' => $item->translation->subtitle,
-                    ];
-                })->values()->toArray();
-
+            $data = Cache::tags(['procedures'])->remember('navbar_data_' . app()->getLocale(), 86400, function () {
                 $proceduresQuery = QueryBuilder::for(Procedure::class)
                     ->select('id', 'slug', 'image', 'category_code', 'views')
                     ->with(['translation', 'category.translation'])
                     ->where('status', 'active');
-
-                $topProcedure = (clone $proceduresQuery)->whereHas('category')->orderBy('views', 'desc')->limit(3)->get()->map(function (Procedure $procedure) {
-                    return [
-                        'id' => $procedure->id,
-                        'slug' => $procedure->slug,
-                        'image' => $procedure->image,
-                        'title' => $procedure->translation?->title ?? '',
-                        'category' => $procedure->category?->translation?->title ?? '',
-                    ];
-                });
 
                 $procedures = (clone $proceduresQuery)
                     ->whereHas('category')
@@ -64,22 +44,14 @@ class ClientController extends Controller
                         return [
                             'id' => $procedure->id,
                             'slug' => $procedure->slug,
-                            'image' => $procedure->image,
                             'title' => $procedure->translation?->title ?? '',
                             'category' => $procedure->category?->translation?->title,
                         ];
                     })
                     ->groupBy('category');
 
-                $communication = [];
-                $communication['social'] = Setting::findByGroup("social");
-                $communication['contact'] = Setting::findByGroup("contact");
-
                 return [
-                    'carousel' => $carousel,
                     'procedures' => $procedures,
-                    'topProcedure' => $topProcedure,
-                    'settings' => $communication
                 ];
             });
 
